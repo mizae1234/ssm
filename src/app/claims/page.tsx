@@ -22,54 +22,63 @@ export default function ClaimsPage() {
   const [insuranceFilter, setInsuranceFilter] = useState<string>('')
   const [claims, setClaims] = useState<any[]>([])
   const [insurances, setInsurances] = useState<any[]>([])
+  const [total, setTotal] = useState(0)
+  const [statusCounts, setStatusCounts] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
 
+  const [debouncedSearch, setDebouncedSearch] = useState(search)
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search)
+    }, 300)
+    return () => clearTimeout(handler)
+  }, [search])
+
   useEffect(() => {
     setCurrentPage(1)
-  }, [search, statusFilter, insuranceFilter])
+  }, [debouncedSearch, statusFilter, insuranceFilter])
 
   useEffect(() => {
-    Promise.all([
-      fetch('/api/claims').then(res => res.json()),
-      fetch('/api/insurances').then(res => res.json())
-    ]).then(([claimsData, insurancesData]) => {
-      setClaims(claimsData)
-      setInsurances(insurancesData)
-      setLoading(false)
-    }).catch(err => {
-      console.error(err)
-      setLoading(false)
-    })
+    fetch('/api/insurances')
+      .then(res => res.json())
+      .then(data => {
+        setInsurances(data)
+      })
+      .catch(console.error)
   }, [])
 
-  const filtered = useMemo(() => {
-    let list = [...claims]
-    if (search) {
-      const s = search.toLowerCase()
-      list = list.filter(c =>
-        c.claimNo?.toLowerCase().includes(s) ||
-        c.carPlate?.toLowerCase().includes(s) ||
-        c.insuredName?.toLowerCase().includes(s)
-      )
-    }
-    if (statusFilter) list = list.filter(c => c.status === statusFilter)
-    if (insuranceFilter) list = list.filter(c => c.insuranceId === insuranceFilter)
-    return list
-  }, [claims, search, statusFilter, insuranceFilter])
+  useEffect(() => {
+    setLoading(true)
+    const params = new URLSearchParams()
+    params.set('page', String(currentPage))
+    params.set('limit', String(itemsPerPage))
+    if (debouncedSearch) params.set('search', debouncedSearch)
+    if (statusFilter) params.set('status', statusFilter)
+    if (insuranceFilter) params.set('insuranceId', insuranceFilter)
 
-  const paginatedClaims = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage
-    return filtered.slice(start, start + itemsPerPage)
-  }, [filtered, currentPage])
+    fetch(`/api/claims?${params.toString()}`)
+      .then(res => res.json())
+      .then(data => {
+        setClaims(data.claims || [])
+        setTotal(data.total || 0)
+        setStatusCounts(data.statusCounts || {})
+        setLoading(false)
+      })
+      .catch(err => {
+        console.error(err)
+        setLoading(false)
+      })
+  }, [currentPage, debouncedSearch, statusFilter, insuranceFilter])
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[#0f172a]">Claims</h1>
-          <p className="text-sm text-[#94a3b8] mt-1">จัดการ Claim ทั้งหมด ({claims.length} รายการ)</p>
+          <p className="text-sm text-[#94a3b8] mt-1">จัดการ Claim ทั้งหมด ({total} รายการ)</p>
         </div>
         <Link href="/claims/new">
           <Button className="gap-2">
@@ -81,10 +90,10 @@ export default function ClaimsPage() {
 
       {/* Status Summary */}
       <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-9 gap-2">
-        {loading ? (
+        {loading && claims.length === 0 ? (
           Array.from({ length: 9 }).map((_, i) => <SkeletonStatusPill key={i} />)
         ) : statuses.map(status => {
-          const count = claims.filter(c => c.status === status).length
+          const count = statusCounts[status] || 0
           const { bg, text } = getStatusColor(status)
           const isActive = statusFilter === status
           return (
@@ -150,7 +159,7 @@ export default function ClaimsPage() {
             <TableBody>
               {loading ? (
                 <SkeletonTableRows rows={8} cols={7} />
-              ) : paginatedClaims.map(claim => {
+              ) : claims.map(claim => {
                 const { bg, text } = getStatusColor(claim.status)
                 const hasReturnParts = claim.parts?.some((p: any) => p.requireReturn)
                 return (
@@ -187,17 +196,17 @@ export default function ClaimsPage() {
               })}
             </TableBody>
           </Table>
-          {filtered.length === 0 && (
+          {claims.length === 0 && !loading && (
             <div className="text-center py-12 text-[#94a3b8]">
               <FileText className="w-12 h-12 mx-auto mb-3 opacity-30" />
               <p>ไม่พบ Claim ที่ตรงกับเงื่อนไข</p>
             </div>
           )}
 
-          {filtered.length > itemsPerPage && (
+          {total > itemsPerPage && (
             <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
               <div className="text-sm text-[#94a3b8]">
-                แสดง {((currentPage - 1) * itemsPerPage) + 1} ถึง {Math.min(currentPage * itemsPerPage, filtered.length)} จากทั้งหมด {filtered.length} รายการ
+                แสดง {((currentPage - 1) * itemsPerPage) + 1} ถึง {Math.min(currentPage * itemsPerPage, total)} จากทั้งหมด {total} รายการ
               </div>
               <div className="flex items-center gap-2">
                 <Button 
@@ -215,17 +224,17 @@ export default function ClaimsPage() {
                     value={currentPage}
                     onChange={e => setCurrentPage(Number(e.target.value))}
                   >
-                    {Array.from({ length: Math.ceil(filtered.length / itemsPerPage) }, (_, i) => i + 1).map(p => (
+                    {Array.from({ length: Math.ceil(total / itemsPerPage) }, (_, i) => i + 1).map(p => (
                       <option key={p} value={p}>{p}</option>
                     ))}
                   </select>
-                  จาก {Math.ceil(filtered.length / itemsPerPage)}
+                  จาก {Math.ceil(total / itemsPerPage)}
                 </div>
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  onClick={() => setCurrentPage(p => Math.min(Math.ceil(filtered.length / itemsPerPage), p + 1))}
-                  disabled={currentPage >= Math.ceil(filtered.length / itemsPerPage)}
+                  onClick={() => setCurrentPage(p => Math.min(Math.ceil(total / itemsPerPage), p + 1))}
+                  disabled={currentPage >= Math.ceil(total / itemsPerPage)}
                 >
                   ถัดไป
                 </Button>
@@ -237,3 +246,4 @@ export default function ClaimsPage() {
     </div>
   )
 }
+

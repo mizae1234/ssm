@@ -15,6 +15,13 @@ import { getStatusColor, getStatusLabel, formatCurrency, getPOStatusLabel, cn } 
 import { ClaimStatus, PaymentRequest, Quotation, InsuranceInvoice, PurchaseOrder } from '@/lib/types'
 import { formatDate } from '@/lib/date'
 import { ClaimInfoTab, PnLTab, TimelineTab, PaymentsTab, InsuranceInvoiceTab, ExpensesTab, DocumentsTab } from './tabs'
+import { SearchableSelect } from '@/components/ui/searchable-select'
+import POModal from './components/POModal'
+import QuotationModal from './components/QuotationModal'
+import GRModal from './components/GRModal'
+import SupplierInvoiceModal from './components/SupplierInvoiceModal'
+import ReceiveARModal from './components/ReceiveARModal'
+import PaymentRequestModal from './components/PaymentRequestModal'
 
 const STATUS_FLOW: Record<string, string> = {
   RECEIVED: 'PARTS_CHECK',
@@ -36,99 +43,6 @@ const STATUS_FLOW_LABEL: Record<string, string> = {
   AR_RECEIVED: 'ปิด Claim',
 }
 
-interface SearchableSelectOption {
-  value: string
-  label: string
-}
-
-function SearchableSelect({
-  options,
-  value,
-  onChange,
-  placeholder,
-  className
-}: {
-  options: SearchableSelectOption[]
-  value: string
-  onChange: (val: string) => void
-  placeholder: string
-  className?: string
-}) {
-  const [open, setOpen] = useState(false)
-  const [search, setSearch] = useState('')
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setOpen(false)
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [])
-
-  const selectedOption = options.find(o => o.value === value)
-
-  const filtered = options.filter(o => {
-    const s = search.toLowerCase()
-    return o.label.toLowerCase().includes(s) || o.value.toLowerCase().includes(s)
-  })
-
-  return (
-    <div className={cn("relative w-full", className)} ref={containerRef}>
-      <button
-        type="button"
-        onClick={() => {
-          setOpen(!open)
-          setSearch('')
-        }}
-        className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-left mt-1"
-      >
-        <span className="truncate">{selectedOption ? selectedOption.label : placeholder}</span>
-        <span className="text-gray-400 text-xs ml-2">▼</span>
-      </button>
-      {open && (
-        <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border border-slate-200 bg-white p-1 text-slate-900 shadow-md outline-none">
-          <div className="p-1">
-            <input
-              type="text"
-              placeholder="ค้นหา..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 mb-1"
-              autoFocus
-            />
-          </div>
-          <div className="max-h-48 overflow-y-auto">
-            {filtered.length === 0 ? (
-              <div className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm text-gray-500 outline-none">
-                ไม่พบผลลัพธ์
-              </div>
-            ) : (
-              filtered.map(opt => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => {
-                    onChange(opt.value)
-                    setOpen(false)
-                  }}
-                  className={cn(
-                    "relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-slate-100 text-left",
-                    opt.value === value && "bg-slate-100 font-medium"
-                  )}
-                >
-                  {opt.label}
-                </button>
-              ))
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
 
 export default function ClaimDetailPage() {
   const params = useParams()
@@ -188,10 +102,6 @@ export default function ClaimDetailPage() {
       setClaimPRs(data.paymentRequests || [])
       
       setVendors(vData)
-      if (vData.length > 0) {
-        setPoVendorId(vData[0].id)
-        setPoVendorName(vData[0].name)
-      }
       
       if (Array.isArray(pmData)) setPartsMaster(pmData)
       
@@ -203,21 +113,6 @@ export default function ClaimDetailPage() {
   }, [params.id])
   const [showStatusModal, setShowStatusModal] = useState(false)
   const [showUploadModal, setShowUploadModal] = useState(false)
-  const [showGarageUploadModal, setShowGarageUploadModal] = useState(false)
-  const [isUploadingFile, setIsUploadingFile] = useState(false)
-  const [uploadedFile, setUploadedFile] = useState<{ name: string, url: string, type: string, file?: File } | null>(null)
-  const [uploadedGarageFile, setUploadedGarageFile] = useState<{ name: string, url: string, type: string, file?: File } | null>(null)
-  const [uploadMapSelections, setUploadMapSelections] = useState<Record<string, boolean>>({})
-  const [uploadItemPrices, setUploadItemPrices] = useState<Record<string, number>>({})
-  const [uploadItemQuantities, setUploadItemQuantities] = useState<Record<string, number>>({})
-  const [customInvoiceNo, setCustomInvoiceNo] = useState('')
-  const [invoiceIncludeVat, setInvoiceIncludeVat] = useState(true)
-  const [invoiceVatPct, setInvoiceVatPct] = useState(7)
-  const [garageUploadSelections, setGarageUploadSelections] = useState<Record<string, boolean>>({})
-  const [showCreatePRModal, setShowCreatePRModal] = useState(false)
-  const [prInvoiceSelections, setPrInvoiceSelections] = useState<Record<string, boolean>>({})
-  const [prMethod, setPrMethod] = useState('โอนเงิน')
-  const [prNote, setPrNote] = useState('')
   const [claimPRs, setClaimPRs] = useState<PaymentRequest[]>([])
   const [vendors, setVendors] = useState<any[]>([])
   const [toast, setToast] = useState<string | null>(null)
@@ -226,20 +121,6 @@ export default function ClaimDetailPage() {
   const [showCreatePOModal, setShowCreatePOModal] = useState(false)
   const [editPOId, setEditPOId] = useState<string | null>(null)
   const [confirmCancelPOId, setConfirmCancelPOId] = useState<string | null>(null)
-  const [poModalParts, setPoModalParts] = useState<any[]>([])
-  const [poModalLabors, setPoModalLabors] = useState<any[]>([])
-  const [poVendorId, setPoVendorId] = useState<string>('')
-  const [poVendorName, setPoVendorName] = useState<string>('')
-  const [poDeliveryAddress, setPoDeliveryAddress] = useState<string>('')
-  const [poManualItems, setPoManualItems] = useState<{ id: string; description: string; quantity: number; unitPrice: number }[]>([])
-  const [poIncludeVat, setPoIncludeVat] = useState(true)
-  const [poVatPct, setPoVatPct] = useState(7)
-  
-  const [qtParts, setQtParts] = useState<any[]>([])
-  const [qtLabors, setQtLabors] = useState<any[]>([])
-  const [qtCustomVat, setQtCustomVat] = useState<string>('')
-  const [qtCustomGrand, setQtCustomGrand] = useState<string>('')
-  
   const [showSupplementModal, setShowSupplementModal] = useState(false)
   const [confirmModal, setConfirmModal] = useState<{ title: string, message: string, onConfirm: () => void } | null>(null)
   const [showReceiveARModal, setShowReceiveARModal] = useState(false)
@@ -248,20 +129,14 @@ export default function ClaimDetailPage() {
   const [rejectReason, setRejectReason] = useState('')
   const [selectedQuotationId, setSelectedQuotationId] = useState<string | null>(null)
   const [previewAttachment, setPreviewAttachment] = useState<{ name: string; url: string; type: string } | null>(null)
-  const [qtDate, setQtDate] = useState(new Date().toISOString().split('T')[0])
-  
+  const [supplementReason, setSupplementReason] = useState('')
+
   // Partial GR states
   const [showGRModal, setShowGRModal] = useState(false)
   const [selectedPOForGR, setSelectedPOForGR] = useState<any>(null)
-  const [grQuantities, setGrQuantities] = useState<Record<string, number>>({})
-  const [grReceivedBy, setGrReceivedBy] = useState('admin')
-  const [grNote, setGrNote] = useState('')
   const [grHistoryPO, setGrHistoryPO] = useState<any>(null)
   const [showGRHistoryModal, setShowGRHistoryModal] = useState(false)
-  const [qtValidUntil, setQtValidUntil] = useState(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
-  const [qtNote, setQtNote] = useState('')
-  const [supplementReason, setSupplementReason] = useState('')
-  const [arReceiveDate, setArReceiveDate] = useState(new Date().toISOString().split('T')[0])
+
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500) }
 
@@ -319,75 +194,6 @@ export default function ClaimDetailPage() {
   }
 
   // ─── Action Handlers ───
-  const submitCreatePO = async () => {
-    const selectedParts = poModalParts.filter(p => p.selected)
-    const selectedLabors = poModalLabors.filter(l => l.selected)
-    if (selectedParts.length === 0 && selectedLabors.length === 0 && poManualItems.length === 0) { showToast('กรุณาเลือกรายการอย่างน้อย 1 รายการ'); return }
-    if (!poDeliveryAddress || !poDeliveryAddress.trim()) {
-      showToast('⚠️ กรุณาระบุที่อยู่สำหรับจัดส่ง')
-      return
-    }
-    const poNo = editPOId ? purchaseOrders.find(p => p.id === editPOId)?.poNo : undefined // let server generate
-    
-    const partItems = selectedParts.map(p => ({
-      partNo: p.partNo,
-      description: p.partName,
-      quantity: Number(p.quantity) || 1,
-      unitPrice: Number(p.priceApprove) || 0,
-      totalPrice: (Number(p.priceApprove) || 0) * (Number(p.quantity) || 1)
-    }))
-    const laborItems = selectedLabors.map(l => ({
-      partNo: '',
-      description: `[ค่าแรง] ${l.description}`,
-      quantity: 1,
-      unitPrice: Number(l.priceApprove) || 0,
-      totalPrice: Number(l.priceApprove) || 0
-    }))
-    const manualItems = poManualItems.filter(m => m.description.trim()).map(m => ({
-      partNo: '',
-      description: m.description,
-      quantity: Number(m.quantity) || 1,
-      unitPrice: Number(m.unitPrice) || 0,
-      totalPrice: (Number(m.unitPrice) || 0) * (Number(m.quantity) || 1)
-    }))
-
-    const payload = {
-      poNo,
-      vendorId: poVendorId,
-      deliveryAddress: poDeliveryAddress,
-      includeVat: poIncludeVat,
-      vatPct: poIncludeVat ? poVatPct : 0,
-      items: [...partItems, ...laborItems, ...manualItems]
-    }
-
-    try {
-      const url = editPOId ? `/api/claims/${claim.id}/pos/${editPOId}` : `/api/claims/${claim.id}/pos`
-      const method = editPOId ? 'PUT' : 'POST'
-      
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
-      if (!res.ok) {
-        const errData = await res.json()
-        throw new Error(errData.error || 'Failed to save PO')
-      }
-      const savedPO = await res.json()
-      if (!savedPO.vendor) savedPO.vendor = { id: poVendorId, name: poVendorName }
-      
-      if (editPOId) {
-        setPurchaseOrders(prev => prev.map(p => p.id === editPOId ? savedPO : p))
-        showToast(`แก้ไข ${poNo} สำเร็จ`)
-      } else {
-        setPurchaseOrders(prev => [...prev, savedPO])
-        showToast(`สร้าง ${poNo} สำเร็จ (${selectedParts.length} รายการ)`)
-      }
-      setShowCreatePOModal(false)
-    } catch (err: any) {
-      setErrorModalMsg(`เกิดข้อผิดพลาดในการ${editPOId ? 'แก้ไข' : 'สร้าง'} PO: ${err.message}`)
-    }
-  }
 
   const handleCancelPO = async () => {
     if (!confirmCancelPOId) return
@@ -465,73 +271,7 @@ export default function ClaimDetailPage() {
     }
   }
 
-  const handleCreatePaymentRequest = async (type: 'AP_VENDOR' | 'AP_GARAGE', invoiceId: string, amount: number) => {
-    try {
-      const res = await fetch(`/api/payment-requests`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          requestType: type,
-          claimId: claim.id,
-          supplierInvoiceId: type === 'AP_VENDOR' ? invoiceId : undefined,
-          garageInvoiceId: type === 'AP_GARAGE' ? invoiceId : undefined,
-          amount,
-        })
-      })
 
-      if (!res.ok) {
-        const errData = await res.json()
-        throw new Error(errData.error || 'Failed to create payment request')
-      }
-
-      showToast('สร้างคำขอเบิกจ่ายเงินเรียบร้อย กรุณารอการเงินอนุมัติ')
-      await refreshClaim()
-    } catch (err: any) {
-      setErrorModalMsg(`เกิดข้อผิดพลาดในการสร้างคำขอเบิกเงิน: ${err.message}`)
-    }
-  }
-
-  const handleCreateQuotation = async () => {
-    const qtNo = `QT-${new Date().getFullYear()}-${Date.now().toString(36).toUpperCase()}`
-    
-    const laborTot = qtLabors.filter(l => l.selected).reduce((sum, l) => sum + (Number(l.priceApprove) || 0), 0)
-    const partTot = qtParts.filter(p => p.selected).reduce((sum, p) => sum + ((Number(p.priceApprove) || 0) * (Number(p.quantity) || 1)), 0)
-    const sub = partTot + laborTot
-    const vatAmt = qtCustomVat !== '' ? Number(qtCustomVat) : Math.round(sub * 0.07 * 100) / 100
-    const grand = qtCustomGrand !== '' ? Number(qtCustomGrand) : Math.round((sub + vatAmt) * 100) / 100
-    
-    const payload = {
-      quotationNo: qtNo,
-      quotationDate: new Date(qtDate).toISOString(),
-      validUntil: new Date(qtValidUntil).toISOString(),
-      laborItems: qtLabors.filter(l => l.selected).map(l => ({ description: l.description, damageLevel: l.damageLevel, discountPct: l.discountPct, unitPrice: l.priceApprove, totalPrice: l.priceApprove })),
-      partItems: qtParts.filter(p => p.selected).map(p => ({ partNo: p.partNo, partName: p.partName, quantity: p.quantity, unitPrice: p.priceApprove, discountPct: p.discountPct, totalPrice: p.priceApprove * p.quantity })),
-      laborTotal: laborTot,
-      partsTotal: partTot,
-      subtotal: sub,
-      vatAmount: vatAmt,
-      grandTotal: grand,
-      note: qtNote || undefined,
-      status: 'DRAFT',
-      createdBy: 'Admin',
-    }
-
-    try {
-      const res = await fetch(`/api/claims/${claim.id}/quotations`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
-      if (!res.ok) throw new Error('Failed to create quotation')
-      const newQt = await res.json()
-      setQuotations(prev => [...prev, newQt])
-      setShowCreateQuotationModal(false)
-      setQtNote('')
-      showToast(`สร้างใบเสนอราคา ${qtNo} สำเร็จ`)
-    } catch (err) {
-      setErrorModalMsg('เกิดข้อผิดพลาดในการสร้างใบเสนอราคา')
-    }
-  }
 
   const handleSendQuotation = async (qtId: string) => {
     try {
@@ -965,10 +705,6 @@ export default function ClaimDetailPage() {
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-base flex items-center gap-2"><FileText className="w-5 h-5 text-[#0d9488]" />ใบเสนอราคา (Quotation)</CardTitle>
               <Button size="sm" className="bg-[#0d9488]" onClick={() => {
-                setQtParts(parts.map(p => ({ ...p, selected: true })))
-                setQtLabors(labors.map(l => ({ ...l, selected: true })))
-                setQtCustomVat('')
-                setQtCustomGrand('')
                 setShowCreateQuotationModal(true)
               }}>
                 <Plus className="w-4 h-4 mr-1" />ออกใบเสนอราคา
@@ -1040,12 +776,6 @@ export default function ClaimDetailPage() {
               <CardTitle className="text-base">Purchase Orders</CardTitle>
               <Button variant="outline" size="sm" onClick={() => {
                 setEditPOId(null)
-                setPoDeliveryAddress(claim.garage?.name ? `${claim.garage.name}\n${claim.garage.address || ''} ${claim.garage.province || ''}`.trim() : '')
-                setPoModalParts(parts.map(p => ({ ...p, selected: p.status === 'approved' })))
-                setPoModalLabors(labors.map(l => ({ ...l, selected: false })))
-                setPoManualItems([])
-                setPoIncludeVat(true)
-                setPoVatPct(7)
                 setShowCreatePOModal(true)
               }}>
                 <Plus className="w-4 h-4 mr-1" />สร้าง PO
@@ -1079,26 +809,6 @@ export default function ClaimDetailPage() {
                               <div className="flex items-center gap-1 border-l pl-4 border-gray-200">
                                 <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-500 hover:text-blue-600" onClick={() => {
                                   setEditPOId(po.id)
-                                  setPoVendorId(po.vendorId)
-                                  setPoVendorName(po.vendor?.name || '')
-                                  setPoDeliveryAddress(po.deliveryAddress || '')
-                                  setPoModalParts(parts.map((p: any) => {
-                                    const existingPoItem = po.items.find((pi: any) => pi.partNo === p.partNo || pi.description === p.partName)
-                                    if (existingPoItem) {
-                                      return { ...p, selected: true, partName: existingPoItem.description, quantity: existingPoItem.quantity, priceApprove: existingPoItem.unitPrice }
-                                    }
-                                    return { ...p, selected: false }
-                                  }))
-                                  setPoModalLabors(labors.map((l: any) => {
-                                    const existingPoItem = po.items.find((pi: any) => pi.description === `[ค่าแรง] ${l.description}`)
-                                    if (existingPoItem) {
-                                      return { ...l, selected: true, description: existingPoItem.description.replace('[ค่าแรง] ', ''), priceApprove: existingPoItem.unitPrice }
-                                    }
-                                    return { ...l, selected: false }
-                                  }))
-                                  setPoManualItems([])
-                                  setPoIncludeVat(true)
-                                  setPoVatPct(7)
                                   setShowCreatePOModal(true)
                                 }}>
                                   <Edit2 className="w-3.5 h-3.5" />
@@ -1163,15 +873,6 @@ export default function ClaimDetailPage() {
                             {(po.status === 'SENT' || po.status === 'PARTIALLY_RECEIVED') && (
                               <Button size="sm" className="bg-[#0d9488] hover:bg-[#0f766e] text-white text-xs h-7" onClick={() => {
                                 setSelectedPOForGR(po)
-                                // Initialize quantities
-                                const initQ: Record<string, number> = {}
-                                po.items.forEach((item: any) => {
-                                  const prevRec = (item.goodsReceiptItems || []).reduce((s: number, g: any) => s + g.quantity, 0)
-                                  initQ[item.id] = Math.max(0, item.quantity - prevRec)
-                                })
-                                setGrQuantities(initQ)
-                                setGrReceivedBy('admin')
-                                setGrNote('')
                                 setShowGRModal(true)
                               }}>
                                 <Package className="w-3 h-3 mr-1" />ตรวจรับสินค้า (GR)
@@ -1219,13 +920,9 @@ export default function ClaimDetailPage() {
                 {/* Combined Parts and Labors Table */}
                 <Card><CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle className="text-base">รายการอะไหล่และค่าแรง</CardTitle>
-                  <Button variant="outline" size="sm" onClick={() => {
-                    const sel: Record<string, boolean> = {}
-                    const prices: Record<string, number> = {}
-                    parts.filter(p => p.paymentStatus !== 'INVOICED' && p.paymentStatus !== 'PAID').forEach(p => { sel[p.id] = true; prices[p.id] = getPartAmt(p) })
-                    labors.filter(l => l.paymentStatus !== 'INVOICED' && l.paymentStatus !== 'PAID').forEach(l => { sel[l.id] = true; prices[l.id] = getLaborAmt(l) })
-                    setUploadMapSelections(sel); setUploadItemPrices(prices); setInvoiceIncludeVat(true); setInvoiceVatPct(7); setCustomInvoiceNo(''); setShowUploadModal(true)
-                  }}><Upload className="w-4 h-4 mr-1" />อัพโหลด Invoice</Button>
+                  <Button variant="outline" size="sm" onClick={() => setShowUploadModal(true)}>
+                    <Upload className="w-4 h-4 mr-1" />อัพโหลด Invoice
+                  </Button>
                 </CardHeader><CardContent>
                   <Table><TableHeader><TableRow className="bg-[#f8faff]">
                     <TableHead>ประเภท</TableHead><TableHead>รายการ</TableHead><TableHead className="text-right">ยอดอนุมัติ</TableHead><TableHead className="text-right">ยอด PO</TableHead><TableHead className="text-center">PO / เอกสารอ้างอิง</TableHead><TableHead className="text-center">Invoice</TableHead><TableHead className="text-center">สถานะ</TableHead>
@@ -1461,342 +1158,7 @@ export default function ClaimDetailPage() {
               </>)
             })()}
           </div>
-          {/* Combined Upload Invoice Modal */}
-          {showUploadModal && (
-            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setShowUploadModal(false)}>
-              <Card className="w-full max-w-2xl shadow-2xl max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-                <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Upload className="w-5 h-5" />อัพโหลด Invoice</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                  <label className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-[#0d9488] transition-colors cursor-pointer block relative">
-                    <input 
-                      type="file" 
-                      className="hidden" 
-                      accept="application/pdf, image/png, image/jpeg" 
-                      onChange={(e) => {
-                        const file = e.target.files?.[0]
-                        if (!file) return
-                        const url = URL.createObjectURL(file)
-                        setUploadedFile({ name: file.name, url, type: file.type, file })
-                      }} 
-                    />
-                    {uploadedFile ? (
-                      <div className="flex items-center gap-3 justify-center">
-                        {uploadedFile.type.startsWith('image/') ? (
-                          <img src={uploadedFile.url} alt="preview" className="w-16 h-16 object-cover rounded border" />
-                        ) : (
-                          <div className="w-16 h-16 bg-red-50 rounded border flex items-center justify-center"><FileText className="w-8 h-8 text-red-500" /></div>
-                        )}
-                        <div className="text-left">
-                          <p className="text-sm font-medium text-[#0f172a]">{uploadedFile.name}</p>
-                          <p className="text-xs text-green-600">แนบไฟล์เรียบร้อย • คลิกเพื่อเปลี่ยนไฟล์</p>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <Upload className="w-8 h-8 mx-auto mb-2 text-[#94a3b8]" />
-                        <p className="text-sm text-[#475569]">คลิกเพื่อแนบไฟล์ PDF/Image</p>
-                      </>
-                    )}
-                  </label>
-                  <div>
-                    <label className="text-sm font-medium text-[#475569]">เลขที่ใบวางบิล (Invoice No.)</label>
-                    <Input className="mt-1" placeholder="ใส่เลขที่จริงจากผู้จัดจำหน่าย หรือเว้นว่างระบบสร้างให้อัตโนมัติ" value={customInvoiceNo} onChange={e => setCustomInvoiceNo(e.target.value)} />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-semibold mb-3 text-slate-800">Invoice นี้ cover รายการไหนบ้าง?</h4>
-                    
-                    {/* รายการอะไหล่ */}
-                    <div className="border rounded-lg overflow-hidden bg-white mb-4 shadow-sm">
-                      <div className="bg-slate-50/80 px-3 py-2 border-b flex items-center justify-between">
-                        <span className="font-semibold text-xs text-slate-700 flex items-center gap-1.5">
-                          🛠️ รายการอะไหล่
-                        </span>
-                        {(() => {
-                          const visibleParts = parts.filter(p => p.paymentStatus !== 'INVOICED' && p.paymentStatus !== 'PAID');
-                          const isAllPartsSelected = visibleParts.length > 0 && visibleParts.every(p => !!uploadMapSelections[p.id]);
-                          if (visibleParts.length === 0) return null;
-                          return (
-                            <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-[#0d9488] select-none">
-                              <input 
-                                type="checkbox" 
-                                checked={isAllPartsSelected} 
-                                onChange={e => {
-                                  const checked = e.target.checked;
-                                  setUploadMapSelections(prev => {
-                                    const next = { ...prev };
-                                    visibleParts.forEach(p => {
-                                      next[p.id] = checked;
-                                    });
-                                    return next;
-                                  });
-                                }} 
-                                className="w-3.5 h-3.5 rounded accent-[#0d9488] cursor-pointer" 
-                              />
-                              เลือกทั้งหมด
-                            </label>
-                          );
-                        })()}
-                      </div>
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="bg-slate-50/30">
-                            <TableHead className="w-10"></TableHead>
-                            <TableHead className="text-xs">รายการ</TableHead>
-                            <TableHead className="text-xs text-right w-36">ราคา (แก้ไขได้)</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {(() => {
-                            const visibleParts = parts.filter(p => p.paymentStatus !== 'INVOICED' && p.paymentStatus !== 'PAID');
-                            if (visibleParts.length === 0) {
-                              return (
-                                <TableRow>
-                                  <TableCell colSpan={3} className="text-center p-4 text-xs text-slate-400 italic">ไม่มีรายการอะไหล่ที่รอดำเนินการวางบิล</TableCell>
-                                </TableRow>
-                              );
-                            }
-                            return visibleParts.map(p => (
-                              <TableRow key={p.id} className={uploadMapSelections[p.id] ? 'bg-blue-50/30' : ''}>
-                                <TableCell>
-                                  <input 
-                                    type="checkbox" 
-                                    checked={!!uploadMapSelections[p.id]} 
-                                    onChange={e => setUploadMapSelections(prev => ({ ...prev, [p.id]: e.target.checked }))} 
-                                    className="w-4 h-4 rounded accent-[#0d9488]" 
-                                  />
-                                </TableCell>
-                                <TableCell className="font-medium text-xs">
-                                  {p.partName} <span className="text-[10px] text-[#94a3b8] font-mono block mt-0.5">{p.partNo}</span>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <Input 
-                                    type="number" 
-                                    className="h-8 text-xs text-right w-32 ml-auto" 
-                                    value={uploadItemPrices[p.id] ?? getPartAmt(p)} 
-                                    onChange={e => setUploadItemPrices(prev => ({ ...prev, [p.id]: Number(e.target.value) || 0 }))} 
-                                  />
-                                </TableCell>
-                              </TableRow>
-                            ));
-                          })()}
-                        </TableBody>
-                      </Table>
-                    </div>
 
-                    {/* รายการค่าแรง */}
-                    <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
-                      <div className="bg-slate-50/80 px-3 py-2 border-b flex items-center justify-between">
-                        <span className="font-semibold text-xs text-slate-700 flex items-center gap-1.5">
-                          💼 รายการค่าแรง
-                        </span>
-                        {(() => {
-                          const visibleLabors = labors.filter(l => l.paymentStatus !== 'INVOICED' && l.paymentStatus !== 'PAID');
-                          const isAllLaborsSelected = visibleLabors.length > 0 && visibleLabors.every(l => !!uploadMapSelections[l.id]);
-                          if (visibleLabors.length === 0) return null;
-                          return (
-                            <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-[#0d9488] select-none">
-                              <input 
-                                type="checkbox" 
-                                checked={isAllLaborsSelected} 
-                                onChange={e => {
-                                  const checked = e.target.checked;
-                                  setUploadMapSelections(prev => {
-                                    const next = { ...prev };
-                                    visibleLabors.forEach(l => {
-                                      next[l.id] = checked;
-                                    });
-                                    return next;
-                                  });
-                                }} 
-                                className="w-3.5 h-3.5 rounded accent-[#0d9488] cursor-pointer" 
-                              />
-                              เลือกทั้งหมด
-                            </label>
-                          );
-                        })()}
-                      </div>
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="bg-slate-50/30">
-                            <TableHead className="w-10"></TableHead>
-                            <TableHead className="text-xs">รายการ</TableHead>
-                            <TableHead className="text-xs text-right w-36">ราคา (แก้ไขได้)</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {(() => {
-                            const visibleLabors = labors.filter(l => l.paymentStatus !== 'INVOICED' && l.paymentStatus !== 'PAID');
-                            if (visibleLabors.length === 0) {
-                              return (
-                                <TableRow>
-                                  <TableCell colSpan={3} className="text-center p-4 text-xs text-slate-400 italic">ไม่มีรายการค่าแรงที่รอดำเนินการวางบิล</TableCell>
-                                </TableRow>
-                              );
-                            }
-                            return visibleLabors.map(l => (
-                              <TableRow key={l.id} className={uploadMapSelections[l.id] ? 'bg-blue-50/30' : ''}>
-                                <TableCell>
-                                  <input 
-                                    type="checkbox" 
-                                    checked={!!uploadMapSelections[l.id]} 
-                                    onChange={e => setUploadMapSelections(prev => ({ ...prev, [l.id]: e.target.checked }))} 
-                                    className="w-4 h-4 rounded accent-[#0d9488]" 
-                                  />
-                                </TableCell>
-                                <TableCell className="font-medium text-xs">
-                                  {l.description}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <Input 
-                                    type="number" 
-                                    className="h-8 text-xs text-right w-32 ml-auto" 
-                                    value={uploadItemPrices[l.id] ?? getLaborAmt(l)} 
-                                    onChange={e => setUploadItemPrices(prev => ({ ...prev, [l.id]: Number(e.target.value) || 0 }))} 
-                                  />
-                                </TableCell>
-                              </TableRow>
-                            ));
-                          })()}
-                        </TableBody>
-                      </Table>
-                    </div>
-
-                      <div className="flex flex-col items-end gap-2 mt-4 p-4 bg-gray-50 rounded-lg w-full max-w-sm ml-auto">
-                        {(() => {
-                           const sub = parts.filter(p => uploadMapSelections[p.id]).reduce((s, p) => s + (uploadItemPrices[p.id] ?? getPartAmt(p)), 0) + labors.filter(l => uploadMapSelections[l.id]).reduce((s, l) => s + (uploadItemPrices[l.id] ?? getLaborAmt(l)), 0)
-                           const vat = invoiceIncludeVat ? Math.round(sub * (invoiceVatPct / 100)) : 0
-                           const validPOs = claim.purchaseOrders?.filter((po: any) => po.status !== 'CANCELLED') || []
-                           const vendorData = validPOs[0]?.vendorId ? vendors.find((v: any) => v.id === validPOs[0].vendorId) : vendors[0]
-                           const billingPct = vendorData?.billingPct ?? 100
-                           const expectedBilling = Math.round(sub * billingPct / 100)
-                           return (
-                             <div className="w-full space-y-2">
-                               {/* VAT Toggle */}
-                               <div className="flex items-center justify-between border-b pb-2 mb-2 w-full">
-                                 <label className="flex items-center gap-2 cursor-pointer">
-                                   <input type="checkbox" checked={invoiceIncludeVat} onChange={e => setInvoiceIncludeVat(e.target.checked)} className="w-4 h-4 rounded animate-fade-in" />
-                                   <span className="text-sm text-gray-600 font-medium">คิด VAT</span>
-                                 </label>
-                                 {invoiceIncludeVat && (
-                                   <div className="flex items-center gap-1">
-                                     <Input type="number" className="h-8 w-16 text-sm text-right" value={invoiceVatPct} onChange={e => setInvoiceVatPct(Number(e.target.value) || 0)} min={0} max={100} />
-                                     <span className="text-sm text-gray-500">%</span>
-                                   </div>
-                                 )}
-                               </div>
-
-                               <div className="flex justify-between w-full text-sm text-gray-500"><span>มูลค่าก่อนภาษี:</span><span>฿{formatCurrency(sub)}</span></div>
-                               {invoiceIncludeVat && (
-                                 <div className="flex justify-between w-full text-sm text-gray-500"><span>VAT {invoiceVatPct}%:</span><span>฿{formatCurrency(vat)}</span></div>
-                               )}
-                               <div className="flex justify-between w-full text-base font-bold text-blue-700 pt-2 border-t mt-1"><span>รวมทั้งสิ้น:</span><span>฿{formatCurrency(sub + vat)}</span></div>
-                               {billingPct < 100 && (
-                                 <div className="w-full mt-2 pt-2 border-t border-dashed">
-                                   <div className="flex justify-between text-sm text-amber-600"><span>Vendor วางบิล {billingPct}%:</span><span>฿{formatCurrency(expectedBilling)}</span></div>
-                                   <p className="text-[10px] text-gray-400 mt-0.5">({vendorData?.name})</p>
-                                 </div>
-                               )}
-                             </div>
-                           )
-                        })()}
-                      </div>
-                  </div>
-                  <div className="flex gap-3 justify-end">
-                    <Button variant="outline" onClick={() => setShowUploadModal(false)}>ยกเลิก</Button>
-                    <Button className="bg-[#0d9488]" disabled={isUploadingFile} onClick={async () => {
-                      const selParts = parts.filter(p => uploadMapSelections[p.id])
-                      const selLabors = labors.filter(l => uploadMapSelections[l.id])
-                      if (!selParts.length && !selLabors.length) { showToast('กรุณาเลือกอย่างน้อย 1 รายการ'); return }
-                      
-                      try {
-                        setIsUploadingFile(true)
-                        let pdfUrlToSave = null
-                        if (uploadedFile?.file) {
-                          pdfUrlToSave = await uploadToR2(uploadedFile.file, `claims/${claim.id}/invoices`)
-                        }
-                        
-                        let hasError = false
-                        
-                        // Invoice number — user-provided or auto-generated by server
-                        const invoiceNo = customInvoiceNo.trim() || undefined
-
-                        // Build combined items list (parts + labors in ONE invoice)
-                        const validPOs = claim.purchaseOrders?.filter((po: any) => po.status !== 'CANCELLED') || []
-                        const firstVendorId = validPOs[0]?.vendorId || vendors[0]?.id || claim.garageId || 'ven-p01'
-
-                        const partItems = selParts.map(p => {
-                          const editedPrice = uploadItemPrices[p.id]
-                          const poItem = validPOs.flatMap((po: any) => po.items).find((pi: any) => pi.partNo === p.partNo)
-                          const unitPrice = editedPrice !== undefined ? editedPrice / p.quantity : (poItem ? poItem.unitPrice : p.priceApprove)
-                          return {
-                            poItemId: poItem?.id || validPOs[0]?.items?.[0]?.id,
-                            claimPartId: p.id,
-                            partNo: p.partNo,
-                            description: p.partName,
-                            quantity: p.quantity,
-                            unitPrice: unitPrice,
-                            totalPrice: unitPrice * p.quantity
-                          }
-                        })
-                        const laborItems = selLabors.map(l => {
-                          const editedPrice = uploadItemPrices[l.id]
-                          const poLabor = validPOs.flatMap((po: any) => po.items).find((pi: any) => pi.description?.includes(l.description))
-                          const unitPrice = editedPrice !== undefined ? editedPrice : (poLabor ? poLabor.unitPrice : l.priceApprove)
-                          return {
-                            claimPartId: null,
-                            claimLaborId: l.id,
-                            partNo: '',
-                            description: `[ค่าแรง] ${l.description}`,
-                            quantity: 1,
-                            unitPrice: unitPrice,
-                            totalPrice: unitPrice
-                          }
-                        })
-
-                        const sub = selParts.reduce((s, p) => s + (uploadItemPrices[p.id] ?? getPartAmt(p)), 0) + selLabors.reduce((s, l) => s + (uploadItemPrices[l.id] ?? getLaborAmt(l)), 0)
-                        const computedVat = invoiceIncludeVat ? Math.round(sub * (invoiceVatPct / 100)) : 0
-
-                        const allItems = [...partItems, ...laborItems]
-
-                        // Create ONE supplier invoice with all items
-                        const res = await fetch(`/api/claims/${claim.id}/supplier-invoices`, {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            vendorId: firstVendorId,
-                            invoiceNo,
-                            items: allItems,
-                            pdfUrl: pdfUrlToSave,
-                            vatAmount: computedVat,
-                            laborIds: selLabors.map(l => l.id) // pass labor IDs to mark as INVOICED
-                          })
-                        })
-                        if (!res.ok) hasError = true
-                        else {
-                          const newInv = await res.json()
-                          newInv.attachmentUrl = uploadedFile?.url || null
-                          newInv.attachmentName = uploadedFile?.name || null
-                          setSupplierInvoices(prev => [...prev, newInv])
-                          if (selParts.length > 0) setParts(prev => prev.map(p => uploadMapSelections[p.id] ? { ...p, paymentStatus: 'INVOICED' as const } : p))
-                          if (selLabors.length > 0) setLabors(prev => prev.map(l => uploadMapSelections[l.id] ? { ...l, paymentStatus: 'INVOICED' as const } : l))
-                        }
-
-                        if (hasError) throw new Error('เกิดข้อผิดพลาดในการบันทึกข้อมูลบางส่วน')
-
-                        setShowUploadModal(false); setUploadedFile(null); showToast('บันทึก Invoice เรียบร้อย')
-                      } catch (err: any) {
-                        setErrorModalMsg(`เกิดข้อผิดพลาด: ${err.message}`)
-                      } finally {
-                        setIsUploadingFile(false)
-                      }
-                    }}>
-                      {isUploadingFile ? <span className="flex items-center"><span className="w-4 h-4 mr-1.5 border-2 border-t-white border-white/30 rounded-full animate-spin"></span>อัพโหลด...</span> : <span className="flex items-center"><Save className="w-4 h-4 mr-1.5" />ยืนยัน</span>}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
         </TabsContent>
 
         {/* Tab 5: Insurance Invoice — AR/AP แยกชัดเจน */}
@@ -1831,285 +1193,59 @@ export default function ClaimDetailPage() {
       </Tabs>
 
       {/* ─── Create Quotation Modal ─── */}
-      {showCreateQuotationModal && (() => {
-        const laborTot = qtLabors.filter(l => l.selected).reduce((sum, l) => sum + (Number(l.priceApprove) || 0), 0)
-        const partTot = qtParts.filter(p => p.selected).reduce((sum, p) => sum + ((Number(p.priceApprove) || 0) * (Number(p.quantity) || 1)), 0)
-        const sub = partTot + laborTot
-        const vatAmt = qtCustomVat !== '' ? Number(qtCustomVat) : Math.round(sub * 0.07)
-        const grand = qtCustomGrand !== '' ? Number(qtCustomGrand) : (sub + vatAmt)
-        
-        return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh]">
-              <div className="p-4 border-b flex justify-between items-center bg-[#f8faff]">
-                <h3 className="font-semibold text-lg text-[#0f172a] flex items-center gap-2"><FileText className="w-5 h-5 text-[#0d9488]" />ออกใบเสนอราคา (Quotation)</h3>
-                <Button variant="ghost" size="icon" onClick={() => setShowCreateQuotationModal(false)} className="h-8 w-8 text-[#94a3b8] hover:text-[#0f172a]"><X className="w-4 h-4" /></Button>
-              </div>
-              <div className="p-4 overflow-y-auto flex-1">
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-[#475569]">วันที่เสนอราคา</label>
-                      <Input type="date" className="mt-1" value={qtDate} onChange={e => setQtDate(e.target.value)} />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-[#475569]">วันหมดอายุ</label>
-                      <Input type="date" className="mt-1" value={qtValidUntil} onChange={e => setQtValidUntil(e.target.value)} />
-                    </div>
-                  </div>
-                  
-                  {/* Items Selection Table */}
-                  <div className="border rounded-lg overflow-hidden mt-4">
-                    <Table>
-                      <TableHeader className="bg-gray-50">
-                        <TableRow>
-                          <TableHead className="w-10"></TableHead>
-                          <TableHead>รายการ</TableHead>
-                          <TableHead className="w-20 text-center">จำนวน</TableHead>
-                          <TableHead className="w-32 text-right">ราคา/หน่วย</TableHead>
-                          <TableHead className="w-32 text-right">รวม</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        <TableRow className="bg-blue-50/30"><TableCell colSpan={5} className="font-semibold text-sm">รายการค่าแรง</TableCell></TableRow>
-                        {qtLabors.map((l, i) => (
-                          <TableRow key={l.id}>
-                            <TableCell><input type="checkbox" checked={l.selected} onChange={e => { const n = [...qtLabors]; n[i].selected = e.target.checked; setQtLabors(n) }} className="w-4 h-4" /></TableCell>
-                            <TableCell><Input className="h-8 text-sm" value={l.description} onChange={e => { const n = [...qtLabors]; n[i].description = e.target.value; setQtLabors(n) }} /></TableCell>
-                            <TableCell className="text-center">1</TableCell>
-                            <TableCell><Input type="number" className="h-8 text-sm text-right" value={l.priceApprove || ''} onChange={e => { const n = [...qtLabors]; n[i].priceApprove = Number(e.target.value); setQtLabors(n) }} /></TableCell>
-                            <TableCell className="text-right font-medium text-sm pt-3">฿{formatCurrency(Number(l.priceApprove) || 0)}</TableCell>
-                          </TableRow>
-                        ))}
-                        <TableRow className="bg-blue-50/30"><TableCell colSpan={5} className="font-semibold text-sm">รายการอะไหล่</TableCell></TableRow>
-                        {qtParts.map((p, i) => (
-                          <TableRow key={p.id}>
-                            <TableCell><input type="checkbox" checked={p.selected} onChange={e => { const n = [...qtParts]; n[i].selected = e.target.checked; setQtParts(n) }} className="w-4 h-4" /></TableCell>
-                            <TableCell><Input className="h-8 text-sm" value={p.partName} onChange={e => { const n = [...qtParts]; n[i].partName = e.target.value; setQtParts(n) }} /></TableCell>
-                            <TableCell><Input type="number" className="h-8 text-sm text-center" value={p.quantity || ''} onChange={e => { const n = [...qtParts]; n[i].quantity = Number(e.target.value); setQtParts(n) }} /></TableCell>
-                            <TableCell><Input type="number" className="h-8 text-sm text-right" value={p.priceApprove || ''} onChange={e => { const n = [...qtParts]; n[i].priceApprove = Number(e.target.value); setQtParts(n) }} /></TableCell>
-                            <TableCell className="text-right font-medium text-sm pt-3">฿{formatCurrency((Number(p.priceApprove) || 0) * (Number(p.quantity) || 1))}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+      <QuotationModal
+        isOpen={showCreateQuotationModal}
+        onClose={() => setShowCreateQuotationModal(false)}
+        claim={claim}
+        parts={parts}
+        labors={labors}
+        onSuccess={(newQt) => setQuotations(prev => [...prev, newQt])}
+        showToast={showToast}
+        setErrorModalMsg={setErrorModalMsg}
+      />
 
-                  <div>
-                    <label className="text-sm font-medium text-[#475569]">หมายเหตุ (แสดงในใบเสนอราคา)</label>
-                    <Input placeholder="เช่น ราคาอะไหล่อ้างอิงราคาศูนย์" className="mt-1" value={qtNote} onChange={e => setQtNote(e.target.value)} />
-                  </div>
-                  
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 pt-4 border-t items-end">
-                    <div><span className="text-xs text-[#94a3b8]">รวมค่าแรง</span><p className="font-semibold">฿{formatCurrency(laborTot)}</p></div>
-                    <div><span className="text-xs text-[#94a3b8]">รวมค่าอะไหล่</span><p className="font-semibold">฿{formatCurrency(partTot)}</p></div>
-                    <div><span className="text-xs text-[#94a3b8]">VAT 7% (แก้ไขได้)</span><Input type="number" placeholder={String(Math.round(sub * 0.07))} className="h-8 mt-1" value={qtCustomVat} onChange={e => setQtCustomVat(e.target.value)} /></div>
-                    <div className="md:col-span-2 text-right"><span className="text-xs text-[#94a3b8]">ยอดรวมทั้งสิ้น (แก้ไขได้)</span>
-                      <div className="flex items-center justify-end gap-2 mt-1">
-                        <span className="font-bold text-[#0d9488] text-lg">฿</span>
-                        <Input type="number" placeholder={String(sub + vatAmt)} className="h-10 w-40 text-right font-bold text-[#0d9488] text-lg" value={qtCustomGrand} onChange={e => setQtCustomGrand(e.target.value)} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="p-4 border-t flex justify-end gap-2 bg-gray-50">
-                <Button variant="outline" onClick={() => setShowCreateQuotationModal(false)}>ยกเลิก</Button>
-                <Button className="bg-[#0d9488]" onClick={handleCreateQuotation}>ยืนยันสร้างใบเสนอราคา</Button>
-              </div>
-            </div>
-          </div>
-        )
-      })()}
+      {/* ─── Supplier Invoice Modal ─── */}
+      <SupplierInvoiceModal
+        isOpen={showUploadModal}
+        onClose={() => setShowUploadModal(false)}
+        claim={claim}
+        parts={parts}
+        labors={labors}
+        vendors={vendors}
+        onSuccess={(newInv, selectedPartIds, selectedLaborIds) => {
+          setSupplierInvoices(prev => [...prev, newInv])
+          if (selectedPartIds.length > 0) {
+            setParts(prev => prev.map(p => selectedPartIds.includes(p.id) ? { ...p, paymentStatus: 'INVOICED' } : p))
+          }
+          if (selectedLaborIds.length > 0) {
+            setLabors(prev => prev.map(l => selectedLaborIds.includes(l.id) ? { ...l, paymentStatus: 'INVOICED' } : l))
+          }
+        }}
+        showToast={showToast}
+        setErrorModalMsg={setErrorModalMsg}
+      />
 
       {/* ─── Create PO Modal ─── */}
-      {showCreatePOModal && (() => {
-        const poPartsTot = poModalParts.filter(p => p.selected).reduce((sum, p) => sum + ((Number(p.priceApprove) || 0) * (Number(p.quantity) || 1)), 0)
-        const poLaborsTot = poModalLabors.filter(l => l.selected).reduce((sum, l) => sum + (Number(l.priceApprove) || 0), 0)
-        const poManualTot = poManualItems.reduce((sum, m) => sum + ((Number(m.unitPrice) || 0) * (Number(m.quantity) || 1)), 0)
-        const poTot = poPartsTot + poLaborsTot + poManualTot
-        const vatAmt = poIncludeVat ? Math.round(poTot * (poVatPct / 100)) : 0
-        return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh]">
-              <div className="p-4 border-b flex justify-between items-center bg-[#f8faff]">
-                <h3 className="font-semibold text-lg text-[#0f172a] flex items-center gap-2"><ShoppingCart className="w-5 h-5 text-blue-600" />{editPOId ? 'แก้ไขใบสั่งซื้อ' : 'สร้างใบสั่งซื้อ'} (PO)</h3>
-                <Button variant="ghost" size="icon" onClick={() => setShowCreatePOModal(false)} className="h-8 w-8 text-[#94a3b8] hover:text-[#0f172a]"><X className="w-4 h-4" /></Button>
-              </div>
-              <div className="p-4 overflow-y-auto flex-1">
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-[#475569]">เลือกผู้จัดจำหน่าย (Vendor)</label>
-                      <SearchableSelect
-                        options={vendors.map(v => ({
-                          value: v.id,
-                          label: `${v.name} (${v.vendorType === 'PARTS' ? 'ผู้จำหน่ายอะไหล่' : 'อู่'})`
-                        }))}
-                        value={poVendorId}
-                        onChange={(val) => {
-                          setPoVendorId(val)
-                          const selected = vendors.find(v => v.id === val)
-                          setPoVendorName(selected ? selected.name : '')
-                        }}
-                        placeholder="เลือกผู้จัดจำหน่าย..."
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-[#475569]">ที่อยู่สำหรับจัดส่ง (ใบส่งของ) <span className="text-rose-500">*</span></label>
-                      <SearchableSelect
-                        options={vendors.map(v => ({
-                          value: v.id,
-                          label: `${v.name} (${v.province || 'ไม่ระบุจังหวัด'})`
-                        }))}
-                        value=""
-                        onChange={(val) => {
-                          const selected = vendors.find(v => v.id === val)
-                          if (selected) {
-                            setPoDeliveryAddress(`${selected.name}\n${selected.address || ''} ${selected.province || ''}`.trim())
-                          }
-                        }}
-                        placeholder="ค้นหาและเลือกที่อยู่อู่/คู่ค้า..."
-                      />
-                      <textarea
-                        className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-2 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                        rows={2}
-                        value={poDeliveryAddress}
-                        onChange={e => setPoDeliveryAddress(e.target.value)}
-                        placeholder="พิมพ์ชื่ออู่ / ศูนย์บริการ / ที่อยู่จัดส่งเพิ่มเติม"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="border rounded-lg overflow-hidden mt-4">
-                    <Table>
-                      <TableHeader className="bg-gray-50">
-                        <TableRow>
-                          <TableHead className="w-10"></TableHead>
-                          <TableHead>รายการอะไหล่</TableHead>
-                          <TableHead className="w-20 text-center">จำนวน</TableHead>
-                          <TableHead className="w-32 text-right">ราคา/หน่วย</TableHead>
-                          <TableHead className="w-32 text-right">รวม</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {poModalParts.map((p, i) => (
-                          <TableRow key={p.id}>
-                            <TableCell><input type="checkbox" checked={p.selected} onChange={e => { const n = [...poModalParts]; n[i].selected = e.target.checked; setPoModalParts(n) }} className="w-4 h-4" /></TableCell>
-                            <TableCell><Input className="h-8 text-sm" value={p.partName} onChange={e => { const n = [...poModalParts]; n[i].partName = e.target.value; setPoModalParts(n) }} /></TableCell>
-                            <TableCell><Input type="number" className="h-8 text-sm text-center" value={p.quantity || ''} onChange={e => { const n = [...poModalParts]; n[i].quantity = Number(e.target.value); setPoModalParts(n) }} /></TableCell>
-                            <TableCell><Input type="number" className="h-8 text-sm text-right" value={p.priceApprove || ''} onChange={e => { const n = [...poModalParts]; n[i].priceApprove = Number(e.target.value); setPoModalParts(n) }} /></TableCell>
-                            <TableCell className="text-right font-medium text-sm pt-3">฿{formatCurrency((Number(p.priceApprove) || 0) * (Number(p.quantity) || 1))}</TableCell>
-                          </TableRow>
-                        ))}
-                        {poModalParts.length === 0 && (
-                          <TableRow><TableCell colSpan={5} className="text-center py-4 text-gray-500">ไม่มีรายการอะไหล่</TableCell></TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-
-                  {/* Labor items */}
-                  <div className="border rounded-lg overflow-hidden mt-4">
-                    <div className="bg-amber-50 px-4 py-2 border-b">
-                      <h4 className="text-sm font-semibold text-amber-800">ค่าแรง</h4>
-                    </div>
-                    <Table>
-                      <TableHeader className="bg-gray-50">
-                        <TableRow>
-                          <TableHead className="w-10"></TableHead>
-                          <TableHead>รายการค่าแรง</TableHead>
-                          <TableHead className="w-32 text-right">ราคา</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {poModalLabors.map((l: any, i: number) => (
-                          <TableRow key={l.id}>
-                            <TableCell><input type="checkbox" checked={l.selected} onChange={e => { const n = [...poModalLabors]; n[i].selected = e.target.checked; setPoModalLabors(n) }} className="w-4 h-4" /></TableCell>
-                            <TableCell><Input className="h-8 text-sm" value={l.description} onChange={e => { const n = [...poModalLabors]; n[i].description = e.target.value; setPoModalLabors(n) }} /></TableCell>
-                            <TableCell className="text-right"><Input type="number" className="h-8 text-sm text-right w-28 ml-auto" value={l.priceApprove || ''} onChange={e => { const n = [...poModalLabors]; n[i].priceApprove = Number(e.target.value); setPoModalLabors(n) }} /></TableCell>
-                          </TableRow>
-                        ))}
-                        {poModalLabors.length === 0 && (
-                          <TableRow><TableCell colSpan={3} className="text-center py-4 text-gray-500">ไม่มีรายการค่าแรง</TableCell></TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-
-                  {/* Manual Items */}
-                  <div className="border rounded-lg overflow-hidden mt-4">
-                    <div className="bg-green-50 px-4 py-2 border-b flex items-center justify-between">
-                      <h4 className="text-sm font-semibold text-green-800">รายการเพิ่มเติม (Manual)</h4>
-                      <Button variant="outline" size="sm" className="h-7 text-xs text-green-700 border-green-300 hover:bg-green-100" onClick={() => setPoManualItems([...poManualItems, { id: `manual-${Date.now()}`, description: '', quantity: 1, unitPrice: 0 }])}>
-                        <Plus className="w-3 h-3 mr-1" />เพิ่มรายการ
-                      </Button>
-                    </div>
-                    <Table>
-                      <TableHeader className="bg-gray-50">
-                        <TableRow>
-                          <TableHead>รายการ</TableHead>
-                          <TableHead className="w-20 text-center">จำนวน</TableHead>
-                          <TableHead className="w-32 text-right">ราคา/หน่วย</TableHead>
-                          <TableHead className="w-32 text-right">รวม</TableHead>
-                          <TableHead className="w-10"></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {poManualItems.map((m, i) => (
-                          <TableRow key={m.id}>
-                            <TableCell><Input className="h-8 text-sm" placeholder="ชื่อรายการ เช่น ค่าขนส่ง" value={m.description} onChange={e => { const n = [...poManualItems]; n[i].description = e.target.value; setPoManualItems(n) }} /></TableCell>
-                            <TableCell><Input type="number" className="h-8 text-sm text-center" value={m.quantity || ''} onChange={e => { const n = [...poManualItems]; n[i].quantity = Number(e.target.value); setPoManualItems(n) }} /></TableCell>
-                            <TableCell><Input type="number" className="h-8 text-sm text-right" value={m.unitPrice || ''} onChange={e => { const n = [...poManualItems]; n[i].unitPrice = Number(e.target.value); setPoManualItems(n) }} /></TableCell>
-                            <TableCell className="text-right font-medium text-sm pt-3">฿{formatCurrency((Number(m.unitPrice) || 0) * (Number(m.quantity) || 1))}</TableCell>
-                            <TableCell><button onClick={() => setPoManualItems(poManualItems.filter((_, idx) => idx !== i))} className="text-gray-400 hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button></TableCell>
-                          </TableRow>
-                        ))}
-                        {poManualItems.length === 0 && (
-                          <TableRow><TableCell colSpan={5} className="text-center py-4 text-gray-400 text-sm">ยังไม่มีรายการเพิ่มเติม — กดปุ่ม "เพิ่มรายการ" ด้านบน</TableCell></TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                  
-                  <div className="flex justify-end pt-4 border-t">
-                    <div className="flex flex-col items-end gap-2 w-72 bg-gray-50 p-4 rounded-lg">
-                      <div className="flex justify-between w-full text-sm text-gray-500">
-                        <span>ยอดรวมก่อน VAT:</span><span>฿{formatCurrency(poTot)}</span>
-                      </div>
-                      {/* VAT Toggle */}
-                      <div className="flex items-center justify-between w-full">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input type="checkbox" checked={poIncludeVat} onChange={e => setPoIncludeVat(e.target.checked)} className="w-4 h-4 rounded" />
-                          <span className="text-sm text-gray-600">รวม VAT</span>
-                        </label>
-                        {poIncludeVat && (
-                          <div className="flex items-center gap-1">
-                            <Input type="number" className="h-7 w-16 text-sm text-right" value={poVatPct} onChange={e => setPoVatPct(Number(e.target.value) || 0)} />
-                            <span className="text-sm text-gray-500">%</span>
-                          </div>
-                        )}
-                      </div>
-                      {poIncludeVat && (
-                        <div className="flex justify-between w-full text-sm text-gray-500">
-                          <span>VAT {poVatPct}%:</span><span>฿{formatCurrency(vatAmt)}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between w-full text-base font-bold text-blue-700 pt-2 border-t mt-1">
-                        <span>ยอดรวมทั้งสิ้น:</span><span>฿{formatCurrency(poTot + vatAmt)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="p-4 border-t flex justify-end gap-2 bg-gray-50">
-                <Button variant="outline" onClick={() => setShowCreatePOModal(false)}>ยกเลิก</Button>
-                <Button className="bg-blue-600 hover:bg-blue-700" onClick={submitCreatePO}>{editPOId ? 'บันทึกการแก้ไข PO' : 'ยืนยันสร้าง PO'}</Button>
-              </div>
-            </div>
-          </div>
-        )
-      })()}
+      <POModal
+        isOpen={showCreatePOModal}
+        onClose={() => setShowCreatePOModal(false)}
+        claim={claim}
+        parts={parts}
+        labors={labors}
+        vendors={vendors}
+        editPOId={editPOId}
+        onSuccess={(savedPO, isEditMode) => {
+          if (isEditMode) {
+            setPurchaseOrders(prev => prev.map(p => p.id === editPOId ? savedPO : p))
+            showToast("แก้ไข PO สำเร็จ")
+          } else {
+            setPurchaseOrders(prev => [...prev, savedPO])
+            showToast("สร้าง PO สำเร็จ")
+          }
+        }}
+        showToast={showToast}
+        setErrorModalMsg={setErrorModalMsg}
+      />
 
       {/* ─── Supplement Modal ─── */}
       {showSupplementModal && (
@@ -2189,69 +1325,25 @@ export default function ClaimDetailPage() {
       )}
 
       {/* ─── Receive AR Payment Modal ─── */}
-      {showReceiveARModal && (() => {
-        const [arReceivedDate, setArReceivedDate] = [arReceiveDate, setArReceiveDate]
-        return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowReceiveARModal(false)}>
-          <Card className="w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-green-600" />บันทึกรับเงินจากบ.ประกัน</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <p className="text-sm text-green-700">ยอดรับ: <span className="font-bold text-lg">฿{formatCurrency(claim.insuranceInvoice?.grandTotal || 0)}</span></p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-[#475569]">วันที่รับเงิน</label>
-                <Input type="date" className="mt-1" value={arReceivedDate} onChange={e => setArReceivedDate(e.target.value)} />
-              </div>
-              <div className="flex gap-3 justify-end">
-                <Button variant="outline" onClick={() => setShowReceiveARModal(false)}>ยกเลิก</Button>
-                <Button className="bg-green-600 hover:bg-green-700" onClick={async () => {
-                  try {
-                    const res = await fetch(`/api/claims/${claim.id}/insurance-invoice/receive-payment`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ method: 'โอนเงิน', receivedAt: arReceivedDate ? new Date(arReceivedDate).toISOString() : undefined })
-                    })
-                    if (!res.ok) { const e = await res.json(); throw new Error(e.error) }
-                    setShowReceiveARModal(false)
-                    showToast('บันทึกรับเงินจากบ.ประกันเรียบร้อยแล้ว')
-                    await refreshClaim()
-                  } catch (err: any) { setShowReceiveARModal(false); setErrorModalMsg(`เกิดข้อผิดพลาด: ${err.message}`) }
-                }}><CheckCircle2 className="w-4 h-4 mr-1" />ยืนยันรับเงิน</Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        )
-      })()}
+      <ReceiveARModal
+        isOpen={showReceiveARModal}
+        onClose={() => setShowReceiveARModal(false)}
+        claim={claim}
+        onSuccess={refreshClaim}
+        showToast={showToast}
+        setErrorModalMsg={setErrorModalMsg}
+      />
 
       {/* ─── Create Payment Request Modal ─── */}
-      {pendingPaymentRequest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setPendingPaymentRequest(null)}>
-          <Card className="w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2"><CreditCard className="w-5 h-5 text-[#0d9488]" />สร้างคำขอเบิกจ่ายเงิน</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="bg-[#f8faff] border border-blue-200 rounded-lg p-4">
-                <p className="text-xs text-[#94a3b8]">ประเภท</p>
-                <p className="font-medium text-sm">{pendingPaymentRequest.type === 'AP_VENDOR' ? 'จ่ายเงิน Supplier (ค่าอะไหล่)' : 'จ่ายเงินอู่ (ค่าแรง)'}</p>
-                <p className="text-xs text-[#94a3b8] mt-2">ยอดเงิน</p>
-                <p className="font-bold text-lg text-[#0d9488]">฿{formatCurrency(pendingPaymentRequest.amount)}</p>
-              </div>
-              <div className="flex gap-3 justify-end">
-                <Button variant="outline" onClick={() => setPendingPaymentRequest(null)}>ยกเลิก</Button>
-                <Button className="bg-[#0d9488]" onClick={async () => {
-                  await handleCreatePaymentRequest(pendingPaymentRequest.type, pendingPaymentRequest.invoiceId, pendingPaymentRequest.amount)
-                  setPendingPaymentRequest(null)
-                }}><CreditCard className="w-4 h-4 mr-1" />ยืนยันขอเบิกเงิน</Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      <PaymentRequestModal
+        isOpen={!!pendingPaymentRequest}
+        onClose={() => setPendingPaymentRequest(null)}
+        claim={claim}
+        pendingPaymentRequest={pendingPaymentRequest}
+        onSuccess={refreshClaim}
+        showToast={showToast}
+        setErrorModalMsg={setErrorModalMsg}
+      />
 
       {/* ─── Reject Payment Request Modal ─── */}
       {rejectPRId && (
@@ -2287,134 +1379,15 @@ export default function ClaimDetailPage() {
       )}
 
       {/* ─── Goods Receipt Modal (Partial GR) ─── */}
-      {showGRModal && selectedPOForGR && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowGRModal(false)}>
-          <Card className="w-full max-w-2xl shadow-2xl" onClick={e => e.stopPropagation()}>
-            <CardHeader className="flex flex-row items-center justify-between border-b pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Package className="w-5 h-5 text-[#0d9488]" />
-                บันทึกการตรวจรับของ (GR) - {selectedPOForGR.poNo}
-              </CardTitle>
-              <button onClick={() => setShowGRModal(false)} className="text-gray-400 hover:text-gray-600">
-                <X className="w-5 h-5" />
-              </button>
-            </CardHeader>
-            <CardContent className="space-y-4 pt-4">
-              <div className="text-sm bg-slate-50 p-3 rounded-lg flex flex-wrap gap-x-6 gap-y-1 text-slate-600">
-                <div>ผู้จำหน่าย: <strong className="text-slate-800">{selectedPOForGR.vendor?.name}</strong></div>
-                <div>เลขที่เคลม: <strong className="text-slate-800">{claim.claimNo}</strong></div>
-              </div>
-
-              <div className="overflow-x-auto max-h-[300px] border rounded-lg">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-slate-50">
-                      <TableHead>ชิ้นส่วนอะไหล่</TableHead>
-                      <TableHead className="text-center w-24">สั่งซื้อ</TableHead>
-                      <TableHead className="text-center w-24">รับแล้ว</TableHead>
-                      <TableHead className="text-center w-24">ค้างส่ง</TableHead>
-                      <TableHead className="text-center w-32">จำนวนที่ตรวจรับรอบนี้</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {selectedPOForGR.items.map((item: any) => {
-                      const prevRec = (item.goodsReceiptItems || []).reduce((s: number, g: any) => s + g.quantity, 0)
-                      const remaining = Math.max(0, item.quantity - prevRec)
-                      const currentVal = grQuantities[item.id] || 0
-
-                      return (
-                        <TableRow key={item.id}>
-                          <TableCell className="font-medium">
-                            {item.description}
-                            <p className="text-[10px] text-slate-400 font-mono mt-0.5">{item.partNo}</p>
-                          </TableCell>
-                          <TableCell className="text-center">{item.quantity}</TableCell>
-                          <TableCell className="text-center text-slate-500">{prevRec}</TableCell>
-                          <TableCell className="text-center font-semibold text-slate-700">{remaining}</TableCell>
-                          <TableCell className="text-center">
-                            <input
-                              type="number"
-                              min="0"
-                              max={remaining}
-                              disabled={remaining === 0}
-                              value={remaining === 0 ? 0 : currentVal}
-                              onChange={e => {
-                                const val = Math.min(remaining, Math.max(0, parseInt(e.target.value) || 0))
-                                setGrQuantities(prev => ({ ...prev, [item.id]: val }))
-                              }}
-                              className="w-20 text-center bg-white border border-slate-200 focus:ring-1 focus:ring-[#0d9488] focus:border-[#0d9488] rounded py-1 px-1.5 text-sm font-semibold text-slate-800 disabled:bg-slate-100 disabled:text-slate-400"
-                            />
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-semibold text-[#475569] uppercase tracking-wider block mb-1">ผู้ตรวจรับของ</label>
-                  <Input 
-                    type="text" 
-                    value={grReceivedBy} 
-                    onChange={e => setGrReceivedBy(e.target.value)} 
-                    placeholder="กรอกชื่อผู้รับของ..."
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-[#475569] uppercase tracking-wider block mb-1">หมายเหตุเพิ่มเติม</label>
-                  <Input 
-                    type="text" 
-                    value={grNote} 
-                    onChange={e => setGrNote(e.target.value)} 
-                    placeholder="ระบุหมายเหตุการรับ..."
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-3 justify-end border-t pt-4">
-                <Button variant="outline" onClick={() => setShowGRModal(false)}>ยกเลิก</Button>
-                <Button 
-                  className="bg-[#0d9488] hover:bg-[#0f766e] text-white" 
-                  disabled={!grReceivedBy.trim() || Object.values(grQuantities).every(q => q === 0)}
-                  onClick={async () => {
-                    try {
-                      const payloadItems = Object.entries(grQuantities)
-                        .filter(([_, q]) => q > 0)
-                        .map(([id, q]) => ({ poItemId: id, quantity: q }))
-
-                      const res = await fetch(`/api/claims/${claim.id}/pos/${selectedPOForGR.id}/gr`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          receivedBy: grReceivedBy,
-                          note: grNote,
-                          items: payloadItems
-                        })
-                      })
-
-                      if (!res.ok) {
-                        const err = await res.json()
-                        throw new Error(err.error || 'บันทึกไม่สำเร็จ')
-                      }
-
-                      showToast('บันทึกตรวจรับสินค้าสำเร็จ')
-                      setShowGRModal(false)
-                      await refreshClaim()
-                    } catch (err: any) {
-                      setErrorModalMsg(err.message || 'เกิดข้อผิดพลาดในการบันทึก')
-                    }
-                  }}
-                >
-                  <CheckCircle2 className="w-4 h-4 mr-1.5" />
-                  บันทึกรับของ
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      <GRModal
+        isOpen={showGRModal}
+        onClose={() => setShowGRModal(false)}
+        claim={claim}
+        po={selectedPOForGR}
+        onSuccess={refreshClaim}
+        showToast={showToast}
+        setErrorModalMsg={setErrorModalMsg}
+      />
 
       {/* ─── Goods Receipt History Modal ─── */}
       {showGRHistoryModal && grHistoryPO && (

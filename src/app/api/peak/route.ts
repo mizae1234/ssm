@@ -1,8 +1,11 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url)
+    const limit = Number(searchParams.get('limit') || '100')
+
     const [arInvoices, supplierInvoices, garageInvoices, expenses] = await Promise.all([
       prisma.insuranceInvoice.findMany({
         where: {
@@ -13,7 +16,8 @@ export async function GET() {
             include: { insurance: { select: { id: true, name: true } } }
           }
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
+        take: limit
       }),
       prisma.supplierInvoice.findMany({
         where: {
@@ -28,7 +32,8 @@ export async function GET() {
           paymentRequests: true,
           apPayment: true
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
+        take: limit
       }),
       prisma.garageInvoice.findMany({
         where: {
@@ -39,13 +44,15 @@ export async function GET() {
           garage: { select: { name: true } },
           paymentRequests: true
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
+        take: limit
       }),
       prisma.claimExpense.findMany({
         include: {
           claim: { select: { claimNo: true } }
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
+        take: limit
       })
     ])
 

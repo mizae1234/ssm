@@ -8,6 +8,9 @@ export async function GET(request: NextRequest) {
   const dateFrom = searchParams.get('dateFrom')
   const dateTo = searchParams.get('dateTo')
   const search = searchParams.get('search')
+  const page = Number(searchParams.get('page') || '1')
+  const limit = Number(searchParams.get('limit') || '10')
+  const skip = (page - 1) * limit
 
   const where: any = {}
 
@@ -31,8 +34,27 @@ export async function GET(request: NextRequest) {
     ]
   }
 
+  // Count total matching items
+  const total = await prisma.claim.count({ where })
+
+  // Calculate status counts matching the other filters (ignoring the status filter itself so status pills show correct counts)
+  const statusWhere = { ...where }
+  delete statusWhere.status
+  const statusCountsData = await prisma.claim.groupBy({
+    by: ['status'],
+    where: statusWhere,
+    _count: true,
+  })
+
+  const statusCounts: Record<string, number> = {}
+  statusCountsData.forEach(item => {
+    statusCounts[item.status] = item._count
+  })
+
   const claims = await prisma.claim.findMany({
     where,
+    skip,
+    take: limit,
     include: {
       insurance: true,
       garage: true,
@@ -61,7 +83,11 @@ export async function GET(request: NextRequest) {
     laborsCount: c._count.labors,
   }))
 
-  return NextResponse.json(listData)
+  return NextResponse.json({
+    claims: listData,
+    total,
+    statusCounts
+  })
 }
 
 export async function POST(request: NextRequest) {
@@ -102,15 +128,34 @@ export async function POST(request: NextRequest) {
         .trim()
     }
     const cleanSearch = cleanName(rawInsName)
-    const insurances = await prisma.insurance.findMany()
-    let matchedIns = insurances.find(ins => {
-      const dbClean = cleanName(ins.name)
-      return dbClean.includes(cleanSearch) || cleanSearch.includes(dbClean)
+    
+    // Try exact or contains match first directly on the database
+    let matchedIns: { id: string; name: string } | null = await prisma.insurance.findFirst({
+      where: {
+        name: {
+          contains: cleanSearch,
+          mode: 'insensitive'
+        }
+      },
+      select: { id: true, name: true }
     })
+
+    // Fallback to fuzzy match in JS memory if not found directly
+    if (!matchedIns) {
+      const insurances = await prisma.insurance.findMany({
+        select: { id: true, name: true }
+      })
+      const found = insurances.find(ins => {
+        const dbClean = cleanName(ins.name)
+        return dbClean.includes(cleanSearch) || cleanSearch.includes(dbClean)
+      })
+      matchedIns = found || null
+    }
 
     if (!matchedIns) {
       matchedIns = await prisma.insurance.create({
-        data: { name: rawInsName }
+        data: { name: rawInsName },
+        select: { id: true, name: true }
       })
     }
     insuranceId = matchedIns.id

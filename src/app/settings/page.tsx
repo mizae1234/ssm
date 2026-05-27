@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Building2, Save, Upload, FileText, Hash, CreditCard, CheckCircle2, Users, Plus, Pencil, Trash2 } from 'lucide-react'
+import { Building2, Save, Upload, FileText, Hash, CreditCard, CheckCircle2, Users, Plus, Pencil, Trash2, X } from 'lucide-react'
 import { CompanyProfile, DocumentSequence } from '@/lib/types'
 import { uploadToR2 } from '@/lib/upload'
 
@@ -27,7 +27,13 @@ export default function SettingsPage() {
   const [insurancesList, setInsurancesList] = useState<any[]>([])
   const [toast, setToast] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500) }
+  const showToast = (msg: string) => { 
+    setToast(msg)
+    // Only auto-hide if it is not an error or warning toast
+    if (!msg.includes('❌') && !msg.includes('⚠️')) {
+      setTimeout(() => setToast(null), 3000) 
+    }
+  }
 
   const [users, setUsers] = useState<any[]>([])
   const [userModalOpen, setUserModalOpen] = useState(false)
@@ -215,8 +221,8 @@ export default function SettingsPage() {
                           const url = await uploadToR2(file, 'settings/company/logo')
                           updateField('logoUrl', url)
                           showToast('อัปโหลดโลโก้สำเร็จ')
-                        } catch (err) {
-                          showToast('❌ อัปโหลดโลโก้ไม่สำเร็จ')
+                        } catch (err: any) {
+                          showToast(`❌ อัปโหลดโลโก้ไม่สำเร็จ: ${err.message || err}`)
                         } finally {
                           setIsUploadingLogo(false)
                         }
@@ -258,8 +264,8 @@ export default function SettingsPage() {
                           const url = await uploadToR2(file, 'settings/company/signature')
                           updateField('signatureUrl', url)
                           showToast('อัปโหลดลายเซ็นสำเร็จ')
-                        } catch (err) {
-                          showToast('❌ อัปโหลดลายเซ็นไม่สำเร็จ')
+                        } catch (err: any) {
+                          showToast(`❌ อัปโหลดลายเซ็นไม่สำเร็จ: ${err.message || err}`)
                         } finally {
                           setIsUploadingSig(false)
                         }
@@ -661,9 +667,17 @@ export default function SettingsPage() {
       )}
 
       {toast && (
-        <div className={`fixed top-6 right-6 text-white px-6 py-3 rounded-xl shadow-2xl z-50 animate-in slide-in-from-top-4 font-medium flex items-center gap-2 ${toast.includes('❌') || toast.includes('⚠️') ? 'bg-red-600' : 'bg-green-600'}`}>
-          {!toast.includes('❌') && !toast.includes('⚠️') && !toast.includes('✅') && '✅ '}
-          <span>{toast}</span>
+        <div className={`fixed top-6 right-6 text-white px-6 py-3 rounded-xl shadow-2xl z-50 animate-in slide-in-from-top-4 font-medium flex items-center justify-between gap-4 ${toast.includes('❌') || toast.includes('⚠️') ? 'bg-red-600' : 'bg-green-600'}`}>
+          <div className="flex items-center gap-2">
+            {!toast.includes('❌') && !toast.includes('⚠️') && !toast.includes('✅') && '✅ '}
+            <span>{toast}</span>
+          </div>
+          <button 
+            onClick={() => setToast(null)} 
+            className="text-white/80 hover:text-white hover:bg-white/10 rounded p-1 transition-colors shrink-0"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
     </div>

@@ -33,34 +33,19 @@ interface NavGroup {
   items: NavItem[]
 }
 
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import type { AuthUser } from './client-layout'
 
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
   user: AuthUser | null;
+  stats: { claims: number; invoices: number; payments: number };
 }
 
-export default function Sidebar({ collapsed, onToggle, user }: SidebarProps) {
+export default function Sidebar({ collapsed, onToggle, user, stats }: SidebarProps) {
   const pathname = usePathname()
-  const [stats, setStats] = useState({ claims: 0, invoices: 0, payments: 0 })
   const role = user?.role || 'STAFF'
-
-  useEffect(() => {
-    fetch('/api/stats')
-      .then(res => res.json())
-      .then(data => {
-        if (!data.error) {
-          setStats({
-            claims: data.claims || 0,
-            invoices: data.invoices || 0,
-            payments: data.payments || 0
-          })
-        }
-      })
-      .catch(console.error)
-  }, [])
 
   const currentNavGroups: NavGroup[] = [
     {

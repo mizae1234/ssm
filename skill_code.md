@@ -80,15 +80,18 @@ src/
 │   │   ├── reports/             # Report data (filter: year, insurance, vendor)
 │   │   ├── settings/            # Company profile + sequences
 │   │   ├── stats/               # Sidebar badge counts
-│   │   ├── upload/              # File upload to R2
+│   │   ├── upload/              # File upload to R2 (presigned URL / image compression)
+│   │   │   └── presigned/
+│   │   │       └── route.ts     # PUT presigned URL generator (38 lines)
 │   │   ├── users/               # User management CRUD + [id]/route.ts
 │   │   └── vendors/             # Vendor CRUD + [id]/route.ts
 │   ├── login/page.tsx           # Login page (134 lines)
 │   ├── claims/                  # Claims pages
-│   │   ├── page.tsx             # Claims list (239 lines)
+│   │   ├── page.tsx             # Claims list (server-side pagination, 239 lines)
 │   │   ├── new/page.tsx         # New claim form with AI extraction (979 lines)
 │   │   └── [id]/
 │   │       ├── page.tsx         # Claim detail (~2,497 lines — main orchestrator)
+│   │       ├── components/      # Extracted modals (PO, Quotation, GR, etc.)
 │   │       ├── tabs/            # 7 extracted tab components
 │   │       │   ├── index.ts     # Barrel export
 │   │       │   ├── types.ts     # Shared ClaimTabProps interface
@@ -140,7 +143,7 @@ src/
 │   ├── date.ts                  # Centralized date formatting — พ.ศ./ค.ศ. (49 lines)
 │   ├── types.ts                 # TypeScript interfaces (589 lines)
 │   ├── utils.ts                 # formatCurrency, getStatusColor/Label, cn (63 lines)
-│   ├── upload.ts                # R2 upload helper (18 lines)
+│   ├── upload.ts                # R2 direct upload utility + canvas compression (116 lines)
 │   ├── r2.ts                    # R2 client config (35 lines)
 │   └── mock/                    # Legacy mock data (NOT imported anywhere — safe to delete)
 ├── middleware.ts                 # Auth + RBAC middleware (113 lines)
@@ -353,6 +356,24 @@ The `claims/[id]/page.tsx` (2,497 lines) serves as the main orchestrator with 7 
 - Export Excel per tab using dynamic `xlsx` import
 - All data from real Prisma queries (no mock/random)
 
+### 5.8 Direct R2 Upload & Client-side Image Compression
+- **API Endpoint:** `/api/upload/presigned` (GET) generates PUT presigned URLs using `@aws-sdk/s3-request-presigner` and sanitizes filenames (allowing English, digits, and Thai characters `[a-zA-Z0-9.\-_ก-๙]`).
+- **Client Compression (`lib/upload.ts`):** 
+  - Verifies if the file is an image (excluding `image/gif` to preserve animations).
+  - Uses HTML5 Canvas to resize images larger than `2048x2048` pixels while keeping the aspect ratio.
+  - Converts/Compresses the image to `image/jpeg` at `0.85` quality.
+  - Limits file uploads to a maximum of 10MB on the client side.
+  - Direct PUT upload from browser to R2 with a 5-second timeout (using `AbortController`).
+  - Automatically falls back to server-side POST proxy (`/api/upload`) on timeout, network failure, or CORS block.
+
+### 5.9 Performance Optimizations & Refactoring
+- **Reports API Aggregation:** Replaced JS Map/Reduce memory processing in `/api/reports/route.ts` with direct DB aggregation (`$queryRaw` for P&L Month, Prisma select for aging/outstanding/income/expense details, `groupBy` for vendor performance) to handle large datasets efficiently.
+- **Insurance Match Search:** Optimized fuzzy matching in `/api/claims/route.ts` to perform a database-level `findFirst` (`LIKE` search) first, falling back to JS-level comparison only when no exact matches are found, reducing memory footprint.
+- **Sidebar Stats Optimization:** Consolidated stats polling `/api/stats` to run from the root `client-layout.tsx` on path transitions, instead of multiple sub-components fetching independently.
+- **PEAK Sync Limit:** Added pagination/limiting parameters to the PEAK integration query to fetch only the latest records (default 100) instead of loading the entire DB table.
+- **Claims Server-side Pagination:** Added pagination parameters (`skip`/`take`) to the Claims list endpoint `/api/claims` along with debounced search.
+- **Claim Detail Modals Refactoring:** Extracted modal states and components from the main claim detail page into `src/app/claims/[id]/components/` (`POModal`, `QuotationModal`, `GRModal`, `SupplierInvoiceModal`, `ReceiveARModal`, `PaymentRequestModal`) to decrease React virtual DOM load and speed up interactive input latency.
+
 ---
 
 ## 6. Database Schema — 32 Models
@@ -487,21 +508,23 @@ ACCOUNT_COST_PARTS    = '51102'  // ต้นทุนค่าอะไหล�
 |------|--------|--------|
 | `xlsx` import | ✅ Optimized | Dynamic `await import('xlsx')` in PEAK + Reports pages |
 | Claim detail query | ⚠️ Heavy | GET `/api/claims/[id]` uses deep nested `include` (13 sub-resources) — consider lazy loading |
-| Claims list | ✅ OK | Simple query with insurance/garage select |
+| Claims list | ✅ Optimized | Server-side pagination (skip/take) and debounced client-side search (300ms) |
 | Dashboard | ✅ OK | 3 separate lightweight API calls |
 | Parts Master list | ✅ OK | Paginated with search |
-| PEAK page | ⚠️ Watch | Loads all AR + AP + Expenses at once |
+| PEAK page | ✅ Optimized | Added default limits (limit: 100) for query payloads |
+| Reports page | ✅ Optimized | Changed to raw SQL aggregation (`$queryRaw`) and Prisma `select` to bypass JS memory buffer |
+| File uploads | ✅ Optimized | Direct-to-R2 upload bypasses server buffering with client-side canvas compression (2048px max / JPEG 85%) |
 
 ### Potential Optimizations
-1. **Claim Detail Page** (2,497 lines) — Still a large component. Parts/Labor/PO/SI modals and inline editors are not extracted to tabs yet.
+1. **Claim Detail Page** (2,497 lines) — Modals (PO, Quotation, GR, SupplierInvoice, ReceiveAR, PaymentRequest) have been extracted to sub-components, but parts/labor inline editors are still in the main component.
 2. **Missing DB Indexes** — Consider adding indexes on frequently queried/filtered fields:
    - `PaymentRequest.status` — filtered in sidebar + payments page
    - `InsuranceInvoice.status` — filtered in invoices page + peak sync
    - `Claim.status` — filtered in claims list
    - `ClaimExpense.isSynced` — filtered in PEAK sync
 3. **`any` type usage** — `useState<any[]>([])` used extensively in tab components and pages. Should use proper types from `types.ts`.
-4. **Sidebar badge poll** — `stats` and `auth/me` fetched on every page load (could use SWR/stale-while-revalidate pattern).
-5. **No data pagination** — Claims list, invoices, payments pages load all records. Consider server-side pagination for large datasets.
+4. **Sidebar badge poll** — Centralized in `client-layout.tsx` to trigger on pathname transition instead of on every page load/component.
+5. **No data pagination** — Claims list has server-side pagination. Invoices and payments pages still load all records.
 
 ---
 
@@ -617,3 +640,5 @@ git add . && git commit && git push
 | **Phase 30** | Break up claim detail page further (PO/SI/GI modals) | 🔲 Pending |
 | **Phase 31** | Server-side pagination for large datasets | 🔲 Pending |
 | **Phase 32** | SWR/caching for sidebar stats & auth check | 🔲 Pending |
+| **Phase 33** | Direct R2 Upload + Client-side Image Compression (Canvas) | ✅ Done |
+| **Phase 34** | Select All in PO and Quotation Modals | ✅ Done |
