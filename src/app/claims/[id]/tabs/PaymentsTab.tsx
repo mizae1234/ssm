@@ -45,9 +45,16 @@ export default function PaymentsTab({ claim, showToast, setErrorModalMsg, refres
                     : claim.insurance?.name}
                 </span>
               </div>
-              <Badge className={`border-none text-[10px] ${pr.status === 'APPROVED' ? 'bg-green-100 text-green-700' : pr.status === 'REJECTED' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
-                {pr.status === 'APPROVED' ? 'อนุมัติแล้ว' : pr.status === 'REJECTED' ? 'ถูกปฏิเสธ' : 'รออนุมัติ'}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge className={`border-none text-[10px] ${pr.status === 'APPROVED' ? 'bg-green-100 text-green-700' : pr.status === 'REJECTED' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
+                  {pr.status === 'APPROVED' ? 'อนุมัติแล้ว' : pr.status === 'REJECTED' ? 'ถูกปฏิเสธ' : 'รออนุมัติ'}
+                </Badge>
+                {pr.status === 'APPROVED' && (pr.apPayment?.id || pr.arPayment?.id) && (
+                  <span className="text-xs font-mono font-medium text-gray-500">
+                    ({pr.apPayment?.id || pr.arPayment?.id})
+                  </span>
+                )}
+              </div>
             </div>
             <div className="grid grid-cols-3 gap-3 text-sm mb-2">
               <div><span className="text-[#94a3b8] text-xs block">ยอด</span><span className="font-bold text-[#0f172a]">฿{formatCurrency(pr.amount)}</span></div>

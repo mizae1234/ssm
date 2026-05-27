@@ -17,7 +17,7 @@ CREATE TYPE "POType" AS ENUM ('PARTS', 'LABOR');
 CREATE TYPE "DeliveryMode" AS ENUM ('DIRECT_TO_GARAGE', 'SELF_DELIVERY');
 
 -- CreateEnum
-CREATE TYPE "POStatus" AS ENUM ('DRAFT', 'SENT', 'RECEIVED', 'CANCELLED');
+CREATE TYPE "POStatus" AS ENUM ('DRAFT', 'SENT', 'RECEIVED', 'PARTIALLY_RECEIVED', 'CANCELLED');
 
 -- CreateEnum
 CREATE TYPE "ARStatus" AS ENUM ('PENDING', 'SENT', 'PARTIAL', 'PAID', 'CANCELLED');
@@ -36,6 +36,9 @@ CREATE TYPE "VendorType" AS ENUM ('PARTS', 'GARAGE');
 
 -- CreateEnum
 CREATE TYPE "QuotationStatus" AS ENUM ('DRAFT', 'SENT', 'APPROVED', 'REJECTED', 'SUPERSEDED');
+
+-- CreateEnum
+CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'ACCOUNTANT', 'STAFF');
 
 -- CreateTable
 CREATE TABLE "Claim" (
@@ -90,6 +93,10 @@ CREATE TABLE "PartMaster" (
     "category" TEXT,
     "unit" TEXT NOT NULL DEFAULT 'ชิ้น',
     "standardPrice" DOUBLE PRECISION,
+    "purchasePrice" DOUBLE PRECISION,
+    "description" TEXT,
+    "peakCode" TEXT,
+    "stock" INTEGER NOT NULL DEFAULT 0,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "source" "PartMasterSource" NOT NULL DEFAULT 'AUTO',
     "createdFrom" TEXT,
@@ -183,6 +190,16 @@ CREATE TABLE "GoodsReceipt" (
     "note" TEXT,
 
     CONSTRAINT "GoodsReceipt_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "GoodsReceiptItem" (
+    "id" TEXT NOT NULL,
+    "goodsReceiptId" TEXT NOT NULL,
+    "poItemId" TEXT NOT NULL,
+    "quantity" INTEGER NOT NULL,
+
+    CONSTRAINT "GoodsReceiptItem_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -312,6 +329,7 @@ CREATE TABLE "Insurance" (
     "name" TEXT NOT NULL,
     "branch" TEXT,
     "taxId" TEXT,
+    "address" TEXT,
     "branchCode" TEXT NOT NULL DEFAULT '00000',
     "isVatRegistered" BOOLEAN NOT NULL DEFAULT true,
     "contactPerson" TEXT,
@@ -569,6 +587,20 @@ CREATE TABLE "ClaimDocument" (
     CONSTRAINT "ClaimDocument_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "User" (
+    "id" TEXT NOT NULL,
+    "username" TEXT NOT NULL,
+    "password" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "role" "UserRole" NOT NULL DEFAULT 'STAFF',
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "Claim_claimNo_key" ON "Claim"("claimNo");
 
@@ -577,9 +609,6 @@ CREATE UNIQUE INDEX "PartMaster_partNo_key" ON "PartMaster"("partNo");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "PurchaseOrder_poNo_key" ON "PurchaseOrder"("poNo");
-
--- CreateIndex
-CREATE UNIQUE INDEX "GoodsReceipt_poId_key" ON "GoodsReceipt"("poId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "DeliveryOrder_goodsReceiptId_key" ON "DeliveryOrder"("goodsReceiptId");
@@ -622,6 +651,9 @@ CREATE UNIQUE INDEX "DocumentSequence_docType_key" ON "DocumentSequence"("docTyp
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Quotation_quotationNo_key" ON "Quotation"("quotationNo");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
 
 -- AddForeignKey
 ALTER TABLE "Claim" ADD CONSTRAINT "Claim_insuranceId_fkey" FOREIGN KEY ("insuranceId") REFERENCES "Insurance"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -667,6 +699,12 @@ ALTER TABLE "SupplierInvoiceItem" ADD CONSTRAINT "SupplierInvoiceItem_claimLabor
 
 -- AddForeignKey
 ALTER TABLE "GoodsReceipt" ADD CONSTRAINT "GoodsReceipt_poId_fkey" FOREIGN KEY ("poId") REFERENCES "PurchaseOrder"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "GoodsReceiptItem" ADD CONSTRAINT "GoodsReceiptItem_goodsReceiptId_fkey" FOREIGN KEY ("goodsReceiptId") REFERENCES "GoodsReceipt"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "GoodsReceiptItem" ADD CONSTRAINT "GoodsReceiptItem_poItemId_fkey" FOREIGN KEY ("poItemId") REFERENCES "POItem"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "DeliveryOrder" ADD CONSTRAINT "DeliveryOrder_goodsReceiptId_fkey" FOREIGN KEY ("goodsReceiptId") REFERENCES "GoodsReceipt"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

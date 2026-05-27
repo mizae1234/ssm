@@ -21,12 +21,24 @@ export async function POST(
 
     const body = await request.json()
 
+    const now = new Date(body.receivedAt || Date.now())
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const prefix = `REC-${year}${month}`
+    
+    const count = await prisma.aRPayment.count({
+      where: { id: { startsWith: prefix } }
+    })
+    const seq = String(count + 1).padStart(5, '0')
+    const paymentId = `${prefix}${seq}`
+
     // Create ARPayment and update InsuranceInvoice status to PAID
     const arPayment = await prisma.aRPayment.create({
       data: {
+        id: paymentId,
         insuranceInvoiceId: invoice.id,
         amount: invoice.grandTotal,
-        receivedAt: new Date(body.receivedAt || Date.now()),
+        receivedAt: now,
         method: body.method || 'โอนเงิน',
         ref: body.ref || null,
       }

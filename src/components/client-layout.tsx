@@ -5,11 +5,27 @@ import Topbar from "@/components/topbar"
 import { ToastProvider } from "@/components/toast-provider"
 import { usePathname } from "next/navigation"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+
+export interface AuthUser {
+  name: string
+  role: string
+  username: string
+}
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [user, setUser] = useState<AuthUser | null>(null)
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then(res => res.json())
+      .then(data => {
+        if (data.user) setUser(data.user)
+      })
+      .catch(console.error)
+  }, [])
 
   // Full-screen pages (no sidebar)
   if (pathname === '/' || pathname === '/login' || (pathname && (pathname.includes('/pdf') || pathname.includes('/print-')))) {
@@ -19,9 +35,9 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   return (
     <ToastProvider>
       <div className="flex min-h-screen bg-[#f8faff]">
-        <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
+        <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} user={user} />
         <div className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'ml-[72px]' : 'ml-[260px]'}`}>
-          <Topbar />
+          <Topbar user={user} />
           <main className="p-6">
             {children}
           </main>

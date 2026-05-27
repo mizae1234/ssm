@@ -34,27 +34,18 @@ interface NavGroup {
 }
 
 import React, { useState, useEffect } from 'react'
+import type { AuthUser } from './client-layout'
 
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
+  user: AuthUser | null;
 }
 
-export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
+export default function Sidebar({ collapsed, onToggle, user }: SidebarProps) {
   const pathname = usePathname()
   const [stats, setStats] = useState({ claims: 0, invoices: 0, payments: 0 })
-  const [role, setRole] = useState<string>('STAFF')
-
-  useEffect(() => {
-    fetch('/api/auth/me')
-      .then(res => res.json())
-      .then(data => {
-        if (data.user) {
-          setRole(data.user.role)
-        }
-      })
-      .catch(console.error)
-  }, [])
+  const role = user?.role || 'STAFF'
 
   useEffect(() => {
     fetch('/api/stats')

@@ -25,6 +25,10 @@ export async function POST(
 ) {
   try {
     const body = await request.json()
+
+    if (!body.deliveryAddress || !body.deliveryAddress.trim()) {
+      return NextResponse.json({ error: 'กรุณาระบุที่อยู่สำหรับจัดส่ง' }, { status: 400 })
+    }
     
     // Generate sequential PO number if not provided
     let poNo = body.poNo

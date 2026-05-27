@@ -142,7 +142,7 @@ export async function POST(req: NextRequest) {
           'ผู้รับเงิน/คู่ค้า': si.vendor?.peakVendorCode || si.vendor?.id || '',
           'เลขทะเบียน 13 หลัก': si.vendor?.taxId || '',
           'เลขสาขา 5 หลัก': si.vendor?.branchCode || '00000',
-          'เลขที่ใบกำกับฯ (ถ้ามี)': si.invoiceNo,
+          'เลขที่ใบกำกับฯ (ถ้ามี)': '',
           'วันที่ใบกำกับฯ (ถ้ามี)': formatDate(si.invoiceDate),
           'วันที่บันทึกภาษีซื้อ (ถ้ามี)': formatDate(si.invoiceDate),
           'ประเภทราคา': 1,
@@ -170,7 +170,7 @@ export async function POST(req: NextRequest) {
           'ผู้รับเงิน/คู่ค้า': '', // Garage may not have peakVendorCode in schema currently
           'เลขทะเบียน 13 หลัก': '',
           'เลขสาขา 5 หลัก': '00000',
-          'เลขที่ใบกำกับฯ (ถ้ามี)': gi.invoiceNo,
+          'เลขที่ใบกำกับฯ (ถ้ามี)': '',
           'วันที่ใบกำกับฯ (ถ้ามี)': formatDate(gi.invoiceDate),
           'วันที่บันทึกภาษีซื้อ (ถ้ามี)': formatDate(gi.invoiceDate),
           'ประเภทราคา': 1,

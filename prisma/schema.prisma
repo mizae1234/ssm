@@ -39,6 +39,10 @@ model Claim {
   quotations       Quotation[]
   expenses         ClaimExpense[]
   documents        ClaimDocument[]
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([insuranceId])
 }
 
 enum ClaimStatus {
@@ -95,6 +99,10 @@ model PartMaster {
   category      String? // เช่น กันชน, ไฟ, กระจก
   unit          String           @default("ชิ้น")
   standardPrice Float? // ราคากลางอ้างอิง
+  purchasePrice Float? // ราคาซื้อต่อหน่วย
+  description   String? // คำอธิบายสินค้า
+  peakCode      String? // รหัสสินค้าใน PEAK
+  stock         Int              @default(0) // จำนวนสต็อกคงเหลือ
   isActive      Boolean          @default(true)
   source        PartMasterSource @default(AUTO) // AUTO=จาก Claim, MANUAL=key เอง
   createdFrom   String? // claim_id แรกที่พบ Part นี้
@@ -255,6 +263,9 @@ model SupplierInvoice {
   isSynced        Boolean               @default(false)
   syncedAt        DateTime?
   createdAt       DateTime              @default(now())
+
+  @@index([isSynced])
+  @@index([claimId])
 }
 
 model InsuranceInvoice {
@@ -277,6 +288,9 @@ model InsuranceInvoice {
   isSynced        Boolean          @default(false)
   syncedAt        DateTime?
   createdAt       DateTime         @default(now())
+
+  @@index([status])
+  @@index([createdAt])
 }
 
 enum ARStatus {
@@ -323,6 +337,10 @@ model PaymentRequest {
   billReceipt        BillReceipt?
   apPayment          APPayment?
   arPayment          ARPayment?
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([claimId])
 }
 
 model BillReceipt {
@@ -614,6 +632,9 @@ model ClaimExpense {
   isSynced    Boolean  @default(false)
   syncedAt    DateTime?
   createdAt   DateTime @default(now())
+
+  @@index([isSynced])
+  @@index([claimId])
 }
 
 // General document attachments per claim

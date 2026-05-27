@@ -101,6 +101,51 @@ export async function POST(
         }
       })
 
+      // Update stock in PartMaster and StockBalance / StockMovement
+      for (const item of items) {
+        if (item.quantity <= 0) continue
+        const poItem = po.items.find(pi => pi.id === item.poItemId)
+        if (poItem) {
+          // Update PartMaster stock
+          await tx.partMaster.updateMany({
+            where: { partNo: poItem.partNo },
+            data: {
+              stock: {
+                increment: item.quantity
+              }
+            }
+          })
+
+          // Update StockBalance
+          await tx.stockBalance.upsert({
+            where: { partNo: poItem.partNo },
+            update: {
+              quantity: {
+                increment: item.quantity
+              }
+            },
+            create: {
+              partNo: poItem.partNo,
+              partName: poItem.description,
+              quantity: item.quantity
+            }
+          })
+
+          // Create StockMovement
+          await tx.stockMovement.create({
+            data: {
+              partNo: poItem.partNo,
+              partName: poItem.description,
+              movementType: 'IN',
+              quantity: item.quantity,
+              claimId: params.id,
+              vendorId: po.vendorId,
+              note: `รับเข้าจาก PO: ${po.poNo}`
+            }
+          })
+        }
+      }
+
       // Fetch all items from PO again to check overall completion status
       const allPoItems = po.items
       

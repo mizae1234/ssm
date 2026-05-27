@@ -53,7 +53,8 @@ export default function PaymentsPage() {
       (r.vendorName || '').toLowerCase().includes(q) ||
       (r.garageName || '').toLowerCase().includes(q) ||
       (r.insuranceName || '').toLowerCase().includes(q) ||
-      (r.invoiceNo || '').toLowerCase().includes(q)
+      (r.invoiceNo || '').toLowerCase().includes(q) ||
+      (r.paymentId || '').toLowerCase().includes(q)
     )
   })
 
@@ -155,7 +156,14 @@ export default function PaymentsPage() {
       <TableCell className="font-mono text-xs">{pr.invoiceNo || '-'}</TableCell>
       <TableCell className="text-right font-semibold">฿{formatCurrency(pr.amount)}</TableCell>
       <TableCell className="text-xs">{pr.createdBy}</TableCell>
-      <TableCell><Badge className={`${statusColor(pr.status)} border-none text-[10px]`}>{statusLabel(pr.status)}</Badge></TableCell>
+      <TableCell>
+        <div className="flex flex-col gap-1 items-start">
+          <Badge className={`${statusColor(pr.status)} border-none text-[10px]`}>{statusLabel(pr.status)}</Badge>
+          {pr.status === 'APPROVED' && pr.paymentId && (
+            <span className="text-[10px] font-mono text-gray-500 font-semibold">{pr.paymentId}</span>
+          )}
+        </div>
+      </TableCell>
       <TableCell>
         <div className="flex gap-1">
           {pr.status === 'PENDING_APPROVAL' && (

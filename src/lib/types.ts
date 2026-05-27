@@ -106,6 +106,10 @@ export interface PartMaster {
   category?: string
   unit: string
   standardPrice?: number
+  purchasePrice?: number
+  description?: string
+  peakCode?: string
+  stock?: number
   isActive: boolean
   source: PartMasterSource
   createdFrom?: string

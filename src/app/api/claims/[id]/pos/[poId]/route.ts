@@ -7,6 +7,10 @@ export async function PUT(
 ) {
   try {
     const body = await request.json()
+
+    if (body.deliveryAddress !== undefined && (!body.deliveryAddress || !body.deliveryAddress.trim())) {
+      return NextResponse.json({ error: 'กรุณาระบุที่อยู่สำหรับจัดส่ง' }, { status: 400 })
+    }
     
     const subtotal = (body.items || []).reduce((sum: number, item: any) => sum + (item.totalPrice || 0), 0)
     const vatPct = body.includeVat !== false ? (body.vatPct ?? 7) : 0

@@ -209,6 +209,7 @@ export default function ClaimDetailPage() {
   const [uploadedGarageFile, setUploadedGarageFile] = useState<{ name: string, url: string, type: string, file?: File } | null>(null)
   const [uploadMapSelections, setUploadMapSelections] = useState<Record<string, boolean>>({})
   const [uploadItemPrices, setUploadItemPrices] = useState<Record<string, number>>({})
+  const [uploadItemQuantities, setUploadItemQuantities] = useState<Record<string, number>>({})
   const [customInvoiceNo, setCustomInvoiceNo] = useState('')
   const [invoiceIncludeVat, setInvoiceIncludeVat] = useState(true)
   const [invoiceVatPct, setInvoiceVatPct] = useState(7)
@@ -322,6 +323,10 @@ export default function ClaimDetailPage() {
     const selectedParts = poModalParts.filter(p => p.selected)
     const selectedLabors = poModalLabors.filter(l => l.selected)
     if (selectedParts.length === 0 && selectedLabors.length === 0 && poManualItems.length === 0) { showToast('กรุณาเลือกรายการอย่างน้อย 1 รายการ'); return }
+    if (!poDeliveryAddress || !poDeliveryAddress.trim()) {
+      showToast('⚠️ กรุณาระบุที่อยู่สำหรับจัดส่ง')
+      return
+    }
     const poNo = editPOId ? purchaseOrders.find(p => p.id === editPOId)?.poNo : undefined // let server generate
     
     const partItems = selectedParts.map(p => ({
@@ -1374,7 +1379,9 @@ export default function ClaimDetailPage() {
                                 </div>
                                 <div className="flex flex-col items-end gap-1">
                                   <span className="font-semibold text-sm">฿{formatCurrency(inv.totalAmount)}</span>
-                                  <Badge className={`border-none text-[10px] ${inv.apPayment ? 'bg-green-100 text-green-700' : pr?.status === 'APPROVED' ? 'bg-green-100 text-green-700' : pr?.status === 'PENDING_APPROVAL' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>{inv.apPayment ? 'จ่ายแล้ว' : pr?.status === 'APPROVED' ? 'อนุมัติแล้ว' : pr?.status === 'PENDING_APPROVAL' ? 'รออนุมัติ' : 'รอเบิกจ่าย'}</Badge>
+                                  <Badge className={`border-none text-[10px] ${inv.apPayment ? 'bg-green-100 text-green-700' : pr?.status === 'APPROVED' ? 'bg-green-100 text-green-700' : pr?.status === 'PENDING_APPROVAL' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
+                                    {inv.apPayment ? `จ่ายแล้ว (${inv.apPayment.id})` : pr?.status === 'APPROVED' ? `อนุมัติแล้ว (${pr.apPayment?.id || ''})` : pr?.status === 'PENDING_APPROVAL' ? 'รออนุมัติ' : 'รอเบิกจ่าย'}
+                                  </Badge>
                                 </div>
                               </div>
                               <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-100">
@@ -1495,26 +1502,165 @@ export default function ClaimDetailPage() {
                     <label className="text-sm font-medium text-[#475569]">เลขที่ใบวางบิล (Invoice No.)</label>
                     <Input className="mt-1" placeholder="ใส่เลขที่จริงจากผู้จัดจำหน่าย หรือเว้นว่างระบบสร้างให้อัตโนมัติ" value={customInvoiceNo} onChange={e => setCustomInvoiceNo(e.target.value)} />
                   </div>
-                  <div><h4 className="text-sm font-semibold mb-2">Invoice นี้ cover รายการไหนบ้าง?</h4>
-                    <Table><TableHeader><TableRow className="bg-[#f8faff]"><TableHead className="w-10"></TableHead><TableHead className="text-xs">ประเภท</TableHead><TableHead className="text-xs">รายการ</TableHead><TableHead className="text-xs text-right w-36">ราคา (แก้ไขได้)</TableHead></TableRow></TableHeader>
-                      <TableBody>
-                        {parts.filter(p => p.paymentStatus !== 'INVOICED' && p.paymentStatus !== 'PAID').map(p => (
-                          <TableRow key={p.id} className={uploadMapSelections[p.id] ? 'bg-blue-50/50' : ''}>
-                            <TableCell><input type="checkbox" checked={!!uploadMapSelections[p.id]} onChange={e => setUploadMapSelections(prev => ({ ...prev, [p.id]: e.target.checked }))} className="w-4 h-4" /></TableCell>
-                            <TableCell><Badge variant="outline" className="text-[10px]">อะไหล่</Badge></TableCell>
-                            <TableCell className="font-medium">{p.partName} <span className="text-xs text-[#94a3b8] font-mono">{p.partNo}</span></TableCell>
-                            <TableCell className="text-right"><Input type="number" className="h-8 text-sm text-right w-32 ml-auto" value={uploadItemPrices[p.id] ?? getPartAmt(p)} onChange={e => setUploadItemPrices(prev => ({ ...prev, [p.id]: Number(e.target.value) || 0 }))} /></TableCell>
+                  <div>
+                    <h4 className="text-sm font-semibold mb-3 text-slate-800">Invoice นี้ cover รายการไหนบ้าง?</h4>
+                    
+                    {/* รายการอะไหล่ */}
+                    <div className="border rounded-lg overflow-hidden bg-white mb-4 shadow-sm">
+                      <div className="bg-slate-50/80 px-3 py-2 border-b flex items-center justify-between">
+                        <span className="font-semibold text-xs text-slate-700 flex items-center gap-1.5">
+                          🛠️ รายการอะไหล่
+                        </span>
+                        {(() => {
+                          const visibleParts = parts.filter(p => p.paymentStatus !== 'INVOICED' && p.paymentStatus !== 'PAID');
+                          const isAllPartsSelected = visibleParts.length > 0 && visibleParts.every(p => !!uploadMapSelections[p.id]);
+                          if (visibleParts.length === 0) return null;
+                          return (
+                            <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-[#0d9488] select-none">
+                              <input 
+                                type="checkbox" 
+                                checked={isAllPartsSelected} 
+                                onChange={e => {
+                                  const checked = e.target.checked;
+                                  setUploadMapSelections(prev => {
+                                    const next = { ...prev };
+                                    visibleParts.forEach(p => {
+                                      next[p.id] = checked;
+                                    });
+                                    return next;
+                                  });
+                                }} 
+                                className="w-3.5 h-3.5 rounded accent-[#0d9488] cursor-pointer" 
+                              />
+                              เลือกทั้งหมด
+                            </label>
+                          );
+                        })()}
+                      </div>
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-slate-50/30">
+                            <TableHead className="w-10"></TableHead>
+                            <TableHead className="text-xs">รายการ</TableHead>
+                            <TableHead className="text-xs text-right w-36">ราคา (แก้ไขได้)</TableHead>
                           </TableRow>
-                        ))}
-                        {labors.filter(l => l.paymentStatus !== 'INVOICED' && l.paymentStatus !== 'PAID').map(l => (
-                          <TableRow key={l.id} className={uploadMapSelections[l.id] ? 'bg-blue-50/50' : ''}>
-                            <TableCell><input type="checkbox" checked={!!uploadMapSelections[l.id]} onChange={e => setUploadMapSelections(prev => ({ ...prev, [l.id]: e.target.checked }))} className="w-4 h-4" /></TableCell>
-                            <TableCell><Badge variant="outline" className="text-[10px]">ค่าแรง</Badge></TableCell>
-                            <TableCell className="font-medium">{l.description}</TableCell>
-                            <TableCell className="text-right"><Input type="number" className="h-8 text-sm text-right w-32 ml-auto" value={uploadItemPrices[l.id] ?? getLaborAmt(l)} onChange={e => setUploadItemPrices(prev => ({ ...prev, [l.id]: Number(e.target.value) || 0 }))} /></TableCell>
+                        </TableHeader>
+                        <TableBody>
+                          {(() => {
+                            const visibleParts = parts.filter(p => p.paymentStatus !== 'INVOICED' && p.paymentStatus !== 'PAID');
+                            if (visibleParts.length === 0) {
+                              return (
+                                <TableRow>
+                                  <TableCell colSpan={3} className="text-center p-4 text-xs text-slate-400 italic">ไม่มีรายการอะไหล่ที่รอดำเนินการวางบิล</TableCell>
+                                </TableRow>
+                              );
+                            }
+                            return visibleParts.map(p => (
+                              <TableRow key={p.id} className={uploadMapSelections[p.id] ? 'bg-blue-50/30' : ''}>
+                                <TableCell>
+                                  <input 
+                                    type="checkbox" 
+                                    checked={!!uploadMapSelections[p.id]} 
+                                    onChange={e => setUploadMapSelections(prev => ({ ...prev, [p.id]: e.target.checked }))} 
+                                    className="w-4 h-4 rounded accent-[#0d9488]" 
+                                  />
+                                </TableCell>
+                                <TableCell className="font-medium text-xs">
+                                  {p.partName} <span className="text-[10px] text-[#94a3b8] font-mono block mt-0.5">{p.partNo}</span>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <Input 
+                                    type="number" 
+                                    className="h-8 text-xs text-right w-32 ml-auto" 
+                                    value={uploadItemPrices[p.id] ?? getPartAmt(p)} 
+                                    onChange={e => setUploadItemPrices(prev => ({ ...prev, [p.id]: Number(e.target.value) || 0 }))} 
+                                  />
+                                </TableCell>
+                              </TableRow>
+                            ));
+                          })()}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    {/* รายการค่าแรง */}
+                    <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
+                      <div className="bg-slate-50/80 px-3 py-2 border-b flex items-center justify-between">
+                        <span className="font-semibold text-xs text-slate-700 flex items-center gap-1.5">
+                          💼 รายการค่าแรง
+                        </span>
+                        {(() => {
+                          const visibleLabors = labors.filter(l => l.paymentStatus !== 'INVOICED' && l.paymentStatus !== 'PAID');
+                          const isAllLaborsSelected = visibleLabors.length > 0 && visibleLabors.every(l => !!uploadMapSelections[l.id]);
+                          if (visibleLabors.length === 0) return null;
+                          return (
+                            <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-[#0d9488] select-none">
+                              <input 
+                                type="checkbox" 
+                                checked={isAllLaborsSelected} 
+                                onChange={e => {
+                                  const checked = e.target.checked;
+                                  setUploadMapSelections(prev => {
+                                    const next = { ...prev };
+                                    visibleLabors.forEach(l => {
+                                      next[l.id] = checked;
+                                    });
+                                    return next;
+                                  });
+                                }} 
+                                className="w-3.5 h-3.5 rounded accent-[#0d9488] cursor-pointer" 
+                              />
+                              เลือกทั้งหมด
+                            </label>
+                          );
+                        })()}
+                      </div>
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-slate-50/30">
+                            <TableHead className="w-10"></TableHead>
+                            <TableHead className="text-xs">รายการ</TableHead>
+                            <TableHead className="text-xs text-right w-36">ราคา (แก้ไขได้)</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody></Table>
+                        </TableHeader>
+                        <TableBody>
+                          {(() => {
+                            const visibleLabors = labors.filter(l => l.paymentStatus !== 'INVOICED' && l.paymentStatus !== 'PAID');
+                            if (visibleLabors.length === 0) {
+                              return (
+                                <TableRow>
+                                  <TableCell colSpan={3} className="text-center p-4 text-xs text-slate-400 italic">ไม่มีรายการค่าแรงที่รอดำเนินการวางบิล</TableCell>
+                                </TableRow>
+                              );
+                            }
+                            return visibleLabors.map(l => (
+                              <TableRow key={l.id} className={uploadMapSelections[l.id] ? 'bg-blue-50/30' : ''}>
+                                <TableCell>
+                                  <input 
+                                    type="checkbox" 
+                                    checked={!!uploadMapSelections[l.id]} 
+                                    onChange={e => setUploadMapSelections(prev => ({ ...prev, [l.id]: e.target.checked }))} 
+                                    className="w-4 h-4 rounded accent-[#0d9488]" 
+                                  />
+                                </TableCell>
+                                <TableCell className="font-medium text-xs">
+                                  {l.description}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <Input 
+                                    type="number" 
+                                    className="h-8 text-xs text-right w-32 ml-auto" 
+                                    value={uploadItemPrices[l.id] ?? getLaborAmt(l)} 
+                                    onChange={e => setUploadItemPrices(prev => ({ ...prev, [l.id]: Number(e.target.value) || 0 }))} 
+                                  />
+                                </TableCell>
+                              </TableRow>
+                            ));
+                          })()}
+                        </TableBody>
+                      </Table>
+                    </div>
+
                       <div className="flex flex-col items-end gap-2 mt-4 p-4 bg-gray-50 rounded-lg w-full max-w-sm ml-auto">
                         {(() => {
                            const sub = parts.filter(p => uploadMapSelections[p.id]).reduce((s, p) => s + (uploadItemPrices[p.id] ?? getPartAmt(p)), 0) + labors.filter(l => uploadMapSelections[l.id]).reduce((s, l) => s + (uploadItemPrices[l.id] ?? getLaborAmt(l)), 0)
@@ -1810,7 +1956,7 @@ export default function ClaimDetailPage() {
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-[#475569]">ที่อยู่สำหรับจัดส่ง (ใบส่งของ)</label>
+                      <label className="text-sm font-medium text-[#475569]">ที่อยู่สำหรับจัดส่ง (ใบส่งของ) <span className="text-rose-500">*</span></label>
                       <SearchableSelect
                         options={vendors.map(v => ({
                           value: v.id,

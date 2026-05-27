@@ -63,13 +63,27 @@ export async function POST(
       include: { vendor: true, items: true, apPayment: true }
     })
 
-    // Update paymentStatus of the related ClaimParts to 'INVOICED'
-    const partIds = (body.items || []).map((item: any) => item.claimPartId).filter(Boolean)
-    if (partIds.length > 0) {
-      await prisma.claimPart.updateMany({
-        where: { id: { in: partIds } },
-        data: { paymentStatus: 'INVOICED' }
-      })
+    // Update paymentStatus of the related ClaimParts to 'INVOICED' only if fully invoiced
+    const items = body.items || []
+    for (const item of items) {
+      if (item.claimPartId) {
+        const claimPart = await prisma.claimPart.findUnique({
+          where: { id: item.claimPartId }
+        })
+        if (claimPart) {
+          const sumResult = await prisma.supplierInvoiceItem.aggregate({
+            where: { claimPartId: item.claimPartId },
+            _sum: { quantity: true }
+          })
+          const totalInvoicedQty = sumResult._sum.quantity || 0
+          if (totalInvoicedQty >= claimPart.quantity) {
+            await prisma.claimPart.update({
+              where: { id: item.claimPartId },
+              data: { paymentStatus: 'INVOICED' }
+            })
+          }
+        }
+      }
     }
 
     // Also mark labors as INVOICED (when unified invoice covers both parts + labors)

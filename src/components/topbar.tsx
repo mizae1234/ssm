@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation'
 import { Bell, Search, User as UserIcon, LogOut, ChevronDown } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
+import type { AuthUser } from './client-layout'
 
 const breadcrumbMap: Record<string, string> = {
   '/dashboard': 'Dashboard',
@@ -15,23 +16,11 @@ const breadcrumbMap: Record<string, string> = {
   '/settings': 'ตั้งค่าระบบ',
 }
 
-export default function Topbar() {
+export default function Topbar({ user }: { user: AuthUser | null }) {
   const pathname = usePathname()
   const router = useRouter()
-  const [user, setUser] = useState<{ name: string; role: string; username: string } | null>(null)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    fetch('/api/auth/me')
-      .then(res => res.json())
-      .then(data => {
-        if (data.user) {
-          setUser(data.user)
-        }
-      })
-      .catch(console.error)
-  }, [])
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {

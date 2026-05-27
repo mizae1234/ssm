@@ -37,7 +37,9 @@ export async function GET(request: NextRequest) {
           garage: { select: { name: true } }
         }
       },
-      insuranceInvoice: { select: { invoiceNo: true } }
+      insuranceInvoice: { select: { invoiceNo: true } },
+      apPayment: true,
+      arPayment: true
     }
   })
   
@@ -61,7 +63,8 @@ export async function GET(request: NextRequest) {
     garageName: p.garageInvoice?.garage?.name,
     insuranceName: p.claim?.insurance?.name,
     invoiceUrl: p.supplierInvoice?.pdfUrl || p.garageInvoice?.pdfUrl || null,
-    invoiceNo: p.supplierInvoice?.invoiceNo || p.garageInvoice?.invoiceNo || null
+    invoiceNo: p.supplierInvoice?.invoiceNo || p.garageInvoice?.invoiceNo || null,
+    paymentId: p.apPayment?.id || p.arPayment?.id || null
   }))
 
   return NextResponse.json(formatted)

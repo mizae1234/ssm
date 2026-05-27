@@ -39,7 +39,9 @@ export async function GET(
           supplierInvoice: { select: { id: true, invoiceNo: true, vendor: { select: { id: true, name: true } } } }, 
           garageInvoice: { select: { id: true, invoiceNo: true, garage: { select: { id: true, name: true } } } }, 
           insuranceInvoice: { select: { id: true, invoiceNo: true } }, 
-          billReceipt: true 
+          billReceipt: true,
+          apPayment: true,
+          arPayment: true
         } 
       },
     }
@@ -178,7 +180,9 @@ export async function PUT(
           supplierInvoice: { select: { id: true, invoiceNo: true, vendor: { select: { id: true, name: true } } } }, 
           garageInvoice: { select: { id: true, invoiceNo: true, garage: { select: { id: true, name: true } } } }, 
           insuranceInvoice: { select: { id: true, invoiceNo: true } }, 
-          billReceipt: true 
+          billReceipt: true,
+          apPayment: true,
+          arPayment: true
         } 
       },
     }
