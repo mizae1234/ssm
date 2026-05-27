@@ -154,7 +154,7 @@ model PurchaseOrder {
   totalAmount  Float
   status       POStatus      @default(DRAFT)
   items        POItem[]
-  goodsReceipt GoodsReceipt?
+  goodsReceipts GoodsReceipt[]
   apPayment    APPayment?
   createdAt    DateTime      @default(now())
 }
@@ -173,6 +173,7 @@ enum POStatus {
   DRAFT
   SENT
   RECEIVED
+  PARTIALLY_RECEIVED
   CANCELLED
 }
 
@@ -186,6 +187,7 @@ model POItem {
   unitPrice            Float
   totalPrice           Float
   supplierInvoiceItems SupplierInvoiceItem[]
+  goodsReceiptItems    GoodsReceiptItem[]
 }
 
 model SupplierInvoiceItem {
@@ -206,13 +208,23 @@ model SupplierInvoiceItem {
 }
 
 model GoodsReceipt {
-  id            String         @id @default(cuid())
-  poId          String         @unique
-  po            PurchaseOrder  @relation(fields: [poId], references: [id])
+  id            String             @id @default(cuid())
+  poId          String
+  po            PurchaseOrder      @relation(fields: [poId], references: [id])
   receivedAt    DateTime
   receivedBy    String
   note          String?
+  items         GoodsReceiptItem[]
   deliveryOrder DeliveryOrder?
+}
+
+model GoodsReceiptItem {
+  id             String       @id @default(cuid())
+  goodsReceiptId String
+  goodsReceipt   GoodsReceipt @relation(fields: [goodsReceiptId], references: [id], onDelete: Cascade)
+  poItemId       String
+  poItem         POItem       @relation(fields: [poItemId], references: [id], onDelete: Cascade)
+  quantity       Int
 }
 
 model DeliveryOrder {

@@ -12,7 +12,21 @@ export async function GET(
       garage: { select: { id: true, name: true, phone: true } },
       parts: { include: { partMaster: { select: { id: true, partNo: true, partName: true, standardPrice: true } } } },
       labors: true,
-      purchaseOrders: { include: { vendor: { select: { id: true, name: true } }, items: true } },
+      purchaseOrders: { 
+        include: { 
+          vendor: { select: { id: true, name: true } }, 
+          items: {
+            include: {
+              goodsReceiptItems: true
+            }
+          },
+          goodsReceipts: {
+            include: {
+              items: true
+            }
+          }
+        } 
+      },
       supplierInvoices: { include: { vendor: { select: { id: true, name: true } }, items: true, apPayment: { select: { id: true, paidAt: true, amount: true } } } },
       garageInvoices: { include: { garage: { select: { id: true, name: true } }, items: true } },
       insuranceInvoice: { include: { arPayment: { select: { id: true, receivedAt: true, amount: true } } } },
@@ -137,7 +151,21 @@ export async function PUT(
       garage: { select: { id: true, name: true, phone: true } },
       parts: { include: { partMaster: { select: { id: true, partNo: true, partName: true, standardPrice: true } } } },
       labors: true,
-      purchaseOrders: { include: { vendor: { select: { id: true, name: true } }, items: true } },
+      purchaseOrders: { 
+        include: { 
+          vendor: { select: { id: true, name: true } }, 
+          items: {
+            include: {
+              goodsReceiptItems: true
+            }
+          },
+          goodsReceipts: {
+            include: {
+              items: true
+            }
+          }
+        } 
+      },
       supplierInvoices: { include: { vendor: { select: { id: true, name: true } }, items: true, apPayment: { select: { id: true, paidAt: true, amount: true } } } },
       garageInvoices: { include: { garage: { select: { id: true, name: true } }, items: true } },
       insuranceInvoice: { include: { arPayment: { select: { id: true, receivedAt: true, amount: true } } } },

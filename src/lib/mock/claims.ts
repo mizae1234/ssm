@@ -159,7 +159,7 @@ function generateClaims(): Claim[] {
           totalAmount: partsTotal,
           status: goodsReceipt ? 'RECEIVED' : 'SENT',
           items: poItems,
-          goodsReceipt,
+          goodsReceipts: goodsReceipt ? [goodsReceipt] : [],
           createdAt: new Date(createdDate.getTime() + 2 * 86400000).toISOString(),
         })
       }

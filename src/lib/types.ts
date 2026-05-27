@@ -14,7 +14,7 @@ export type ClaimStatus =
 
 export type POType = 'PARTS' | 'LABOR'
 export type DeliveryMode = 'DIRECT_TO_GARAGE' | 'SELF_DELIVERY'
-export type POStatus = 'DRAFT' | 'SENT' | 'RECEIVED' | 'CANCELLED'
+export type POStatus = 'DRAFT' | 'SENT' | 'RECEIVED' | 'PARTIALLY_RECEIVED' | 'CANCELLED'
 export type ARStatus = 'PENDING' | 'SENT' | 'PARTIAL' | 'PAID' | 'CANCELLED'
 export type QuotationStatus = 'DRAFT' | 'SENT' | 'APPROVED' | 'REJECTED' | 'SUPERSEDED'
 export type APPayType = 'VENDOR' | 'GARAGE'
@@ -184,6 +184,15 @@ export interface POItem {
   quantity: number
   unitPrice: number
   totalPrice: number
+  goodsReceiptItems?: GoodsReceiptItem[]
+}
+
+export interface GoodsReceiptItem {
+  id: string
+  goodsReceiptId: string
+  poItemId: string
+  poItem?: POItem
+  quantity: number
 }
 
 export interface GoodsReceipt {
@@ -192,6 +201,7 @@ export interface GoodsReceipt {
   receivedAt: string
   receivedBy: string
   note?: string
+  items?: GoodsReceiptItem[]
   deliveryOrder?: DeliveryOrder
 }
 
@@ -215,7 +225,7 @@ export interface PurchaseOrder {
   totalAmount: number
   status: POStatus
   items: POItem[]
-  goodsReceipt?: GoodsReceipt
+  goodsReceipts?: GoodsReceipt[]
   apPayment?: APPayment
   createdAt: string
 }

@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { FileText, ArrowLeft, History, Wrench, ShieldAlert, Car, PackageOpen, Tag, CheckCircle2, ChevronRight, Download, Plus, AlertTriangle, TrendingUp, CreditCard, Save, Upload, X, Edit2, Package, Truck, Trash2, CircleDot, Ban, XCircle, Clock, ShoppingCart, Eye } from 'lucide-react'
+import { FileText, ArrowLeft, History, Wrench, ShieldAlert, Car, PackageOpen, Tag, CheckCircle2, ChevronRight, Download, Plus, AlertTriangle, TrendingUp, CreditCard, Save, Upload, X, Edit2, Package, Truck, Trash2, CircleDot, Ban, XCircle, Clock, ShoppingCart, Eye, AlertCircle, Info } from 'lucide-react'
 import { uploadToR2 } from '@/lib/upload'
 import { getStatusColor, getStatusLabel, formatCurrency, getPOStatusLabel, cn } from '@/lib/utils'
 import { ClaimStatus, PaymentRequest, Quotation, InsuranceInvoice, PurchaseOrder } from '@/lib/types'
@@ -248,6 +248,15 @@ export default function ClaimDetailPage() {
   const [selectedQuotationId, setSelectedQuotationId] = useState<string | null>(null)
   const [previewAttachment, setPreviewAttachment] = useState<{ name: string; url: string; type: string } | null>(null)
   const [qtDate, setQtDate] = useState(new Date().toISOString().split('T')[0])
+  
+  // Partial GR states
+  const [showGRModal, setShowGRModal] = useState(false)
+  const [selectedPOForGR, setSelectedPOForGR] = useState<any>(null)
+  const [grQuantities, setGrQuantities] = useState<Record<string, number>>({})
+  const [grReceivedBy, setGrReceivedBy] = useState('admin')
+  const [grNote, setGrNote] = useState('')
+  const [grHistoryPO, setGrHistoryPO] = useState<any>(null)
+  const [showGRHistoryModal, setShowGRHistoryModal] = useState(false)
   const [qtValidUntil, setQtValidUntil] = useState(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
   const [qtNote, setQtNote] = useState('')
   const [supplementReason, setSupplementReason] = useState('')
@@ -1107,12 +1116,27 @@ export default function ClaimDetailPage() {
                           <span>Vendor: {po.vendor?.name}</span>
                           <span>•</span>
                           <span>{po.items.length} รายการ</span>
-                          {po.goodsReceipt && (
+                          {po.goodsReceipts && po.goodsReceipts.length > 0 && (
                             <>
                               <span>•</span>
-                              <span className="flex items-center gap-1 text-green-600">
-                                <CheckCircle2 className="w-3.5 h-3.5" />รับของแล้ว
-                              </span>
+                              {po.status === 'RECEIVED' ? (
+                                <span className="flex items-center gap-1 text-green-600 font-medium">
+                                  <CheckCircle2 className="w-3.5 h-3.5" />รับของแล้ว (ครบ)
+                                </span>
+                              ) : (
+                                <span className="flex items-center gap-1 text-amber-600 font-medium">
+                                  <AlertCircle className="w-3.5 h-3.5" />รับของแล้วบางส่วน
+                                </span>
+                              )}
+                              <button 
+                                onClick={() => {
+                                  setGrHistoryPO(po)
+                                  setShowGRHistoryModal(true)
+                                }}
+                                className="text-xs text-[#0d9488] hover:underline font-medium ml-1"
+                              >
+                                (ดูประวัติ {po.goodsReceipts.length} ครั้ง)
+                              </button>
                             </>
                           )}
                         </div>
@@ -1131,17 +1155,21 @@ export default function ClaimDetailPage() {
                                 <CheckCircle2 className="w-3 h-3 mr-1" />อนุมัติ / ส่ง PO
                               </Button>
                             )}
-                            {po.status === 'SENT' && (
-                              <Button size="sm" className="bg-green-600 hover:bg-green-700 text-xs h-7" onClick={async () => {
-                                try {
-                                  const res = await fetch(`/api/claims/${claim.id}/pos/${po.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'RECEIVED' }) })
-                                  if (!res.ok) throw new Error()
-                                  const updated = await res.json()
-                                  setPurchaseOrders(prev => prev.map(p => p.id === po.id ? updated : p))
-                                  showToast(`${po.poNo} รับอะไหล่แล้ว`)
-                                } catch { setErrorModalMsg('เกิดข้อผิดพลาด') }
+                            {(po.status === 'SENT' || po.status === 'PARTIALLY_RECEIVED') && (
+                              <Button size="sm" className="bg-[#0d9488] hover:bg-[#0f766e] text-white text-xs h-7" onClick={() => {
+                                setSelectedPOForGR(po)
+                                // Initialize quantities
+                                const initQ: Record<string, number> = {}
+                                po.items.forEach((item: any) => {
+                                  const prevRec = (item.goodsReceiptItems || []).reduce((s: number, g: any) => s + g.quantity, 0)
+                                  initQ[item.id] = Math.max(0, item.quantity - prevRec)
+                                })
+                                setGrQuantities(initQ)
+                                setGrReceivedBy('admin')
+                                setGrNote('')
+                                setShowGRModal(true)
                               }}>
-                                <Package className="w-3 h-3 mr-1" />รับอะไหล่แล้ว
+                                <Package className="w-3 h-3 mr-1" />ตรวจรับสินค้า (GR)
                               </Button>
                             )}
                             <Link href={`/claims/${claim.id}/pdf/purchase-order?poId=${po.id}`} target="_blank">
@@ -2106,6 +2134,206 @@ export default function ClaimDetailPage() {
                     await refreshClaim()
                   } catch (err: any) { setRejectPRId(null); setErrorModalMsg(`เกิดข้อผิดพลาด: ${err.message}`) }
                 }}><XCircle className="w-4 h-4 mr-1" />ยืนยันปฏิเสธ</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* ─── Goods Receipt Modal (Partial GR) ─── */}
+      {showGRModal && selectedPOForGR && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowGRModal(false)}>
+          <Card className="w-full max-w-2xl shadow-2xl" onClick={e => e.stopPropagation()}>
+            <CardHeader className="flex flex-row items-center justify-between border-b pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Package className="w-5 h-5 text-[#0d9488]" />
+                บันทึกการตรวจรับของ (GR) - {selectedPOForGR.poNo}
+              </CardTitle>
+              <button onClick={() => setShowGRModal(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-4">
+              <div className="text-sm bg-slate-50 p-3 rounded-lg flex flex-wrap gap-x-6 gap-y-1 text-slate-600">
+                <div>ผู้จำหน่าย: <strong className="text-slate-800">{selectedPOForGR.vendor?.name}</strong></div>
+                <div>เลขที่เคลม: <strong className="text-slate-800">{claim.claimNo}</strong></div>
+              </div>
+
+              <div className="overflow-x-auto max-h-[300px] border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-slate-50">
+                      <TableHead>ชิ้นส่วนอะไหล่</TableHead>
+                      <TableHead className="text-center w-24">สั่งซื้อ</TableHead>
+                      <TableHead className="text-center w-24">รับแล้ว</TableHead>
+                      <TableHead className="text-center w-24">ค้างส่ง</TableHead>
+                      <TableHead className="text-center w-32">จำนวนที่ตรวจรับรอบนี้</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {selectedPOForGR.items.map((item: any) => {
+                      const prevRec = (item.goodsReceiptItems || []).reduce((s: number, g: any) => s + g.quantity, 0)
+                      const remaining = Math.max(0, item.quantity - prevRec)
+                      const currentVal = grQuantities[item.id] || 0
+
+                      return (
+                        <TableRow key={item.id}>
+                          <TableCell className="font-medium">
+                            {item.description}
+                            <p className="text-[10px] text-slate-400 font-mono mt-0.5">{item.partNo}</p>
+                          </TableCell>
+                          <TableCell className="text-center">{item.quantity}</TableCell>
+                          <TableCell className="text-center text-slate-500">{prevRec}</TableCell>
+                          <TableCell className="text-center font-semibold text-slate-700">{remaining}</TableCell>
+                          <TableCell className="text-center">
+                            <input
+                              type="number"
+                              min="0"
+                              max={remaining}
+                              disabled={remaining === 0}
+                              value={remaining === 0 ? 0 : currentVal}
+                              onChange={e => {
+                                const val = Math.min(remaining, Math.max(0, parseInt(e.target.value) || 0))
+                                setGrQuantities(prev => ({ ...prev, [item.id]: val }))
+                              }}
+                              className="w-20 text-center bg-white border border-slate-200 focus:ring-1 focus:ring-[#0d9488] focus:border-[#0d9488] rounded py-1 px-1.5 text-sm font-semibold text-slate-800 disabled:bg-slate-100 disabled:text-slate-400"
+                            />
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-semibold text-[#475569] uppercase tracking-wider block mb-1">ผู้ตรวจรับของ</label>
+                  <Input 
+                    type="text" 
+                    value={grReceivedBy} 
+                    onChange={e => setGrReceivedBy(e.target.value)} 
+                    placeholder="กรอกชื่อผู้รับของ..."
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-[#475569] uppercase tracking-wider block mb-1">หมายเหตุเพิ่มเติม</label>
+                  <Input 
+                    type="text" 
+                    value={grNote} 
+                    onChange={e => setGrNote(e.target.value)} 
+                    placeholder="ระบุหมายเหตุการรับ..."
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 justify-end border-t pt-4">
+                <Button variant="outline" onClick={() => setShowGRModal(false)}>ยกเลิก</Button>
+                <Button 
+                  className="bg-[#0d9488] hover:bg-[#0f766e] text-white" 
+                  disabled={!grReceivedBy.trim() || Object.values(grQuantities).every(q => q === 0)}
+                  onClick={async () => {
+                    try {
+                      const payloadItems = Object.entries(grQuantities)
+                        .filter(([_, q]) => q > 0)
+                        .map(([id, q]) => ({ poItemId: id, quantity: q }))
+
+                      const res = await fetch(`/api/claims/${claim.id}/pos/${selectedPOForGR.id}/gr`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          receivedBy: grReceivedBy,
+                          note: grNote,
+                          items: payloadItems
+                        })
+                      })
+
+                      if (!res.ok) {
+                        const err = await res.json()
+                        throw new Error(err.error || 'บันทึกไม่สำเร็จ')
+                      }
+
+                      showToast('บันทึกตรวจรับสินค้าสำเร็จ')
+                      setShowGRModal(false)
+                      await refreshClaim()
+                    } catch (err: any) {
+                      setErrorModalMsg(err.message || 'เกิดข้อผิดพลาดในการบันทึก')
+                    }
+                  }}
+                >
+                  <CheckCircle2 className="w-4 h-4 mr-1.5" />
+                  บันทึกรับของ
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* ─── Goods Receipt History Modal ─── */}
+      {showGRHistoryModal && grHistoryPO && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowGRHistoryModal(false)}>
+          <Card className="w-full max-w-2xl shadow-2xl" onClick={e => e.stopPropagation()}>
+            <CardHeader className="flex flex-row items-center justify-between border-b pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <History className="w-5 h-5 text-teal-600" />
+                ประวัติการตรวจรับของ - {grHistoryPO.poNo}
+              </CardTitle>
+              <button onClick={() => setShowGRHistoryModal(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-4 max-h-[450px] overflow-y-auto">
+              {(!grHistoryPO.goodsReceipts || grHistoryPO.goodsReceipts.length === 0) ? (
+                <div className="text-center py-8 text-slate-400 text-sm">ไม่มีประวัติการตรวจรับสินค้า</div>
+              ) : (
+                <div className="space-y-4">
+                  {grHistoryPO.goodsReceipts.map((gr: any, idx: number) => (
+                    <div key={gr.id} className="border border-slate-100 rounded-xl bg-slate-50/50 overflow-hidden">
+                      {/* Header GR */}
+                      <div className="bg-slate-100/60 px-4 py-2 text-xs flex justify-between items-center text-slate-650 font-medium">
+                        <div>ครั้งที่ {grHistoryPO.goodsReceipts.length - idx} • บันทึกเมื่อ {formatDate(gr.receivedAt)} น.</div>
+                        <div>โดย: <strong className="text-slate-800">{gr.receivedBy}</strong></div>
+                      </div>
+                      
+                      {/* Content GR Items */}
+                      <div className="p-3">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="border-none hover:bg-transparent">
+                              <TableHead className="h-7 text-xs font-semibold py-0.5 text-slate-500">รายการอะไหล่</TableHead>
+                              <TableHead className="h-7 text-xs font-semibold py-0.5 text-center w-24 text-slate-500">จำนวนที่รับ</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {(gr.items || []).map((gi: any) => {
+                              const poItem = grHistoryPO.items.find((pi: any) => pi.id === gi.poItemId)
+                              return (
+                                <TableRow key={gi.id} className="hover:bg-transparent border-slate-100">
+                                  <TableCell className="py-2 text-xs">
+                                    {poItem?.description || gi.poItemId}
+                                    <p className="text-[9px] text-slate-400 font-mono mt-0.5">{poItem?.partNo}</p>
+                                  </TableCell>
+                                  <TableCell className="py-2 text-center text-xs font-bold text-[#0d9488]">{gi.quantity} ชิ้น</TableCell>
+                                </TableRow>
+                              )
+                            })}
+                          </TableBody>
+                        </Table>
+                        {gr.note && (
+                          <div className="text-xs text-slate-500 mt-2 px-1 flex items-start gap-1">
+                            <Info className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                            <span>หมายเหตุ: {gr.note}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex justify-end pt-2">
+                <Button variant="outline" onClick={() => setShowGRHistoryModal(false)}>ปิดหน้าต่าง</Button>
               </div>
             </CardContent>
           </Card>

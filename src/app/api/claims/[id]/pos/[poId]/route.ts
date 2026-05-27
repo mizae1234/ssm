@@ -34,7 +34,16 @@ export async function PUT(
       },
       include: {
         vendor: true,
-        items: true
+        items: {
+          include: {
+            goodsReceiptItems: true
+          }
+        },
+        goodsReceipts: {
+          include: {
+            items: true
+          }
+        }
       }
     })
     
@@ -58,7 +67,16 @@ export async function PATCH(
       },
       include: {
         vendor: true,
-        items: true
+        items: {
+          include: {
+            goodsReceiptItems: true
+          }
+        },
+        goodsReceipts: {
+          include: {
+            items: true
+          }
+        }
       }
     })
     
