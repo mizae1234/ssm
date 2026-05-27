@@ -27,6 +27,7 @@ export default function PDFMockPage() {
   const type = params.type as string
   const qtId = searchParams.get('qtId')
   const poId = searchParams.get('poId')
+  const grId = searchParams.get('grId')
 
   const [claim, setClaim] = useState<any>(null)
   const [quotation, setQuotation] = useState<any>(null)
@@ -54,7 +55,7 @@ export default function PDFMockPage() {
       console.error(err)
       setLoading(false)
     })
-  }, [claimId, qtId])
+  }, [claimId, qtId, poId])
 
   const hasPrinted = useRef(false)
 
@@ -364,9 +365,39 @@ export default function PDFMockPage() {
   if (type === 'delivery-note') {
     if (!po) return <div className="p-8 text-center">ไม่พบใบสั่งซื้อ</div>
 
+    let itemsToRender = (po.items || []).map((item: any) => ({
+      id: item.id,
+      partNo: item.partNo,
+      description: item.description,
+      quantity: item.quantity,
+    }))
+    let documentDate = po.createdAt
+    let noteText = 'กรุณาตรวจนับอะไหล่ให้ครบถ้วนก่อนลงนามรับของ'
+    let titleText = 'ใบส่งของ (Delivery Note)'
+
+    if (grId) {
+      const targetGR = (po.goodsReceipts || []).find((gr: any) => gr.id === grId)
+      if (targetGR) {
+        documentDate = targetGR.receivedAt
+        titleText = 'ใบส่งของ (Delivery Note) - ตรวจรับบางส่วน'
+        if (targetGR.note) {
+          noteText = `หมายเหตุ: ${targetGR.note}`
+        }
+        itemsToRender = (targetGR.items || []).map((gi: any) => {
+          const poItem = po.items?.find((pi: any) => pi.id === gi.poItemId)
+          return {
+            id: gi.id,
+            partNo: poItem?.partNo || gi.poItemId,
+            description: poItem?.description || 'รายการอะไหล่',
+            quantity: gi.quantity,
+          }
+        })
+      }
+    }
+
     return (
       <div className="bg-white min-h-screen text-black p-8 max-w-4xl mx-auto print:p-12">
-        {renderHeader('ใบส่งของ (Delivery Note)', po.poNo, po.createdAt)}
+        {renderHeader(titleText, po.poNo, documentDate)}
 
         <div className="grid grid-cols-2 gap-8 mb-8 text-sm">
           <div className="border rounded p-4">
@@ -390,7 +421,7 @@ export default function PDFMockPage() {
             </tr>
           </thead>
           <tbody>
-            {(po.items || []).map((item: any, i: number) => (
+            {itemsToRender.map((item: any, i: number) => (
               <tr key={item.id} className="border-b border-gray-200">
                 <td className="py-3 px-2 text-gray-600">{i + 1}</td>
                 <td className="py-3 px-2 font-mono text-xs">{item.partNo}</td>
@@ -404,7 +435,7 @@ export default function PDFMockPage() {
 
         <div className="mt-8 text-sm border rounded p-4 bg-gray-50">
           <h4 className="font-semibold mb-1">หมายเหตุ</h4>
-          <p className="text-gray-600">กรุณาตรวจนับอะไหล่ให้ครบถ้วนก่อนลงนามรับของ</p>
+          <p className="text-gray-600">{noteText}</p>
         </div>
 
         <div className="mt-16 grid grid-cols-3 gap-8 text-center text-sm">

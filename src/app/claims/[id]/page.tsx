@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { FileText, ArrowLeft, History, Wrench, ShieldAlert, Car, PackageOpen, Tag, CheckCircle2, ChevronRight, Download, Plus, AlertTriangle, TrendingUp, CreditCard, Save, Upload, X, Edit2, Package, Truck, Trash2, CircleDot, Ban, XCircle, Clock, ShoppingCart, Eye, AlertCircle, Info } from 'lucide-react'
+import { FileText, ArrowLeft, History, Wrench, ShieldAlert, Car, PackageOpen, Tag, CheckCircle2, ChevronRight, Download, Plus, AlertTriangle, TrendingUp, CreditCard, Save, Upload, X, Edit2, Package, Truck, Trash2, CircleDot, Ban, XCircle, Clock, ShoppingCart, Eye, AlertCircle, Info, Printer } from 'lucide-react'
 import { uploadToR2 } from '@/lib/upload'
 import { getStatusColor, getStatusLabel, formatCurrency, getPOStatusLabel, cn } from '@/lib/utils'
 import { ClaimStatus, PaymentRequest, Quotation, InsuranceInvoice, PurchaseOrder } from '@/lib/types'
@@ -2293,7 +2293,14 @@ export default function ClaimDetailPage() {
                       {/* Header GR */}
                       <div className="bg-slate-100/60 px-4 py-2 text-xs flex justify-between items-center text-slate-650 font-medium">
                         <div>ครั้งที่ {grHistoryPO.goodsReceipts.length - idx} • บันทึกเมื่อ {formatDate(gr.receivedAt)} น.</div>
-                        <div>โดย: <strong className="text-slate-800">{gr.receivedBy}</strong></div>
+                        <div className="flex items-center gap-3">
+                          <div>โดย: <strong className="text-slate-800">{gr.receivedBy}</strong></div>
+                          <Link href={`/claims/${claim.id}/pdf/delivery-note?poId=${grHistoryPO.id}&grId=${gr.id}`} target="_blank">
+                            <Button size="sm" className="h-6 text-[10px] px-2 py-0.5 bg-white text-[#0d9488] border border-slate-200 hover:bg-slate-50 flex items-center gap-1 font-semibold">
+                              <Printer className="w-3 h-3" />พิมพ์ใบส่งของ
+                            </Button>
+                          </Link>
+                        </div>
                       </div>
                       
                       {/* Content GR Items */}
