@@ -49,5 +49,5 @@ jobs:
             docker pull ghcr.io/${{ github.repository }}:latest
 
             # restart container
-            cd /home/web/expert
+            cd /home/web/ssm
             docker compose up -d
