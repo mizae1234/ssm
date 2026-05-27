@@ -42,7 +42,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Get token from cookies
-  const token = request.cookies.get('expert-token')?.value
+  const token = request.cookies.get('ssm-token')?.value
 
   if (!token) {
     if (pathname.startsWith('/api/')) {
@@ -59,7 +59,7 @@ export async function middleware(request: NextRequest) {
       : NextResponse.redirect(new URL('/login', request.url))
     
     // Clear invalid token cookie
-    response.cookies.delete('expert-token')
+    response.cookies.delete('ssm-token')
     return response
   }
 

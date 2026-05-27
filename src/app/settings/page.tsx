@@ -201,7 +201,7 @@ export default function SettingsPage() {
               <Card>
                 <CardHeader><CardTitle className="text-base">โลโก้บริษัท</CardTitle></CardHeader>
                 <CardContent>
-                  <label className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:border-[#1d4ed8] transition-colors cursor-pointer block relative">
+                  <label className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:border-[#0d9488] transition-colors cursor-pointer block relative">
                     <input 
                       type="file" 
                       className="hidden" 
@@ -244,7 +244,7 @@ export default function SettingsPage() {
                     <label className="text-xs font-medium text-[#475569]">ตำแหน่ง</label>
                     <Input value={company.authorizedTitle || ''} onChange={e => updateField('authorizedTitle', e.target.value)} className="mt-1 bg-white" />
                   </div>
-                  <label className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-[#1d4ed8] transition-colors cursor-pointer block relative">
+                  <label className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-[#0d9488] transition-colors cursor-pointer block relative">
                     <input 
                       type="file" 
                       className="hidden" 
@@ -278,7 +278,7 @@ export default function SettingsPage() {
             </div>
           </div>
           <div className="flex justify-end mt-6">
-            <Button className="bg-[#1d4ed8]" onClick={saveCompany}><Save className="w-4 h-4 mr-1.5" />บันทึก</Button>
+            <Button className="bg-[#0d9488]" onClick={saveCompany}><Save className="w-4 h-4 mr-1.5" />บันทึก</Button>
           </div>
         </TabsContent>
 
@@ -286,7 +286,7 @@ export default function SettingsPage() {
         <TabsContent value="sequences">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2"><FileText className="w-5 h-5 text-[#1d4ed8]" />ตั้งค่าเลขที่เอกสาร</CardTitle>
+              <CardTitle className="text-base flex items-center gap-2"><FileText className="w-5 h-5 text-[#0d9488]" />ตั้งค่าเลขที่เอกสาร</CardTitle>
               <p className="text-xs text-[#94a3b8] mt-1">รูปแบบ: {'{prefix}'}-{'{YYYY}'}-{'{XXXX}'} — ขึ้นปีใหม่ reset เป็น 0001</p>
             </CardHeader>
             <CardContent>
@@ -311,7 +311,7 @@ export default function SettingsPage() {
                         />
                       </TableCell>
                       <TableCell><span className="font-mono text-sm">{String(seq.lastNo).padStart(4, '0')}</span></TableCell>
-                      <TableCell><span className="font-mono text-sm text-[#1d4ed8]">{seq.prefix}-{new Date().getFullYear()}-{String(seq.lastNo + 1).padStart(4, '0')}</span></TableCell>
+                      <TableCell><span className="font-mono text-sm text-[#0d9488]">{seq.prefix}-{new Date().getFullYear()}-{String(seq.lastNo + 1).padStart(4, '0')}</span></TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -320,7 +320,7 @@ export default function SettingsPage() {
           </Card>
           <div className="flex justify-end mt-4">
             <Button 
-              className="bg-[#1d4ed8]" 
+              className="bg-[#0d9488]" 
               onClick={async () => {
                 try {
                   const res = await fetch('/api/settings/sequences', {
@@ -370,10 +370,10 @@ export default function SettingsPage() {
 
             {/* Checklist Go Live */}
             <div className="space-y-6">
-              <Card className="border-[#1d4ed8]">
+              <Card className="border-[#0d9488]">
                 <CardHeader className="bg-[#f8faff] border-b">
                   <CardTitle className="text-base flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-[#1d4ed8]" />
+                    <CheckCircle2 className="w-5 h-5 text-[#0d9488]" />
                     Checklist ความพร้อม (Go Live)
                   </CardTitle>
                 </CardHeader>
@@ -452,7 +452,7 @@ export default function SettingsPage() {
             </div>
           </div>
           <div className="flex justify-end mt-4">
-            <Button className="bg-[#1d4ed8]" onClick={() => showToast('บันทึก PEAK Config เรียบร้อย')}><Save className="w-4 h-4 mr-1.5" />บันทึก</Button>
+            <Button className="bg-[#0d9488]" onClick={() => showToast('บันทึก PEAK Config เรียบร้อย')}><Save className="w-4 h-4 mr-1.5" />บันทึก</Button>
           </div>
         </TabsContent>
 
@@ -462,7 +462,7 @@ export default function SettingsPage() {
             <CardHeader className="flex flex-row items-center justify-between space-y-0">
               <div>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Users className="w-5 h-5 text-[#1d4ed8]" />
+                  <Users className="w-5 h-5 text-[#0d9488]" />
                   จัดการผู้ใช้งานระบบ
                 </CardTitle>
                 <p className="text-xs text-[#94a3b8] mt-1">กำหนดสิทธิ์เข้าใช้งานของเจ้าหน้าที่ในระบบ</p>
@@ -473,7 +473,7 @@ export default function SettingsPage() {
                   setUserForm({ username: '', name: '', password: '', role: 'STAFF', isActive: true })
                   setUserModalOpen(true)
                 }}
-                className="bg-[#1d4ed8]"
+                className="bg-[#0d9488]"
               >
                 <Plus className="w-4 h-4 mr-1.5" />
                 เพิ่มผู้ใช้งาน
@@ -601,7 +601,7 @@ export default function SettingsPage() {
                 <select
                   value={userForm.role}
                   onChange={e => setUserForm(p => ({ ...p, role: e.target.value }))}
-                  className="w-full h-10 px-3 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1d4ed8]"
+                  className="w-full h-10 px-3 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]"
                 >
                   <option value="STAFF">Staff (จัดการ Claim/เสนอราคา)</option>
                   <option value="ACCOUNTANT">Accountant (ฝ่ายบัญชี/การเงิน/รายงาน/PEAK)</option>
@@ -616,7 +616,7 @@ export default function SettingsPage() {
                     type="checkbox" 
                     checked={userForm.isActive}
                     onChange={e => setUserForm(p => ({ ...p, isActive: e.target.checked }))}
-                    className="w-4 h-4 rounded text-[#1d4ed8] focus:ring-[#1d4ed8]"
+                    className="w-4 h-4 rounded text-[#0d9488] focus:ring-[#0d9488]"
                   />
                 </div>
               )}
@@ -625,7 +625,7 @@ export default function SettingsPage() {
                 <Button variant="outline" className="border-gray-200" onClick={() => setUserModalOpen(false)}>
                   ยกเลิก
                 </Button>
-                <Button className="bg-[#1d4ed8]" onClick={handleSaveUser}>
+                <Button className="bg-[#0d9488]" onClick={handleSaveUser}>
                   บันทึก
                 </Button>
               </div>

@@ -10,13 +10,13 @@ export const dynamic = 'force-dynamic'
 
 // Fallback values matching mockup exactly if database settings are empty
 const DEFAULT_COMPANY = {
-  name: 'บริษัท เอ็กซ์เพิร์ท บอดี้แอนด์เพนท์ จำกัด',
+  name: 'บริษัท ดับเบิ้ลเอสเอ็ม จำกัด',
   address: 'เลขที่ 622 ซอย ลาดพร้าว 47 (สะพาน2) แขวงสะพานสอง เขตวังทองหลาง กรุงเทพมหานคร 10310',
   taxId: '0105568142253',
   branchCode: '00000',
   branchName: 'สำนักงานใหญ่',
   phone: '082-160-6773',
-  email: 'admin@expertbodypaint.com',
+  email: 'admin@doublesm.com',
   website: '-',
   logoUrl: '',
   authorizedName: 'Vilaiphon Vamagun',
@@ -194,7 +194,7 @@ function BillingNoteContent() {
       
       // Setup Remarks
       const bankName = mergedCompany.bankName || 'ธ.กสิกรไทย'
-      const bankAccName = mergedCompany.bankAccountName || 'บจก. เอ็กซ์เพิร์ท บอดี้แอนด์เพนท์'
+      const bankAccName = mergedCompany.bankAccountName || 'บจก. ดับเบิ้ลเอสเอ็ม'
       const bankAcc = mergedCompany.bankAccount || '214-1-55266-2'
       const defaultRemarks = `กรุณาโอนเข้าบัญชี ${bankAccName}\n${bankName} สาขาเดอะ คริสตัล พาร์ค ออมทรัพย์ #${bankAcc}`
       setRemarks(defaultRemarks)
@@ -431,13 +431,13 @@ function BillingNoteContent() {
           ย้อนกลับ
         </button>
         <div className="flex items-center gap-3">
-          <div className="text-xs text-slate-500 font-medium flex items-center gap-1.5 bg-sky-50 text-sky-800 px-3 py-1.5 rounded-full border border-sky-100">
-            <ShieldCheck className="w-4 h-4 text-sky-600" />
+          <div className="text-xs text-slate-500 font-medium flex items-center gap-1.5 bg-teal-50 text-teal-800 px-3 py-1.5 rounded-full border border-teal-100">
+            <ShieldCheck className="w-4 h-4 text-teal-600" />
             <span>ใบแจ้งหนี้ถูกปรับเป็น "รอรับชำระ" แล้วอัตโนมัติ</span>
           </div>
           <button 
             onClick={handlePrint} 
-            className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-lg shadow-sm transition"
+            className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 rounded-lg shadow-sm transition"
           >
             <Printer className="w-4 h-4" />
             พิมพ์เอกสาร
@@ -458,17 +458,17 @@ function BillingNoteContent() {
                 {company.logoUrl ? (
                   <img src={company.logoUrl} alt="Company Logo" className="w-full h-full object-contain" />
                 ) : (
-                  // Custom clean fallback logo matching "EXPERT BODY PAINT" theme
+                  // Custom clean fallback logo matching "SSM" theme
                   <svg className="w-12 h-12" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M20 55C20 55 24 45 40 40C56 35 78 40 85 45C92 50 90 55 90 55H20Z" fill="#0284c7" />
+                    <path d="M20 55C20 55 24 45 40 40C56 35 78 40 85 45C92 50 90 55 90 55H20Z" fill="#0d9488" />
                     <circle cx="35" cy="55" r="8" fill="#f97316" stroke="white" strokeWidth="2" />
                     <circle cx="75" cy="55" r="8" fill="#f97316" stroke="white" strokeWidth="2" />
-                    <text x="50%" y="85" dominantBaseline="middle" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a" fontFamily="sans-serif">EXPERT</text>
+                    <text x="50%" y="85" dominantBaseline="middle" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a" fontFamily="sans-serif">SSM</text>
                   </svg>
                 )}
               </div>
               <div>
-                <h1 className="text-lg font-bold text-slate-800">EXPERT BODY PAINT</h1>
+                <h1 className="text-lg font-bold text-slate-800">SSM</h1>
                 <p className="text-[10px] text-slate-400 font-semibold tracking-wider">CO., LTD.</p>
               </div>
             </div>
@@ -477,7 +477,7 @@ function BillingNoteContent() {
             <div className="text-right">
               <div className="text-xs text-slate-500 font-medium no-print">หน้า 1/1 (ต้นฉบับ)</div>
               <div className="text-xs text-slate-700 font-semibold hidden print:block">หน้า 1/1 (ต้นฉบับ)</div>
-              <h2 className="text-3xl font-bold text-[#0284c7] tracking-wide mt-1">ใบวางบิล</h2>
+              <h2 className="text-3xl font-bold text-[#0d9488] tracking-wide mt-1">ใบวางบิล</h2>
             </div>
           </div>
 
@@ -590,8 +590,8 @@ function BillingNoteContent() {
               </div>
             </div>
 
-            {/* Document Metadata Panel (Styled Light Blue Box) */}
-            <div className="bg-[#e0f2fe]/60 border border-sky-100 rounded-xl p-4 space-y-2 text-xs print:bg-[#e0f2fe]/30">
+            {/* Document Metadata Panel (Styled Light Teal Box) */}
+            <div className="bg-[#ccfbf1]/60 border border-teal-100 rounded-xl p-4 space-y-2 text-xs print:bg-[#ccfbf1]/30">
               <div className="grid grid-cols-[90px_1fr] items-baseline gap-1.5">
                 <span className="font-semibold text-slate-800">เลขที่เอกสาร :</span>
                 <input 
@@ -682,7 +682,7 @@ function BillingNoteContent() {
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left border-collapse">
               <thead>
-                <tr className="bg-[#e0f2fe] text-slate-800 border-b border-sky-200 font-semibold print:bg-[#e0f2fe]/40">
+                <tr className="bg-[#ccfbf1] text-slate-800 border-b border-teal-200 font-semibold print:bg-[#ccfbf1]/40">
                   <th className="py-2.5 px-3 text-center w-10">#</th>
                   <th className="py-2.5 px-3">เลขที่เอกสาร</th>
                   <th className="py-2.5 px-3 text-center w-24">วันที่เอกสาร</th>
@@ -784,17 +784,17 @@ function BillingNoteContent() {
                 </div>
               </div>
 
-              {/* Right blue box */}
-              <div className="bg-sky-50/60 border border-sky-100/80 rounded-lg p-4 space-y-2.5 text-xs print:bg-sky-50/10 print:border-slate-300">
+              {/* Right teal box */}
+              <div className="bg-teal-50/60 border border-teal-100/80 rounded-lg p-4 space-y-2.5 text-xs print:bg-teal-50/10 print:border-slate-300">
                 <div className="flex justify-between items-center">
                   <span className="text-slate-600 font-semibold">จำนวนเงินทั้งสิ้น</span>
-                  <span className="text-base font-bold text-sky-900 print:text-black">{formatCurrency(grandTotalAmount)} บาท</span>
+                  <span className="text-base font-bold text-teal-900 print:text-black">{formatCurrency(grandTotalAmount)} บาท</span>
                 </div>
-                <div className="flex justify-between border-t border-sky-100 pt-2">
+                <div className="flex justify-between border-t border-teal-100 pt-2">
                   <span className="text-slate-500">จำนวนเงินที่ถูกหัก ณ ที่จ่าย</span>
                   <span className="font-semibold text-slate-700">{formatCurrency(totalWht)} บาท</span>
                 </div>
-                <div className="flex justify-between font-bold text-sky-900 border-t border-sky-200 pt-2 text-sm print:text-black">
+                <div className="flex justify-between font-bold text-teal-900 border-t border-teal-200 pt-2 text-sm print:text-black">
                   <span>จำนวนเงินที่ชำระ</span>
                   <span>{formatCurrency(netAmount)} บาท</span>
                 </div>

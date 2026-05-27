@@ -29,7 +29,7 @@ function AIField({
 }) {
   const [edited, setEdited] = useState(false)
   const state: ConfState = edited ? 'edited' : confidence >= 85 ? 'ai-high' : 'ai-low'
-  const borderColor = isManual ? 'border-gray-300 focus-within:border-[#1d4ed8]' : state === 'ai-high' ? 'border-emerald-300 focus-within:ring-emerald-200' : state === 'ai-low' ? 'border-amber-300 focus-within:ring-amber-200' : 'border-gray-300'
+  const borderColor = isManual ? 'border-gray-300 focus-within:border-[#0d9488]' : state === 'ai-high' ? 'border-emerald-300 focus-within:ring-emerald-200' : state === 'ai-low' ? 'border-amber-300 focus-within:ring-amber-200' : 'border-gray-300'
 
   return (
     <div className="space-y-1">
@@ -286,22 +286,22 @@ export default function NewClaimPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card className="cursor-pointer hover:shadow-lg hover:border-[#1d4ed8] transition-all duration-300 group" onClick={() => setStep('upload')}>
+          <Card className="cursor-pointer hover:shadow-lg hover:border-[#0d9488] transition-all duration-300 group" onClick={() => setStep('upload')}>
             <CardContent className="p-8 text-center">
-              <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-[#1d4ed8] to-[#3b82f6] flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
+              <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-[#0d9488] to-[#2dd4bf] flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
                 <Sparkles className="w-7 h-7 text-white" />
               </div>
               <h3 className="text-lg font-semibold text-[#0f172a] mb-2">AI อ่านเอกสาร</h3>
               <p className="text-sm text-[#475569] mb-4">อัพโหลดภาพหรือ PDF เอกสาร Claim<br/>AI จะช่วยกรอกข้อมูลให้อัตโนมัติ</p>
               <div className="flex flex-wrap justify-center gap-1.5">
                 {['JPG', 'PNG', 'PDF', 'HEIC'].map(f => (
-                  <span key={f} className="px-2 py-0.5 rounded bg-[#eff6ff] text-[#1d4ed8] text-[10px] font-medium">{f}</span>
+                  <span key={f} className="px-2 py-0.5 rounded bg-[#eff6ff] text-[#0d9488] text-[10px] font-medium">{f}</span>
                 ))}
               </div>
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-lg hover:border-[#1d4ed8] transition-all duration-300 group" onClick={startManual}>
+          <Card className="cursor-pointer hover:shadow-lg hover:border-[#0d9488] transition-all duration-300 group" onClick={startManual}>
             <CardContent className="p-8 text-center">
               <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-[#475569] to-[#64748b] flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
                 <FileText className="w-7 h-7 text-white" />
@@ -384,7 +384,7 @@ export default function NewClaimPage() {
                 onDrop={handleDropExcel}
                 className={cn(
                   "border-2 border-dashed rounded-2xl p-12 text-center transition-all duration-300 cursor-pointer",
-                  dragOver ? "border-[#1d4ed8] bg-[#eff6ff] scale-[1.01]" : "border-gray-300 hover:border-[#1d4ed8] hover:bg-[#f8faff]"
+                  dragOver ? "border-[#0d9488] bg-[#eff6ff] scale-[1.01]" : "border-gray-300 hover:border-[#0d9488] hover:bg-[#f8faff]"
                 )}
                 onClick={() => document.getElementById('excel-upload')?.click()}
               >
@@ -438,7 +438,7 @@ export default function NewClaimPage() {
                 <div className="flex gap-3 justify-end border-t pt-4">
                   <Button variant="outline" onClick={() => setImportResult(null)}>นำเข้าไฟล์อื่น</Button>
                   <Link href="/claims">
-                    <Button className="bg-[#1d4ed8] hover:bg-[#1d4ed8]/90 text-white">ไปที่รายการ Claim ทั้งหมด</Button>
+                    <Button className="bg-[#0d9488] hover:bg-[#0d9488]/90 text-white">ไปที่รายการ Claim ทั้งหมด</Button>
                   </Link>
                 </div>
               </div>
@@ -474,11 +474,11 @@ export default function NewClaimPage() {
               onDrop={handleDrop}
               className={cn(
                 "border-2 border-dashed rounded-2xl p-12 text-center transition-all duration-300 cursor-pointer",
-                dragOver ? "border-[#1d4ed8] bg-[#eff6ff] scale-[1.01]" : "border-gray-300 hover:border-[#1d4ed8] hover:bg-[#f8faff]"
+                dragOver ? "border-[#0d9488] bg-[#eff6ff] scale-[1.01]" : "border-gray-300 hover:border-[#0d9488] hover:bg-[#f8faff]"
               )}
               onClick={() => document.getElementById('file-upload')?.click()}
             >
-              <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-[#1d4ed8] to-[#3b82f6] flex items-center justify-center mb-4 shadow-lg">
+              <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-[#0d9488] to-[#2dd4bf] flex items-center justify-center mb-4 shadow-lg">
                 <Upload className="w-7 h-7 text-white" />
               </div>
               <h3 className="text-lg font-semibold text-[#0f172a] mb-2">ลากไฟล์มาวางที่นี่</h3>
@@ -488,7 +488,7 @@ export default function NewClaimPage() {
             </div>
 
             <div className="mt-6 flex items-center gap-3 text-sm text-[#475569]">
-              <Sparkles className="w-5 h-5 text-[#1d4ed8]" />
+              <Sparkles className="w-5 h-5 text-[#0d9488]" />
               <span>AI จะอ่านเอกสารและกรอกข้อมูลให้อัตโนมัติ — คุณสามารถแก้ไขทุก field ได้ภายหลัง</span>
             </div>
           </CardContent>
@@ -502,7 +502,7 @@ export default function NewClaimPage() {
       <div className="max-w-lg mx-auto mt-24 animate-fade-in">
         <Card>
           <CardContent className="p-10 text-center">
-            <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-[#1d4ed8] to-[#3b82f6] flex items-center justify-center mb-6 animate-pulse-soft shadow-xl">
+            <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-[#0d9488] to-[#2dd4bf] flex items-center justify-center mb-6 animate-pulse-soft shadow-xl">
               <Sparkles className="w-9 h-9 text-white" />
             </div>
             <h2 className="text-xl font-bold text-[#0f172a] mb-6">AI กำลังอ่านเอกสาร</h2>
@@ -512,7 +512,7 @@ export default function NewClaimPage() {
                   {i < processingStep ? (
                     <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
                   ) : i === processingStep ? (
-                    <Loader2 className="w-5 h-5 text-[#1d4ed8] animate-spin flex-shrink-0" />
+                    <Loader2 className="w-5 h-5 text-[#0d9488] animate-spin flex-shrink-0" />
                   ) : (
                     <div className="w-5 h-5 rounded-full border-2 border-gray-200 flex-shrink-0" />
                   )}
@@ -736,11 +736,11 @@ export default function NewClaimPage() {
                   {labors.map((l: any, i: number) => (
                     <tr key={i} className="border-b border-gray-50 hover:bg-[#f8faff]">
                       <td className="p-3 text-[#94a3b8]">{i + 1}</td>
-                      <td className="p-3"><input className={cn("w-full bg-white border rounded px-2 py-1.5 text-sm outline-none focus:border-[#1d4ed8] focus:ring-1 focus:ring-[#1d4ed8]/20 transition-all shadow-sm", !l.description.value?.trim() ? "border-red-500 focus:border-red-500 focus:ring-red-200" : isManualMode ? "border-gray-200" : "border-blue-200 hover:border-blue-300")} value={l.description.value} onChange={e => updateLaborReview(i, 'description', e.target.value)} /></td>
-                      <td className="p-3"><input className={cn("w-24 bg-white border rounded px-2 py-1.5 text-sm outline-none focus:border-[#1d4ed8] focus:ring-1 focus:ring-[#1d4ed8]/20 transition-all shadow-sm", isManualMode ? "border-gray-200" : "border-blue-200 hover:border-blue-300")} value={l.damageLevel.value} onChange={e => updateLaborReview(i, 'damageLevel', e.target.value)} /></td>
-                      <td className="p-3 text-right"><input type="text" inputMode="decimal" className={cn("w-16 bg-white border rounded px-2 py-1.5 text-sm outline-none text-right focus:border-[#1d4ed8] focus:ring-1 focus:ring-[#1d4ed8]/20 transition-all shadow-sm", isManualMode ? "border-gray-200" : "border-blue-200 hover:border-blue-300")} value={l.discountPct.value} onChange={e => updateLaborReview(i, 'discountPct', e.target.value)} /></td>
-                      <td className="p-3 text-right"><input type="text" inputMode="decimal" className={cn("w-24 bg-white border rounded px-2 py-1.5 text-sm outline-none text-right focus:border-[#1d4ed8] focus:ring-1 focus:ring-[#1d4ed8]/20 transition-all shadow-sm", isManualMode ? "border-gray-200" : "border-blue-200 hover:border-blue-300")} value={l.priceOffer.value} onChange={e => updateLaborReview(i, 'priceOffer', e.target.value)} /></td>
-                      <td className="p-3 text-right font-semibold"><input type="text" inputMode="decimal" className={cn("w-24 border rounded px-2 py-1.5 text-sm outline-none text-right font-semibold text-[#1d4ed8] focus:bg-white focus:border-[#1d4ed8] focus:ring-1 focus:ring-[#1d4ed8]/20 transition-all shadow-sm", isManualMode ? "bg-white border-gray-200" : "bg-blue-50/50 border-blue-200 hover:border-blue-300")} value={l.priceApprove.value} onChange={e => updateLaborReview(i, 'priceApprove', e.target.value)} /></td>
+                      <td className="p-3"><input className={cn("w-full bg-white border rounded px-2 py-1.5 text-sm outline-none focus:border-[#0d9488] focus:ring-1 focus:ring-[#0d9488]/20 transition-all shadow-sm", !l.description.value?.trim() ? "border-red-500 focus:border-red-500 focus:ring-red-200" : isManualMode ? "border-gray-200" : "border-blue-200 hover:border-blue-300")} value={l.description.value} onChange={e => updateLaborReview(i, 'description', e.target.value)} /></td>
+                      <td className="p-3"><input className={cn("w-24 bg-white border rounded px-2 py-1.5 text-sm outline-none focus:border-[#0d9488] focus:ring-1 focus:ring-[#0d9488]/20 transition-all shadow-sm", isManualMode ? "border-gray-200" : "border-blue-200 hover:border-blue-300")} value={l.damageLevel.value} onChange={e => updateLaborReview(i, 'damageLevel', e.target.value)} /></td>
+                      <td className="p-3 text-right"><input type="text" inputMode="decimal" className={cn("w-16 bg-white border rounded px-2 py-1.5 text-sm outline-none text-right focus:border-[#0d9488] focus:ring-1 focus:ring-[#0d9488]/20 transition-all shadow-sm", isManualMode ? "border-gray-200" : "border-blue-200 hover:border-blue-300")} value={l.discountPct.value} onChange={e => updateLaborReview(i, 'discountPct', e.target.value)} /></td>
+                      <td className="p-3 text-right"><input type="text" inputMode="decimal" className={cn("w-24 bg-white border rounded px-2 py-1.5 text-sm outline-none text-right focus:border-[#0d9488] focus:ring-1 focus:ring-[#0d9488]/20 transition-all shadow-sm", isManualMode ? "border-gray-200" : "border-blue-200 hover:border-blue-300")} value={l.priceOffer.value} onChange={e => updateLaborReview(i, 'priceOffer', e.target.value)} /></td>
+                      <td className="p-3 text-right font-semibold"><input type="text" inputMode="decimal" className={cn("w-24 border rounded px-2 py-1.5 text-sm outline-none text-right font-semibold text-[#0d9488] focus:bg-white focus:border-[#0d9488] focus:ring-1 focus:ring-[#0d9488]/20 transition-all shadow-sm", isManualMode ? "bg-white border-gray-200" : "bg-blue-50/50 border-blue-200 hover:border-blue-300")} value={l.priceApprove.value} onChange={e => updateLaborReview(i, 'priceApprove', e.target.value)} /></td>
                       <td className="p-3"><button onClick={() => removeLaborReview(i)} className="text-gray-400 hover:text-red-500"><Trash2 className="w-4 h-4" /></button></td>
                     </tr>
                   ))}
@@ -752,9 +752,9 @@ export default function NewClaimPage() {
 
         {/* Parts Master Review Section (Only AI) */}
         {!isManualMode && parts.length > 0 && (
-          <Card className="border-[#1d4ed8] shadow-sm">
+          <Card className="border-[#0d9488] shadow-sm">
             <CardHeader className="bg-[#eff6ff] rounded-t-xl border-b border-blue-100 pb-4">
-              <CardTitle className="text-base flex items-center gap-2 text-[#1d4ed8]">
+              <CardTitle className="text-base flex items-center gap-2 text-[#0d9488]">
                 <Package className="w-5 h-5" />
                 รายการอะไหล่ — ตรวจสอบข้อมูล Master
               </CardTitle>
@@ -824,10 +824,10 @@ export default function NewClaimPage() {
                               <div className="flex items-center gap-3 pt-2">
                                 <span className="font-medium text-[#0f172a]">บันทึกลง Master?</span>
                                 <label className="flex items-center gap-1.5 cursor-pointer">
-                                  <input type="radio" name={`master-${i}`} defaultChecked className="text-[#1d4ed8]" /> ใช่
+                                  <input type="radio" name={`master-${i}`} defaultChecked className="text-[#0d9488]" /> ใช่
                                 </label>
                                 <label className="flex items-center gap-1.5 cursor-pointer">
-                                  <input type="radio" name={`master-${i}`} className="text-[#1d4ed8]" /> ไม่ใช่
+                                  <input type="radio" name={`master-${i}`} className="text-[#0d9488]" /> ไม่ใช่
                                 </label>
                               </div>
                             </div>
@@ -873,14 +873,14 @@ export default function NewClaimPage() {
                   {parts.map((p: any, i: number) => (
                     <tr key={i} className="border-b border-gray-50 hover:bg-[#f8faff]">
                       <td className="p-3 text-[#94a3b8]">{i + 1}</td>
-                      <td className="p-3"><input className={cn("w-28 bg-white border rounded px-2 py-1.5 outline-none font-mono text-xs focus:border-[#1d4ed8] focus:ring-1 focus:ring-[#1d4ed8]/20 transition-all shadow-sm", isManualMode ? "border-gray-200" : "border-blue-200 hover:border-blue-300")} value={p.partNo.value} onChange={e => updatePartReview(i, 'partNo', e.target.value)} /></td>
-                      <td className="p-3"><input className={cn("w-32 bg-white border rounded px-2 py-1.5 text-sm outline-none focus:border-[#1d4ed8] focus:ring-1 focus:ring-[#1d4ed8]/20 transition-all shadow-sm", !p.partName.value?.trim() ? "border-red-500 focus:border-red-500 focus:ring-red-200" : isManualMode ? "border-gray-200" : "border-blue-200 hover:border-blue-300")} value={p.partName.value} onChange={e => updatePartReview(i, 'partName', e.target.value)} list="parts-master-list" /></td>
-                      <td className="p-3 text-right"><input type="text" inputMode="decimal" className={cn("w-24 bg-white border rounded px-2 py-1.5 text-sm outline-none text-right focus:border-[#1d4ed8] focus:ring-1 focus:ring-[#1d4ed8]/20 transition-all shadow-sm", isManualMode ? "border-gray-200" : "border-blue-200 hover:border-blue-300")} value={p.priceFull.value} onChange={e => updatePartReview(i, 'priceFull', e.target.value)} /></td>
-                      <td className="p-3 text-center"><input type="text" inputMode="numeric" className={cn("w-16 bg-white border rounded px-2 py-1.5 text-sm outline-none text-center focus:border-[#1d4ed8] focus:ring-1 focus:ring-[#1d4ed8]/20 transition-all shadow-sm", isManualMode ? "border-gray-200" : "border-blue-200 hover:border-blue-300")} value={p.quantity.value} onChange={e => updatePartReview(i, 'quantity', e.target.value)} /></td>
-                      <td className="p-3"><input className={cn("w-20 bg-white border rounded px-2 py-1.5 text-sm outline-none focus:border-[#1d4ed8] focus:ring-1 focus:ring-[#1d4ed8]/20 transition-all shadow-sm", isManualMode ? "border-gray-200" : "border-blue-200 hover:border-blue-300")} value={p.damageType.value} onChange={e => updatePartReview(i, 'damageType', e.target.value)} /></td>
-                      <td className="p-3 text-right font-semibold"><input type="text" inputMode="decimal" className={cn("w-24 border rounded px-2 py-1.5 text-sm outline-none text-right font-semibold text-[#1d4ed8] focus:bg-white focus:border-[#1d4ed8] focus:ring-1 focus:ring-[#1d4ed8]/20 transition-all shadow-sm", isManualMode ? "bg-white border-gray-200" : "bg-blue-50/50 border-blue-200 hover:border-blue-300")} value={p.priceApprove.value} onChange={e => updatePartReview(i, 'priceApprove', e.target.value)} /></td>
+                      <td className="p-3"><input className={cn("w-28 bg-white border rounded px-2 py-1.5 outline-none font-mono text-xs focus:border-[#0d9488] focus:ring-1 focus:ring-[#0d9488]/20 transition-all shadow-sm", isManualMode ? "border-gray-200" : "border-blue-200 hover:border-blue-300")} value={p.partNo.value} onChange={e => updatePartReview(i, 'partNo', e.target.value)} /></td>
+                      <td className="p-3"><input className={cn("w-32 bg-white border rounded px-2 py-1.5 text-sm outline-none focus:border-[#0d9488] focus:ring-1 focus:ring-[#0d9488]/20 transition-all shadow-sm", !p.partName.value?.trim() ? "border-red-500 focus:border-red-500 focus:ring-red-200" : isManualMode ? "border-gray-200" : "border-blue-200 hover:border-blue-300")} value={p.partName.value} onChange={e => updatePartReview(i, 'partName', e.target.value)} list="parts-master-list" /></td>
+                      <td className="p-3 text-right"><input type="text" inputMode="decimal" className={cn("w-24 bg-white border rounded px-2 py-1.5 text-sm outline-none text-right focus:border-[#0d9488] focus:ring-1 focus:ring-[#0d9488]/20 transition-all shadow-sm", isManualMode ? "border-gray-200" : "border-blue-200 hover:border-blue-300")} value={p.priceFull.value} onChange={e => updatePartReview(i, 'priceFull', e.target.value)} /></td>
+                      <td className="p-3 text-center"><input type="text" inputMode="numeric" className={cn("w-16 bg-white border rounded px-2 py-1.5 text-sm outline-none text-center focus:border-[#0d9488] focus:ring-1 focus:ring-[#0d9488]/20 transition-all shadow-sm", isManualMode ? "border-gray-200" : "border-blue-200 hover:border-blue-300")} value={p.quantity.value} onChange={e => updatePartReview(i, 'quantity', e.target.value)} /></td>
+                      <td className="p-3"><input className={cn("w-20 bg-white border rounded px-2 py-1.5 text-sm outline-none focus:border-[#0d9488] focus:ring-1 focus:ring-[#0d9488]/20 transition-all shadow-sm", isManualMode ? "border-gray-200" : "border-blue-200 hover:border-blue-300")} value={p.damageType.value} onChange={e => updatePartReview(i, 'damageType', e.target.value)} /></td>
+                      <td className="p-3 text-right font-semibold"><input type="text" inputMode="decimal" className={cn("w-24 border rounded px-2 py-1.5 text-sm outline-none text-right font-semibold text-[#0d9488] focus:bg-white focus:border-[#0d9488] focus:ring-1 focus:ring-[#0d9488]/20 transition-all shadow-sm", isManualMode ? "bg-white border-gray-200" : "bg-blue-50/50 border-blue-200 hover:border-blue-300")} value={p.priceApprove.value} onChange={e => updatePartReview(i, 'priceApprove', e.target.value)} /></td>
                       <td className="p-3 text-center">
-                        <input type="checkbox" checked={p.requireReturn.value} onChange={e => updatePartReview(i, 'requireReturn', e.target.checked)} className="w-4 h-4 rounded border-gray-300 text-[#1d4ed8] focus:ring-[#1d4ed8]" />
+                        <input type="checkbox" checked={p.requireReturn.value} onChange={e => updatePartReview(i, 'requireReturn', e.target.checked)} className="w-4 h-4 rounded border-gray-300 text-[#0d9488] focus:ring-[#0d9488]" />
                       </td>
                       <td className="p-3"><button onClick={() => removePartReview(i)} className="text-gray-400 hover:text-red-500"><Trash2 className="w-4 h-4" /></button></td>
                     </tr>

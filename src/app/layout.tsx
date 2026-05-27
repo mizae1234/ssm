@@ -3,8 +3,8 @@ import "./globals.css"
 import ClientLayout from "@/components/client-layout"
 
 export const metadata: Metadata = {
-  title: "EXPERT BODY & PAINT Management System",
-  description: "ระบบจัดการ Claim ประกันภัยรถยนต์ครบวงจร",
+  title: "SSM Management System",
+  description: "ระบบจัดการ Claim ประกันภัยรถยนต์ครบวงจร SSM",
 }
 
 export default function RootLayout({

@@ -6,7 +6,7 @@ import { ClaimTabProps } from './types'
 export default function PnLTab({ arReceived, apVendor, grossProfit, margin }: ClaimTabProps) {
   return (
     <Card>
-      <CardHeader><CardTitle className="text-base flex items-center gap-2"><TrendingUp className="w-5 h-5 text-[#1d4ed8]" />P&L Summary</CardTitle></CardHeader>
+      <CardHeader><CardTitle className="text-base flex items-center gap-2"><TrendingUp className="w-5 h-5 text-[#0d9488]" />P&L Summary</CardTitle></CardHeader>
       <CardContent>
         <div className="max-w-md mx-auto space-y-4">
           {[
@@ -19,7 +19,7 @@ export default function PnLTab({ arReceived, apVendor, grossProfit, margin }: Cl
               <span className={`font-semibold ${item.color}`}>฿{formatCurrency(item.value)}</span>
             </div>
           ))}
-          <div className="flex justify-between py-3 border-t-2 border-[#1d4ed8]">
+          <div className="flex justify-between py-3 border-t-2 border-[#0d9488]">
             <span className="font-semibold text-[#0f172a]">Gross Profit</span>
             <span className={`text-xl font-bold ${grossProfit >= 0 ? 'text-green-600' : 'text-red-500'}`}>
               ฿{formatCurrency(grossProfit)}

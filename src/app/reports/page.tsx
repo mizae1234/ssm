@@ -267,7 +267,7 @@ export default function ReportsPage() {
                         return (
                           <div key={item.month} className="text-center">
                             <div className="h-[140px] flex items-end justify-center gap-1">
-                              <div className="w-5 bg-gradient-to-t from-[#1d4ed8] to-[#3b82f6] rounded-t transition-all" style={{ height: arH }} title={`AR: ${formatCurrency(item.ar)}`} />
+                              <div className="w-5 bg-gradient-to-t from-[#0d9488] to-[#2dd4bf] rounded-t transition-all" style={{ height: arH }} title={`AR: ${formatCurrency(item.ar)}`} />
                               <div className="w-5 bg-gradient-to-t from-red-400 to-red-300 rounded-t transition-all" style={{ height: apH }} title={`AP: ${formatCurrency(item.ap)}`} />
                             </div>
                             <p className="text-xs font-medium mt-2 text-[#475569]">{item.month}</p>
@@ -276,7 +276,7 @@ export default function ReportsPage() {
                       })}
                     </div>
                     <div className="flex items-center gap-6 text-xs text-[#475569]">
-                      <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-[#1d4ed8]" />AR (รายรับ)</div>
+                      <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-[#0d9488]" />AR (รายรับ)</div>
                       <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-red-400" />AP (รายจ่าย)</div>
                     </div>
                   </div>
@@ -612,7 +612,7 @@ export default function ReportsPage() {
                       {filteredIE.map((ie, i) => (
                         <TableRow key={ie.claimId} className="hover:bg-blue-50/30">
                           <TableCell className="text-xs text-[#94a3b8]">{i + 1}</TableCell>
-                          <TableCell className="font-mono text-xs font-medium text-[#1d4ed8]">{ie.claimNo}</TableCell>
+                          <TableCell className="font-mono text-xs font-medium text-[#0d9488]">{ie.claimNo}</TableCell>
                           <TableCell className="text-xs">{ie.carPlate}</TableCell>
                           <TableCell className="text-xs">{ie.insurance}</TableCell>
                           <TableCell className="text-xs">{formatDate(ie.date)}</TableCell>
@@ -629,7 +629,7 @@ export default function ReportsPage() {
                         </TableRow>
                       ))}
                       {/* Summary Row */}
-                      <TableRow className="bg-[#f0f4ff] font-semibold border-t-2 border-[#1d4ed8]">
+                      <TableRow className="bg-[#f0f4ff] font-semibold border-t-2 border-[#0d9488]">
                         <TableCell></TableCell>
                         <TableCell className="text-xs">รวมทั้งหมด</TableCell>
                         <TableCell></TableCell>

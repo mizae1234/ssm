@@ -2,8 +2,8 @@ import { CompanyProfile, DocumentSequence } from '@/lib/types'
 
 export const mockCompanyProfile: CompanyProfile = {
   id: 'comp-001',
-  name: 'บริษัท เอ็กซ์เพิร์ท บอดี้แอนด์เพนท์ จำกัด',
-  nameEn: 'Expert Body and Paint Co., Ltd.',
+  name: 'บริษัท ดับเบิ้ลเอสเอ็ม จำกัด',
+  nameEn: 'Double SM Co., Ltd.',
   taxId: '0105568142253',
   branchCode: '00000',
   branchName: 'สำนักงานใหญ่',

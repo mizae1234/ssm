@@ -63,7 +63,7 @@ export default function PartsMasterPage() {
           <h1 className="text-2xl font-bold text-[#0f172a]">Parts Master</h1>
           <p className="text-sm text-[#94a3b8] mt-1">ฐานข้อมูลอะไหล่กลาง สร้างอัตโนมัติจากประวัติการเคลม</p>
         </div>
-        <Button className="bg-[#1d4ed8] hover:bg-[#1e40af]">
+        <Button className="bg-[#0d9488] hover:bg-[#1e40af]">
           <Plus className="w-4 h-4 mr-2" />
           เพิ่มอะไหล่ใหม่
         </Button>
@@ -73,7 +73,7 @@ export default function PartsMasterPage() {
         <Card>
           <CardContent className="p-5 flex items-center gap-4">
             <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
-              <Package className="w-6 h-6 text-[#1d4ed8]" />
+              <Package className="w-6 h-6 text-[#0d9488]" />
             </div>
             <div>
               <p className="text-sm font-medium text-[#475569]">อะไหล่ทั้งหมด</p>
@@ -118,7 +118,7 @@ export default function PartsMasterPage() {
               />
             </div>
             <div className="flex items-center gap-2">
-              <Button variant={filterSource === 'ALL' ? 'default' : 'outline'} onClick={() => setFilterSource('ALL')} className={cn("h-9", filterSource === 'ALL' ? "bg-[#1d4ed8]" : "")}>ทั้งหมด</Button>
+              <Button variant={filterSource === 'ALL' ? 'default' : 'outline'} onClick={() => setFilterSource('ALL')} className={cn("h-9", filterSource === 'ALL' ? "bg-[#0d9488]" : "")}>ทั้งหมด</Button>
               <Button variant={filterSource === 'AUTO' ? 'default' : 'outline'} onClick={() => setFilterSource('AUTO')} className={cn("h-9", filterSource === 'AUTO' ? "bg-emerald-600 hover:bg-emerald-700" : "")}>สร้างออโต้</Button>
               <Button variant={filterSource === 'MANUAL' ? 'default' : 'outline'} onClick={() => setFilterSource('MANUAL')} className={cn("h-9", filterSource === 'MANUAL' ? "bg-gray-600 hover:bg-gray-700" : "")}>คีย์มือ</Button>
             </div>
@@ -189,7 +189,7 @@ export default function PartsMasterPage() {
                       </td>
                       <td className="p-4 text-right">
                         <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                          <ArrowRight className="w-4 h-4 text-[#1d4ed8]" />
+                          <ArrowRight className="w-4 h-4 text-[#0d9488]" />
                         </Button>
                       </td>
                     </tr>
@@ -216,7 +216,7 @@ export default function PartsMasterPage() {
                     pageNum = currentPage - 2 + i
                   }
                   return (
-                    <Button key={pageNum} variant="outline" size="sm" className={currentPage === pageNum ? 'bg-[#f8faff] text-[#1d4ed8] border-[#1d4ed8]' : ''} onClick={() => setCurrentPage(pageNum)}>{pageNum}</Button>
+                    <Button key={pageNum} variant="outline" size="sm" className={currentPage === pageNum ? 'bg-[#f8faff] text-[#0d9488] border-[#0d9488]' : ''} onClick={() => setCurrentPage(pageNum)}>{pageNum}</Button>
                   )
                 })}
                 <Button variant="outline" size="sm" disabled={currentPage >= totalPages} onClick={() => setCurrentPage(p => p + 1)}>ถัดไป</Button>

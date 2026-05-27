@@ -149,10 +149,10 @@ export default function DocumentsTab({ claim, showToast, setErrorModalMsg, setCo
       <Card>
         <CardHeader className="flex flex-row items-center justify-between py-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <Paperclip className="w-5 h-5 text-[#1d4ed8]" />
+            <Paperclip className="w-5 h-5 text-[#0d9488]" />
             เอกสารแนบ ({documents.length})
           </CardTitle>
-          <Button size="sm" className="bg-[#1d4ed8]" onClick={() => setShowUpload(!showUpload)}>
+          <Button size="sm" className="bg-[#0d9488]" onClick={() => setShowUpload(!showUpload)}>
             <Upload className="w-4 h-4 mr-1" />{showUpload ? 'ยกเลิก' : 'อัพโหลดเอกสาร'}
           </Button>
         </CardHeader>
@@ -166,7 +166,7 @@ export default function DocumentsTab({ claim, showToast, setErrorModalMsg, setCo
                   onClick={() => document.getElementById('doc-file-input')?.click()}>
                   {file ? (
                     <div className="flex items-center justify-center gap-2">
-                      <FileText className="w-5 h-5 text-[#1d4ed8]" />
+                      <FileText className="w-5 h-5 text-[#0d9488]" />
                       <span className="text-sm font-medium text-[#0f172a]">{file.name}</span>
                       <Badge className="border-none text-[9px] bg-gray-100 text-gray-600">{formatFileSize(file.size)}</Badge>
                     </div>
@@ -185,7 +185,7 @@ export default function DocumentsTab({ claim, showToast, setErrorModalMsg, setCo
                 <Input className="mt-1" placeholder="เช่น ใบเสร็จค่าซ่อม, รูปถ่ายความเสียหาย" value={description} onChange={e => setDescription(e.target.value)} />
               </div>
               <div className="flex justify-end">
-                <Button className="bg-[#1d4ed8]" disabled={uploading || !file} onClick={handleUpload}>
+                <Button className="bg-[#0d9488]" disabled={uploading || !file} onClick={handleUpload}>
                   {uploading ? 'กำลังอัพโหลด...' : 'อัพโหลด'}
                 </Button>
               </div>
@@ -226,7 +226,7 @@ export default function DocumentsTab({ claim, showToast, setErrorModalMsg, setCo
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="sm" className="text-[#1d4ed8] p-1" onClick={() => window.open(doc.fileUrl)}>
+                        <Button variant="ghost" size="sm" className="text-[#0d9488] p-1" onClick={() => window.open(doc.fileUrl)}>
                           <Download className="w-3.5 h-3.5" />
                         </Button>
                         <Button variant="ghost" size="sm" className="text-red-500 p-1 hover:bg-red-50" onClick={() => handleDelete(doc.id, doc.fileName)}>

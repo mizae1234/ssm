@@ -311,7 +311,7 @@ export default function VendorDetailPage() {
             </CardContent>
           </Card>
 
-          <Button className="w-full bg-[#1d4ed8]" onClick={handleSave} disabled={isSaving}>
+          <Button className="w-full bg-[#0d9488]" onClick={handleSave} disabled={isSaving}>
             {isSaving ? 'กำลังบันทึก...' : 'บันทึกข้อมูล'}
           </Button>
         </div>

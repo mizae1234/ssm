@@ -130,7 +130,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-40 h-screen bg-gradient-to-b from-[#1d4ed8] to-[#1e3a8a] text-white transition-all duration-300 flex flex-col",
+        "fixed left-0 top-0 z-40 h-screen bg-gradient-to-b from-[#0d9488] to-[#115e59] text-white transition-all duration-300 flex flex-col",
         collapsed ? "w-[72px]" : "w-[260px]"
       )}
     >
@@ -141,8 +141,8 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
         </div>
         {!collapsed && (
           <div className="animate-fade-in">
-            <h1 className="text-base font-bold tracking-tight">EXPERT BODY &amp; PAINT</h1>
-            <p className="text-[10px] text-blue-200 font-medium">Management System</p>
+            <h1 className="text-base font-bold tracking-tight">SSM</h1>
+            <p className="text-[10px] text-[#ccfbf1] font-medium">Management System</p>
           </div>
         )}
       </div>
@@ -173,10 +173,10 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                       "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group",
                       isActive
                         ? "bg-white/15 text-white"
-                        : "text-blue-100 hover:bg-white/[0.08] hover:text-white"
+                        : "text-teal-100 hover:bg-white/[0.08] hover:text-white"
                     )}
                   >
-                    <item.icon className={cn("w-5 h-5 flex-shrink-0", isActive ? "text-white" : "text-blue-200 group-hover:text-white")} />
+                    <item.icon className={cn("w-5 h-5 flex-shrink-0", isActive ? "text-white" : "text-teal-200 group-hover:text-white")} />
                     {!collapsed && (
                       <span className="animate-fade-in flex-1">{item.name}</span>
                     )}
@@ -202,7 +202,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
       <div className="px-3 py-3 border-t border-white/10">
         <button
           onClick={onToggle}
-          className="flex items-center justify-center w-full py-2 rounded-lg text-blue-200 hover:text-white hover:bg-white/10 transition-all duration-200"
+          className="flex items-center justify-center w-full py-2 rounded-lg text-teal-200 hover:text-white hover:bg-white/10 transition-all duration-200"
         >
           {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
           {!collapsed && <span className="ml-2 text-sm font-medium">ย่อเมนู</span>}

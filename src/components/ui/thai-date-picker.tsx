@@ -108,7 +108,7 @@ export function ThaiDatePicker({
               "h-9 w-9 p-0 font-normal aria-selected:opacity-100 flex items-center justify-center rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
             ),
             day_selected:
-              "bg-[#1d4ed8] text-white hover:bg-[#1e3a8a] hover:text-white focus:bg-[#1d4ed8] focus:text-white",
+              "bg-[#0d9488] text-white hover:bg-[#1e3a8a] hover:text-white focus:bg-[#0d9488] focus:text-white",
             day_today: "bg-slate-100 text-slate-900 font-semibold",
             day_outside: "text-slate-400 opacity-50",
             day_disabled: "text-slate-400 opacity-50",

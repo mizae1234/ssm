@@ -5,17 +5,17 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-  --primary: #1d4ed8;
-  --primary-hover: #1e40af;
-  --primary-dark: #1e3a8a;
-  --primary-light: #eff6ff;
-  --primary-light-2: #dbeafe;
-  --primary-light-3: #bfdbfe;
-  --surface: #f8faff;
-  --surface-2: #f1f5f9;
-  --surface-3: #e2e8f0;
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
+  --primary: #0d9488;
+  --primary-hover: #0f766e;
+  --primary-dark: #115e59;
+  --primary-light: #f0fdfa;
+  --primary-light-2: #ccfbf1;
+  --primary-light-3: #99f6e4;
+  --surface: #f5fffe;
+  --surface-2: #f0fdfa;
+  --surface-3: #ccfbf1;
+  --text-primary: #042f2e;
+  --text-secondary: #334155;
   --text-muted: #94a3b8;
 }
 
@@ -106,7 +106,7 @@ body {
 
 /* Gradient text */
 .gradient-text {
-  background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+  background: linear-gradient(135deg, #0d9488, #2dd4bf);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

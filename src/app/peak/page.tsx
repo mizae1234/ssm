@@ -323,7 +323,7 @@ export default function PeakSyncPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[#0f172a] flex items-center gap-2">
-            <Cloud className="w-6 h-6 text-[#1d4ed8]" />
+            <Cloud className="w-6 h-6 text-[#0d9488]" />
             PEAK Interface
           </h1>
           <p className="text-sm text-[#94a3b8] mt-1">จัดการส่งข้อมูลบัญชีเข้าสู่ระบบ PEAK Account (Batch Sync)</p>
@@ -363,7 +363,7 @@ export default function PeakSyncPage() {
                     className="pl-9 h-9 bg-gray-50 border-gray-200"
                   />
                 </div>
-                <Button size="sm" className="bg-[#1d4ed8]" disabled={isSyncing} onClick={handleSyncAR}>
+                <Button size="sm" className="bg-[#0d9488]" disabled={isSyncing} onClick={handleSyncAR}>
                   {isSyncing ? <RefreshCw className="w-4 h-4 mr-1.5 animate-spin" /> : <Cloud className="w-4 h-4 mr-1.5" />}
                   Export Excel ({Object.keys(arSelections).filter(k => arSelections[k]).length})
                 </Button>
@@ -408,7 +408,7 @@ export default function PeakSyncPage() {
                       <TableCell className="text-center text-xs font-medium text-[#475569]">
                         {(currentPageAR - 1) * itemsPerPage + index + 1}
                       </TableCell>
-                      <TableCell className="font-mono font-medium text-[#1d4ed8]">
+                      <TableCell className="font-mono font-medium text-[#0d9488]">
                         {editingId === inv.id && editingType === 'AR' ? (
                           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                             <Input
@@ -534,7 +534,7 @@ export default function PeakSyncPage() {
                     className="pl-9 h-9 bg-gray-50 border-gray-200"
                   />
                 </div>
-                <Button size="sm" className="bg-[#1d4ed8]" disabled={isSyncing} onClick={handleSyncAP}>
+                <Button size="sm" className="bg-[#0d9488]" disabled={isSyncing} onClick={handleSyncAP}>
                   {isSyncing ? <RefreshCw className="w-4 h-4 mr-1.5 animate-spin" /> : <Cloud className="w-4 h-4 mr-1.5" />}
                   Export Excel ({Object.keys(apSelections).filter(k => apSelections[k]).length})
                 </Button>
@@ -579,7 +579,7 @@ export default function PeakSyncPage() {
                       <TableCell className="text-center text-xs font-medium text-[#475569]">
                         {(currentPageAP - 1) * itemsPerPage + index + 1}
                       </TableCell>
-                      <TableCell className="font-mono font-medium text-[#1d4ed8]">
+                      <TableCell className="font-mono font-medium text-[#0d9488]">
                         {editingId === inv.id && (editingType === 'SUPPLIER' || editingType === 'GARAGE') ? (
                           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                             <Input
@@ -731,7 +731,7 @@ export default function PeakSyncPage() {
                       <TableCell className="text-center text-xs font-medium text-[#475569]">
                         {(currentPageExpense - 1) * itemsPerPage + index + 1}
                       </TableCell>
-                      <TableCell className="font-mono font-medium text-[#1d4ed8]">{exp.claimNo}</TableCell>
+                      <TableCell className="font-mono font-medium text-[#0d9488]">{exp.claimNo}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className="text-xs font-normal">
                           {categoryLabels[exp.category] || exp.category}

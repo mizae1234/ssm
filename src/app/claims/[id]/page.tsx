@@ -728,7 +728,7 @@ export default function ClaimDetailPage() {
                 <Edit2 className="w-4 h-4 mr-1.5" />แก้ไข
               </Button>
               {nextStatus && (
-                <Button size="sm" className="bg-[#1d4ed8] hover:bg-[#1e40af]" onClick={() => setShowStatusModal(true)}>
+                <Button size="sm" className="bg-[#0d9488] hover:bg-[#1e40af]" onClick={() => setShowStatusModal(true)}>
                   <ChevronRight className="w-4 h-4 mr-1.5" />{nextLabel}
                 </Button>
               )}
@@ -777,7 +777,7 @@ export default function ClaimDetailPage() {
               <p className="text-sm text-[#475569] text-center">ต้องการเปลี่ยนสถานะเป็น &quot;{getStatusLabel(nextStatus)}&quot; ใช่หรือไม่?</p>
               <div className="flex gap-3 justify-end">
                 <Button variant="outline" onClick={() => setShowStatusModal(false)}>ยกเลิก</Button>
-                <Button className="bg-[#1d4ed8]" onClick={async () => { 
+                <Button className="bg-[#0d9488]" onClick={async () => { 
                   try {
                     await fetch(`/api/claims/${claim.id}/status`, {
                       method: 'PATCH',
@@ -844,7 +844,7 @@ export default function ClaimDetailPage() {
             {/* Parts */}
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-base flex items-center gap-2"><Package className="w-5 h-5 text-[#1d4ed8]" />อะไหล่ ({parts.length})</CardTitle>
+                <CardTitle className="text-base flex items-center gap-2"><Package className="w-5 h-5 text-[#0d9488]" />อะไหล่ ({parts.length})</CardTitle>
                 {editMode && (
                   <Button variant="outline" size="sm" onClick={() => setParts([...parts, { id: `new-p-${Date.now()}`, claimId: claim.id, partNo: '', partName: '', priceFullAmt: 0, quantity: 1, damageType: 'เปลี่ยน', discountPct: 0, priceOffer: 0, priceApprove: 0, supplier: '', requireReturn: false, round: 1, status: 'approved' }])}>
                     <Plus className="w-4 h-4 mr-1" />เพิ่ม
@@ -904,7 +904,7 @@ export default function ClaimDetailPage() {
             {/* Labors */}
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-base flex items-center gap-2"><Wrench className="w-5 h-5 text-[#1d4ed8]" />ค่าแรง ({labors.length})</CardTitle>
+                <CardTitle className="text-base flex items-center gap-2"><Wrench className="w-5 h-5 text-[#0d9488]" />ค่าแรง ({labors.length})</CardTitle>
                 {editMode && (
                   <Button variant="outline" size="sm" onClick={() => setLabors([...labors, { id: `new-l-${Date.now()}`, claimId: claim.id, description: '', damageLevel: 'ปานกลาง', discountPct: 0, priceOffer: 0, priceApprove: 0, round: 1, status: 'approved' }])}>
                     <Plus className="w-4 h-4 mr-1" />เพิ่ม
@@ -949,8 +949,8 @@ export default function ClaimDetailPage() {
           {/* ─── Quotation Section ─── */}
           <Card className="mt-6">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2"><FileText className="w-5 h-5 text-[#1d4ed8]" />ใบเสนอราคา (Quotation)</CardTitle>
-              <Button size="sm" className="bg-[#1d4ed8]" onClick={() => {
+              <CardTitle className="text-base flex items-center gap-2"><FileText className="w-5 h-5 text-[#0d9488]" />ใบเสนอราคา (Quotation)</CardTitle>
+              <Button size="sm" className="bg-[#0d9488]" onClick={() => {
                 setQtParts(parts.map(p => ({ ...p, selected: true })))
                 setQtLabors(labors.map(l => ({ ...l, selected: true })))
                 setQtCustomVat('')
@@ -982,7 +982,7 @@ export default function ClaimDetailPage() {
                       <div key={qt.id} className={`border rounded-lg p-4 ${qt.status === 'APPROVED' ? 'border-green-200 bg-green-50/30' : qt.status === 'SUPERSEDED' ? 'border-amber-200 bg-amber-50/30 opacity-60' : 'border-gray-200'}`}>
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
-                            <span className="font-mono font-semibold text-[#1d4ed8]">{qt.quotationNo}</span>
+                            <span className="font-mono font-semibold text-[#0d9488]">{qt.quotationNo}</span>
                             <Badge className={`border-none text-[10px] ${s.bg}`}>{s.label}</Badge>
                           </div>
                           <div className="flex items-center gap-2">
@@ -1008,7 +1008,7 @@ export default function ClaimDetailPage() {
                           <div className="text-sm text-[#475569]">
                             {qt.approvedBy && <span>อนุมัติโดย: <strong>{qt.approvedBy}</strong></span>}
                           </div>
-                          <span className="text-base font-bold text-[#1d4ed8]">฿{formatCurrency(qt.grandTotal)}</span>
+                          <span className="text-base font-bold text-[#0d9488]">฿{formatCurrency(qt.grandTotal)}</span>
                         </div>
                       </div>
                     )
@@ -1314,7 +1314,7 @@ export default function ClaimDetailPage() {
                 {/* ─── ใบแจ้งหนี้ & ขอเบิกเงิน ─── */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2"><CreditCard className="w-5 h-5 text-[#1d4ed8]" />ใบแจ้งหนี้ / ขอเบิกจ่ายเงิน</CardTitle>
+                    <CardTitle className="text-base flex items-center gap-2"><CreditCard className="w-5 h-5 text-[#0d9488]" />ใบแจ้งหนี้ / ขอเบิกจ่ายเงิน</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
@@ -1335,7 +1335,7 @@ export default function ClaimDetailPage() {
                           const typeLabel = hasParts && hasLabors ? 'อะไหล่+ค่าแรง' : inv._type === 'SUPPLIER' ? 'อะไหล่' : 'ค่าแรง'
                           const badgeColor = hasParts && hasLabors ? 'bg-purple-50 text-purple-700' : inv._type === 'SUPPLIER' ? 'bg-blue-50 text-blue-700' : 'bg-orange-50 text-orange-700'
                           return (
-                            <div key={inv.id} className="p-3 bg-[#f8faff] rounded-lg border border-gray-100 hover:border-[#1d4ed8]/30 transition-colors">
+                            <div key={inv.id} className="p-3 bg-[#f8faff] rounded-lg border border-gray-100 hover:border-[#0d9488]/30 transition-colors">
                               <div className="flex items-center justify-between">
                                 <div>
                                   <div className="flex items-center gap-2">
@@ -1351,7 +1351,7 @@ export default function ClaimDetailPage() {
                               </div>
                               <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-100">
                                 {!pr && !inv.apPayment && (
-                                  <Button variant="outline" size="sm" className="h-7 text-xs text-[#1d4ed8] border-[#1d4ed8] hover:bg-blue-50" onClick={() => setPendingPaymentRequest({ type: inv._type === 'SUPPLIER' ? 'AP_VENDOR' : 'AP_GARAGE', invoiceId: inv.id, amount: inv.totalAmount })}><CreditCard className="w-3 h-3 mr-1" />ขอเบิกเงิน</Button>
+                                  <Button variant="outline" size="sm" className="h-7 text-xs text-[#0d9488] border-[#0d9488] hover:bg-blue-50" onClick={() => setPendingPaymentRequest({ type: inv._type === 'SUPPLIER' ? 'AP_VENDOR' : 'AP_GARAGE', invoiceId: inv.id, amount: inv.totalAmount })}><CreditCard className="w-3 h-3 mr-1" />ขอเบิกเงิน</Button>
                                 )}
                                 {pr?.status === 'REJECTED' && (
                                   <Badge className="border-none text-[10px] bg-red-100 text-red-700">ถูกปฏิเสธ: {pr.rejectReason}</Badge>
@@ -1391,7 +1391,7 @@ export default function ClaimDetailPage() {
                                       <span className="text-xs text-[#475569] font-medium flex items-center gap-1">
                                         <FileText className="w-3.5 h-3.5 text-blue-500" /> {name}
                                       </span>
-                                      <Button variant="ghost" size="sm" className="h-6 px-2 text-[11px] text-[#1d4ed8]" onClick={() => window.open(u, '_blank')}>
+                                      <Button variant="ghost" size="sm" className="h-6 px-2 text-[11px] text-[#0d9488]" onClick={() => window.open(u, '_blank')}>
                                         <Download className="w-3 h-3 mr-1" />ดาวน์โหลด
                                       </Button>
                                     </div>
@@ -1432,7 +1432,7 @@ export default function ClaimDetailPage() {
               <Card className="w-full max-w-2xl shadow-2xl max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                 <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Upload className="w-5 h-5" />อัพโหลด Invoice</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
-                  <label className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-[#1d4ed8] transition-colors cursor-pointer block relative">
+                  <label className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-[#0d9488] transition-colors cursor-pointer block relative">
                     <input 
                       type="file" 
                       className="hidden" 
@@ -1529,7 +1529,7 @@ export default function ClaimDetailPage() {
                   </div>
                   <div className="flex gap-3 justify-end">
                     <Button variant="outline" onClick={() => setShowUploadModal(false)}>ยกเลิก</Button>
-                    <Button className="bg-[#1d4ed8]" disabled={isUploadingFile} onClick={async () => {
+                    <Button className="bg-[#0d9488]" disabled={isUploadingFile} onClick={async () => {
                       const selParts = parts.filter(p => uploadMapSelections[p.id])
                       const selLabors = labors.filter(l => uploadMapSelections[l.id])
                       if (!selParts.length && !selLabors.length) { showToast('กรุณาเลือกอย่างน้อย 1 รายการ'); return }
@@ -1668,7 +1668,7 @@ export default function ClaimDetailPage() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh]">
               <div className="p-4 border-b flex justify-between items-center bg-[#f8faff]">
-                <h3 className="font-semibold text-lg text-[#0f172a] flex items-center gap-2"><FileText className="w-5 h-5 text-[#1d4ed8]" />ออกใบเสนอราคา (Quotation)</h3>
+                <h3 className="font-semibold text-lg text-[#0f172a] flex items-center gap-2"><FileText className="w-5 h-5 text-[#0d9488]" />ออกใบเสนอราคา (Quotation)</h3>
                 <Button variant="ghost" size="icon" onClick={() => setShowCreateQuotationModal(false)} className="h-8 w-8 text-[#94a3b8] hover:text-[#0f172a]"><X className="w-4 h-4" /></Button>
               </div>
               <div className="p-4 overflow-y-auto flex-1">
@@ -1732,8 +1732,8 @@ export default function ClaimDetailPage() {
                     <div><span className="text-xs text-[#94a3b8]">VAT 7% (แก้ไขได้)</span><Input type="number" placeholder={String(Math.round(sub * 0.07))} className="h-8 mt-1" value={qtCustomVat} onChange={e => setQtCustomVat(e.target.value)} /></div>
                     <div className="md:col-span-2 text-right"><span className="text-xs text-[#94a3b8]">ยอดรวมทั้งสิ้น (แก้ไขได้)</span>
                       <div className="flex items-center justify-end gap-2 mt-1">
-                        <span className="font-bold text-[#1d4ed8] text-lg">฿</span>
-                        <Input type="number" placeholder={String(sub + vatAmt)} className="h-10 w-40 text-right font-bold text-[#1d4ed8] text-lg" value={qtCustomGrand} onChange={e => setQtCustomGrand(e.target.value)} />
+                        <span className="font-bold text-[#0d9488] text-lg">฿</span>
+                        <Input type="number" placeholder={String(sub + vatAmt)} className="h-10 w-40 text-right font-bold text-[#0d9488] text-lg" value={qtCustomGrand} onChange={e => setQtCustomGrand(e.target.value)} />
                       </div>
                     </div>
                   </div>
@@ -1741,7 +1741,7 @@ export default function ClaimDetailPage() {
               </div>
               <div className="p-4 border-t flex justify-end gap-2 bg-gray-50">
                 <Button variant="outline" onClick={() => setShowCreateQuotationModal(false)}>ยกเลิก</Button>
-                <Button className="bg-[#1d4ed8]" onClick={handleCreateQuotation}>ยืนยันสร้างใบเสนอราคา</Button>
+                <Button className="bg-[#0d9488]" onClick={handleCreateQuotation}>ยืนยันสร้างใบเสนอราคา</Button>
               </div>
             </div>
           </div>
@@ -2008,7 +2008,7 @@ export default function ClaimDetailPage() {
             <div className="p-6 text-center text-[#475569]">{confirmModal.message}</div>
             <div className="p-4 border-t flex justify-end gap-2 bg-gray-50">
               <Button variant="outline" onClick={() => setConfirmModal(null)}>ยกเลิก</Button>
-              <Button className="bg-[#1d4ed8]" onClick={() => { confirmModal.onConfirm(); setConfirmModal(null) }}>ยืนยัน</Button>
+              <Button className="bg-[#0d9488]" onClick={() => { confirmModal.onConfirm(); setConfirmModal(null) }}>ยืนยัน</Button>
             </div>
           </div>
         </div>
@@ -2058,18 +2058,18 @@ export default function ClaimDetailPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setPendingPaymentRequest(null)}>
           <Card className="w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
             <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2"><CreditCard className="w-5 h-5 text-[#1d4ed8]" />สร้างคำขอเบิกจ่ายเงิน</CardTitle>
+              <CardTitle className="text-lg flex items-center gap-2"><CreditCard className="w-5 h-5 text-[#0d9488]" />สร้างคำขอเบิกจ่ายเงิน</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="bg-[#f8faff] border border-blue-200 rounded-lg p-4">
                 <p className="text-xs text-[#94a3b8]">ประเภท</p>
                 <p className="font-medium text-sm">{pendingPaymentRequest.type === 'AP_VENDOR' ? 'จ่ายเงิน Supplier (ค่าอะไหล่)' : 'จ่ายเงินอู่ (ค่าแรง)'}</p>
                 <p className="text-xs text-[#94a3b8] mt-2">ยอดเงิน</p>
-                <p className="font-bold text-lg text-[#1d4ed8]">฿{formatCurrency(pendingPaymentRequest.amount)}</p>
+                <p className="font-bold text-lg text-[#0d9488]">฿{formatCurrency(pendingPaymentRequest.amount)}</p>
               </div>
               <div className="flex gap-3 justify-end">
                 <Button variant="outline" onClick={() => setPendingPaymentRequest(null)}>ยกเลิก</Button>
-                <Button className="bg-[#1d4ed8]" onClick={async () => {
+                <Button className="bg-[#0d9488]" onClick={async () => {
                   await handleCreatePaymentRequest(pendingPaymentRequest.type, pendingPaymentRequest.invoiceId, pendingPaymentRequest.amount)
                   setPendingPaymentRequest(null)
                 }}><CreditCard className="w-4 h-4 mr-1" />ยืนยันขอเบิกเงิน</Button>

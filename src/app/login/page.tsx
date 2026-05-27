@@ -48,20 +48,20 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-tr from-[#1e3a8a] via-[#1d4ed8] to-[#60a5fa] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-tr from-[#115e59] via-[#0d9488] to-[#2dd4bf] flex items-center justify-center p-4">
       {/* Background blobs for depth */}
-      <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-indigo-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse delay-1000" />
+      <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-teal-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" />
+      <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-cyan-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse delay-1000" />
 
       <div className="w-full max-w-md z-10 animate-fade-in">
         <Card className="glass-card shadow-2xl border-white/20">
           <CardHeader className="space-y-3 text-center pb-2">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#1d4ed8] to-[#3b82f6] flex items-center justify-center mx-auto shadow-lg shadow-blue-500/30">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#0d9488] to-[#2dd4bf] flex items-center justify-center mx-auto shadow-lg shadow-teal-500/30">
               <Shield className="w-7 h-7 text-white" />
             </div>
             <div className="space-y-1">
-              <CardTitle className="text-2xl font-bold tracking-tight text-[#0f172a]">EXPERT BODY &amp; PAINT</CardTitle>
-              <p className="text-xs font-semibold uppercase tracking-[2px] text-[#1d4ed8]">Management System</p>
+              <CardTitle className="text-2xl font-bold tracking-tight text-[#042f2e]">SSM</CardTitle>
+              <p className="text-xs font-semibold uppercase tracking-[2px] text-[#0d9488]">Management System</p>
             </div>
           </CardHeader>
           <CardContent className="pt-4">
@@ -91,7 +91,7 @@ export default function LoginPage() {
                     onChange={(e) => setUsername(e.target.value)}
                     required
                     disabled={loading}
-                    className="pl-9 bg-white/70 border-gray-200/80 focus:bg-white focus:ring-[#1d4ed8] focus:border-transparent transition-all"
+                    className="pl-9 bg-white/70 border-gray-200/80 focus:bg-white focus:ring-[#0d9488] focus:border-transparent transition-all"
                   />
                 </div>
               </div>
@@ -107,7 +107,7 @@ export default function LoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     disabled={loading}
-                    className="pl-9 bg-white/70 border-gray-200/80 focus:bg-white focus:ring-[#1d4ed8] focus:border-transparent transition-all"
+                    className="pl-9 bg-white/70 border-gray-200/80 focus:bg-white focus:ring-[#0d9488] focus:border-transparent transition-all"
                   />
                 </div>
               </div>
@@ -115,7 +115,7 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-[#1d4ed8] hover:bg-[#1e40af] text-white font-semibold py-2.5 rounded-xl transition-all shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 mt-2"
+                className="w-full bg-[#0d9488] hover:bg-[#0f766e] text-white font-semibold py-2.5 rounded-xl transition-all shadow-lg shadow-teal-500/25 flex items-center justify-center gap-2 mt-2"
               >
                 {loading ? 'กำลังเข้าสู่ระบบ...' : (
                   <>

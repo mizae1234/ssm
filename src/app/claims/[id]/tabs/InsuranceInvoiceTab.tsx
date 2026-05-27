@@ -117,7 +117,7 @@ export default function InsuranceInvoiceTab({
                       </div>
                     </div>
                     
-                    <Button className="bg-[#1d4ed8] w-full" onClick={() => handleCreateInsuranceInvoice({
+                    <Button className="bg-[#0d9488] w-full" onClick={() => handleCreateInsuranceInvoice({
                       laborTotal: editLabor,
                       partsTotal: editParts,
                       subtotal: sub,

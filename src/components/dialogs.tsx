@@ -29,7 +29,7 @@ export function ConfirmDialog({ open, title, message, confirmLabel = 'ยืน�
         <div className="p-6 text-center text-[#475569]">{message}</div>
         <div className="p-4 border-t flex justify-end gap-2 bg-gray-50">
           <Button variant="outline" onClick={onCancel}>{cancelLabel}</Button>
-          <Button className={isDanger ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-[#1d4ed8]'} onClick={onConfirm}>{confirmLabel}</Button>
+          <Button className={isDanger ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-[#0d9488]'} onClick={onConfirm}>{confirmLabel}</Button>
         </div>
       </div>
     </div>

@@ -10,7 +10,7 @@ import { DashboardSummary, ClaimsByStatus, RevenueByInsurance } from '@/lib/type
 import { Skeleton, SkeletonKPICard, SkeletonBarRow, SkeletonRevenueRow, SkeletonTableRows } from '@/components/ui/skeleton'
 import Link from 'next/link'
 
-const COLORS = ['#1d4ed8', '#3b82f6', '#60a5fa', '#93bbfd', '#bfdbfe', '#dbeafe', '#2563eb', '#1e40af']
+const COLORS = ['#0d9488', '#2dd4bf', '#60a5fa', '#93bbfd', '#bfdbfe', '#dbeafe', '#2563eb', '#1e40af']
 
 export default function DashboardPage() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
@@ -193,7 +193,7 @@ export default function DashboardPage() {
       <Card className="hover:shadow-md transition-all duration-300">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-base">Claims ล่าสุด</CardTitle>
-          <Link href="/claims" className="flex items-center gap-1 text-sm text-[#1d4ed8] hover:text-[#1e40af] font-medium transition-colors">
+          <Link href="/claims" className="flex items-center gap-1 text-sm text-[#0d9488] hover:text-[#1e40af] font-medium transition-colors">
             ดูทั้งหมด <ArrowRight className="w-4 h-4" />
           </Link>
         </CardHeader>
@@ -215,7 +215,7 @@ export default function DashboardPage() {
                 return (
                   <TableRow key={claim.id}>
                     <TableCell>
-                      <Link href={`/claims/${claim.id}`} className="text-[#1d4ed8] hover:underline font-medium">
+                      <Link href={`/claims/${claim.id}`} className="text-[#0d9488] hover:underline font-medium">
                         {claim.claimNo}
                       </Link>
                     </TableCell>

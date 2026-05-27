@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     })
 
     response.cookies.set({
-      name: 'expert-token',
+      name: 'ssm-token',
       value: token,
       httpOnly: true,
       secure: false,

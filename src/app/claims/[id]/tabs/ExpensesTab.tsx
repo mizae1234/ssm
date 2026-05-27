@@ -111,8 +111,8 @@ export default function ExpensesTab({ claim, showToast, setErrorModalMsg, refres
       {/* Expense List */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between py-3">
-          <CardTitle className="text-base flex items-center gap-2"><Receipt className="w-5 h-5 text-[#1d4ed8]" />ค่าใช้จ่ายเพิ่มเติม</CardTitle>
-          <Button size="sm" className="bg-[#1d4ed8]" onClick={() => setShowForm(!showForm)}>
+          <CardTitle className="text-base flex items-center gap-2"><Receipt className="w-5 h-5 text-[#0d9488]" />ค่าใช้จ่ายเพิ่มเติม</CardTitle>
+          <Button size="sm" className="bg-[#0d9488]" onClick={() => setShowForm(!showForm)}>
             <Plus className="w-4 h-4 mr-1" />{showForm ? 'ยกเลิก' : 'เพิ่มรายการ'}
           </Button>
         </CardHeader>
@@ -150,17 +150,17 @@ export default function ExpensesTab({ claim, showToast, setErrorModalMsg, refres
                 <div className="flex items-center gap-4">
                   {/* Billable toggle */}
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked={billable} onChange={e => setBillable(e.target.checked)} className="w-4 h-4 rounded border-gray-300 text-[#1d4ed8] focus:ring-[#1d4ed8]" />
+                    <input type="checkbox" checked={billable} onChange={e => setBillable(e.target.checked)} className="w-4 h-4 rounded border-gray-300 text-[#0d9488] focus:ring-[#0d9488]" />
                     <span className="text-sm text-[#475569]">รวมในใบวางบิลประกัน</span>
                   </label>
                   {/* File upload */}
-                  <label className="flex items-center gap-1.5 text-sm text-[#1d4ed8] cursor-pointer hover:underline">
+                  <label className="flex items-center gap-1.5 text-sm text-[#0d9488] cursor-pointer hover:underline">
                     <Upload className="w-3.5 h-3.5" />
                     {receiptFile ? receiptFile.name : 'แนบหลักฐาน'}
                     <input type="file" className="hidden" accept="image/*,.pdf" onChange={e => setReceiptFile(e.target.files?.[0] || null)} />
                   </label>
                 </div>
-                <Button className="bg-[#1d4ed8]" disabled={saving} onClick={handleSubmit}>
+                <Button className="bg-[#0d9488]" disabled={saving} onClick={handleSubmit}>
                   {saving ? 'กำลังบันทึก...' : 'บันทึก'}
                 </Button>
               </div>
@@ -212,7 +212,7 @@ export default function ExpensesTab({ claim, showToast, setErrorModalMsg, refres
                     </TableCell>
                     <TableCell className="text-center">
                       {exp.receiptUrl ? (
-                        <Button variant="ghost" size="sm" className="text-[#1d4ed8] p-1" onClick={() => window.open(exp.receiptUrl)}>
+                        <Button variant="ghost" size="sm" className="text-[#0d9488] p-1" onClick={() => window.open(exp.receiptUrl)}>
                           <Eye className="w-3.5 h-3.5" />
                         </Button>
                       ) : (
@@ -227,7 +227,7 @@ export default function ExpensesTab({ claim, showToast, setErrorModalMsg, refres
                   </TableRow>
                 ))}
                 {/* Summary row */}
-                <TableRow className="bg-[#f0f4ff] font-semibold border-t-2 border-[#1d4ed8]">
+                <TableRow className="bg-[#f0f4ff] font-semibold border-t-2 border-[#0d9488]">
                   <TableCell colSpan={4} className="text-xs">รวมทั้งหมด ({expenses.length} รายการ)</TableCell>
                   <TableCell className="text-right text-sm">฿{formatCurrency(total)}</TableCell>
                   <TableCell className="text-center text-xs text-green-600">฿{formatCurrency(billableTotal)}</TableCell>

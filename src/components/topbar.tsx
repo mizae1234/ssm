@@ -104,7 +104,7 @@ export default function Topbar() {
           <input
             type="text"
             placeholder="ค้นหา Claim..."
-            className="w-64 h-9 pl-9 pr-4 rounded-lg border border-gray-200 bg-[#f8faff] text-sm focus:outline-none focus:ring-2 focus:ring-[#1d4ed8] focus:border-transparent transition-all duration-200"
+            className="w-64 h-9 pl-9 pr-4 rounded-lg border border-gray-200 bg-[#f8fffe] text-sm focus:outline-none focus:ring-2 focus:ring-[#16a34a] focus:border-transparent transition-all duration-200"
           />
         </div>
 
@@ -120,7 +120,7 @@ export default function Topbar() {
             onClick={() => setDropdownOpen(!dropdownOpen)}
             className="flex items-center gap-2 text-left hover:bg-slate-50 p-1.5 rounded-xl transition-all"
           >
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#1d4ed8] to-[#3b82f6] flex items-center justify-center shadow-inner">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#16a34a] to-[#4ade80] flex items-center justify-center shadow-inner">
               <UserIcon className="w-4 h-4 text-white" />
             </div>
             <div className="hidden sm:block">

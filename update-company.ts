@@ -3,7 +3,7 @@ const prisma = new PrismaClient()
 
 async function main() {
   const companyData = {
-    name: "บริษัท เอ็กซ์เพิร์ท บอดี้แอนด์เพนท์ จำกัด",
+    name: "บริษัท ดับเบิ้ลเอสเอ็ม จำกัด",
     taxId: "0105568142253",
     address: "622 ซ.ลาดพร้าว 47 (สะพาน 2)",
     subDistrict: "สะพานสอง",
@@ -12,7 +12,7 @@ async function main() {
     postalCode: "10310",
     branchCode: "00000",
     branchName: "สำนักงานใหญ่",
-    logoUrl: "/logo_expert.png"
+    logoUrl: "/logo_ssm.png"
   }
 
   // Check if a company profile exists

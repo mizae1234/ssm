@@ -285,7 +285,7 @@ export default function InsuranceDetailPage() {
             </CardContent>
           </Card>
 
-          <Button className="w-full bg-[#1d4ed8]" onClick={handleSave} disabled={isSaving}>
+          <Button className="w-full bg-[#0d9488]" onClick={handleSave} disabled={isSaving}>
             {isSaving ? 'กำลังบันทึก...' : 'บันทึกข้อมูล'}
           </Button>
         </div>
@@ -309,7 +309,7 @@ export default function InsuranceDetailPage() {
                 const sc = getStatusColor(c.status)
                 return (
                   <TableRow key={c.id}>
-                    <TableCell><Link href={`/claims/${c.id}`} className="text-[#1d4ed8] hover:underline font-semibold">{c.claimNo}</Link></TableCell>
+                    <TableCell><Link href={`/claims/${c.id}`} className="text-[#0d9488] hover:underline font-semibold">{c.claimNo}</Link></TableCell>
                     <TableCell>{c.carPlate}</TableCell>
                     <TableCell>{c.insuredName}</TableCell>
                     <TableCell>{formatDate(c.createdAt)}</TableCell>

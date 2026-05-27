@@ -56,7 +56,7 @@ export default function VendorsPage() {
           <Input placeholder="ค้นหาชื่อ Vendor..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
         </div>
         <label className="flex items-center gap-2 text-sm text-[#475569] cursor-pointer bg-white border px-3 py-2 rounded-md hover:bg-gray-50">
-          <input type="checkbox" checked={showMissingPeakOnly} onChange={e => setShowMissingPeakOnly(e.target.checked)} className="rounded border-gray-300 text-[#1d4ed8]" />
+          <input type="checkbox" checked={showMissingPeakOnly} onChange={e => setShowMissingPeakOnly(e.target.checked)} className="rounded border-gray-300 text-[#0d9488]" />
           แสดงเฉพาะที่ยังไม่มี PEAK Code ⚠️
         </label>
       </div>

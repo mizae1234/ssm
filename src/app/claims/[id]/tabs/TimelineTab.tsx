@@ -7,7 +7,7 @@ import { ClaimTabProps } from './types'
 export default function TimelineTab({ claim }: ClaimTabProps) {
   return (
     <Card>
-      <CardHeader><CardTitle className="text-base flex items-center gap-2"><Clock className="w-5 h-5 text-[#1d4ed8]" />Timeline</CardTitle></CardHeader>
+      <CardHeader><CardTitle className="text-base flex items-center gap-2"><Clock className="w-5 h-5 text-[#0d9488]" />Timeline</CardTitle></CardHeader>
       <CardContent>
         <div className="relative pl-8 space-y-6">
           {claim.statusLogs?.map((log: any, i: number) => {

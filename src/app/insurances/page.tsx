@@ -53,7 +53,7 @@ export default function InsurancesPage() {
             <Card key={ins.id} className="hover:shadow-md transition-all duration-300 cursor-pointer">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1d4ed8] to-[#3b82f6] flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0d9488] to-[#2dd4bf] flex items-center justify-center">
                     <Building2 className="w-5 h-5 text-white" />
                   </div>
                   <div className="flex-1 min-w-0">

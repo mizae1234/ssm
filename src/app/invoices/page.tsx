@@ -392,9 +392,9 @@ export default function InvoicesPage() {
                   <TableCell className="text-center text-xs font-medium text-[#475569]">
                     {(currentPage - 1) * itemsPerPage + index + 1}
                   </TableCell>
-                  <TableCell className="font-mono font-medium text-[#1d4ed8]">{inv.invoiceNo}</TableCell>
+                  <TableCell className="font-mono font-medium text-[#0d9488]">{inv.invoiceNo}</TableCell>
                   <TableCell className="text-sm">{inv.claim.insurance.name}</TableCell>
-                  <TableCell><Link href={`/claims/${inv.claimId}`} className="text-[#1d4ed8] hover:underline text-sm">{inv.claim.claimNo}</Link></TableCell>
+                  <TableCell><Link href={`/claims/${inv.claimId}`} className="text-[#0d9488] hover:underline text-sm">{inv.claim.claimNo}</Link></TableCell>
                   <TableCell className="text-sm">{inv.claim.carPlate}</TableCell>
                   <TableCell className="text-sm">{formatDate(inv.invoiceDate)}</TableCell>
                    <TableCell className={`text-sm ${inv.displayStatus === 'OVERDUE' ? 'text-red-600 font-semibold' : ''}`}>

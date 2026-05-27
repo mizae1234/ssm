@@ -93,7 +93,7 @@ export default function ClaimsPage() {
               onClick={() => setStatusFilter(isActive ? '' : status)}
               className={`p-2.5 rounded-xl border text-center transition-all duration-200 ${
                 isActive
-                  ? 'border-[#1d4ed8] bg-[#eff6ff] shadow-sm'
+                  ? 'border-[#0d9488] bg-[#eff6ff] shadow-sm'
                   : 'border-gray-200 bg-white hover:border-gray-300'
               }`}
             >
@@ -156,7 +156,7 @@ export default function ClaimsPage() {
                 return (
                   <TableRow key={claim.id}>
                     <TableCell>
-                      <Link href={`/claims/${claim.id}`} className="text-[#1d4ed8] hover:underline font-semibold">
+                      <Link href={`/claims/${claim.id}`} className="text-[#0d9488] hover:underline font-semibold">
                         {claim.claimNo}
                       </Link>
                     </TableCell>

@@ -144,7 +144,7 @@ export default function PaymentsPage() {
         <TableCell className="text-xs text-[#94a3b8]">{formatDate(pr.createdAt)}</TableCell>
         <TableCell><Badge className={`${typeBadge(pr.requestType)} border-none text-[10px]`}>{typeLabel(pr.requestType)}</Badge></TableCell>
       <TableCell>
-        <a href={`/claims/${pr.claimId}?tab=supplier-inv`} target="_blank" rel="noreferrer" className="font-semibold text-[#1d4ed8] hover:underline">
+        <a href={`/claims/${pr.claimId}?tab=supplier-inv`} target="_blank" rel="noreferrer" className="font-semibold text-[#0d9488] hover:underline">
           {pr.claimNo}
         </a>
       </TableCell>
@@ -201,7 +201,7 @@ export default function PaymentsPage() {
           { label: 'รออนุมัติ', value: pending.length, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
           { label: 'อนุมัติแล้ว', value: approved.length, icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
           { label: 'ถูกปฏิเสธ', value: rejected.length, icon: XCircle, color: 'text-red-500', bg: 'bg-red-50' },
-          { label: 'ยอดรออนุมัติ', value: `฿${formatCurrency(pending.reduce((s, r) => s + r.amount, 0))}`, icon: FileText, color: 'text-[#1d4ed8]', bg: 'bg-blue-50' },
+          { label: 'ยอดรออนุมัติ', value: `฿${formatCurrency(pending.reduce((s, r) => s + r.amount, 0))}`, icon: FileText, color: 'text-[#0d9488]', bg: 'bg-blue-50' },
         ].map((s, i) => (
           <Card key={i} className={s.bg}>
             <CardContent className="p-4 flex items-center gap-3">
@@ -291,7 +291,7 @@ export default function PaymentsPage() {
             <CardContent className="space-y-4">
               <div className="bg-[#f8faff] rounded-lg p-4 space-y-2 text-sm">
                 <div className="flex justify-between"><span className="text-[#94a3b8]">ประเภท</span><span className="font-medium">{typeLabel(activeModal.pr.requestType)}</span></div>
-                <div className="flex justify-between"><span className="text-[#94a3b8]">Claim No.</span><span className="font-semibold text-[#1d4ed8]">{activeModal.pr.claimNo}</span></div>
+                <div className="flex justify-between"><span className="text-[#94a3b8]">Claim No.</span><span className="font-semibold text-[#0d9488]">{activeModal.pr.claimNo}</span></div>
                 <div className="flex justify-between"><span className="text-[#94a3b8]">ทะเบียนรถ</span><span>{activeModal.pr.carPlate}</span></div>
                 <div className="flex justify-between"><span className="text-[#94a3b8]">ผู้รับเงิน</span><span>{activeModal.pr.vendorName || activeModal.pr.garageName || activeModal.pr.insuranceName}</span></div>
                 {activeModal.pr.invoiceNo && (
@@ -307,7 +307,7 @@ export default function PaymentsPage() {
                 <hr />
                 <div className="flex justify-between"><span className="text-[#94a3b8]">ยอดจ่าย</span><span className="text-lg font-bold">฿{formatCurrency(activeModal.pr.amount)}</span></div>
                 <div className="flex justify-between"><span className="text-[#94a3b8]">WHT</span><span>฿{formatCurrency(activeModal.pr.whtAmount)}</span></div>
-                <div className="flex justify-between"><span className="text-[#94a3b8]">ยอดสุทธิ</span><span className="font-bold text-[#1d4ed8]">฿{formatCurrency(activeModal.pr.amount - activeModal.pr.whtAmount)}</span></div>
+                <div className="flex justify-between"><span className="text-[#94a3b8]">ยอดสุทธิ</span><span className="font-bold text-[#0d9488]">฿{formatCurrency(activeModal.pr.amount - activeModal.pr.whtAmount)}</span></div>
                 <div className="flex justify-between"><span className="text-[#94a3b8]">วิธีจ่าย</span><span>{activeModal.pr.method}</span></div>
               </div>
               <div className="space-y-1"><label className="text-xs text-[#94a3b8]">Note (optional)</label><Input value={approveNote} onChange={e => setApproveNote(e.target.value)} placeholder="หมายเหตุเพิ่มเติม" /></div>

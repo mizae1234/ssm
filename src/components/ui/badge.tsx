@@ -7,8 +7,8 @@ function Badge({
   ...props
 }: React.HTMLAttributes<HTMLDivElement> & { variant?: 'default' | 'secondary' | 'destructive' | 'outline' }) {
   const variants: Record<string, string> = {
-    default: 'bg-[#1d4ed8] text-white',
-    secondary: 'bg-[#eff6ff] text-[#1d4ed8]',
+    default: 'bg-[#0d9488] text-white',
+    secondary: 'bg-[#eff6ff] text-[#0d9488]',
     destructive: 'bg-red-100 text-red-700',
     outline: 'border border-gray-300 text-gray-700',
   }

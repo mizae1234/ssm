@@ -1,4 +1,4 @@
-const JWT_SECRET = process.env.JWT_SECRET || 'expert-body-paint-super-secret-key-2026'
+const JWT_SECRET = process.env.JWT_SECRET || 'ssm-super-secret-key-2026'
 
 // Base64Url helpers
 function base64UrlEncode(str: string): string {

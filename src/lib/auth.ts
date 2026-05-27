@@ -23,7 +23,7 @@ export function verifyPassword(password: string, storedHash: string): boolean {
 
 export async function getSession() {
   const cookieStore = cookies()
-  const token = cookieStore.get('expert-token')?.value
+  const token = cookieStore.get('ssm-token')?.value
   if (!token) return null
   
   const payload = await verifyJWT(token)
