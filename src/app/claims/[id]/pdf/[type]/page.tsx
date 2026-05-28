@@ -391,7 +391,7 @@ export default function PDFMockPage() {
             {(po.items || []).map((item: any, i: number) => (
               <tr key={item.id} className="border-b border-gray-200">
                 <td className="py-2 px-2 text-gray-600">{i + 1}</td>
-                <td className="py-2 px-2 font-mono text-xs">{item.partNo}</td>
+                <td className="py-2 px-2 font-mono text-xs">{item.partNo && !/^c[a-z0-9]{24}$/i.test(item.partNo) ? item.partNo : ''}</td>
                 <td className="py-2 px-2">{item.description}</td>
                 <td className="py-2 px-2 text-right">{item.quantity}</td>
                 <td className="py-2 px-2 text-right">{formatCurrency(item.unitPrice)}</td>
@@ -484,7 +484,7 @@ export default function PDFMockPage() {
           const totalPrice = originalFullPrice * gi.quantity * (1 - discountPct / 100)
           return {
             id: gi.id,
-            partNo: poItem?.partNo || gi.poItemId,
+            partNo: poItem?.partNo || '',
             description: poItem?.description || 'รายการอะไหล่',
             quantity: gi.quantity,
             unitPrice: originalFullPrice,
@@ -621,7 +621,7 @@ export default function PDFMockPage() {
                     <td className="py-2.5 px-2 text-center text-gray-550">{i + 1}</td>
                     <td className="py-2.5 px-2 text-gray-900 font-medium">
                       {item.description}
-                      {item.partNo && item.partNo !== '-' && (
+                      {item.partNo && item.partNo !== '-' && !/^c[a-z0-9]{24}$/i.test(item.partNo) && (
                         <span className="text-gray-400 font-mono text-[10px] block mt-0.5">({item.partNo})</span>
                       )}
                     </td>
@@ -855,7 +855,7 @@ export default function PDFMockPage() {
                     <td className="py-2.5 px-2 text-center text-gray-550">{i + 1}</td>
                     <td className="py-2.5 px-2 text-gray-900 font-medium">
                       {item.description}
-                      {item.partNo && item.partNo !== '-' && (
+                      {item.partNo && item.partNo !== '-' && !/^c[a-z0-9]{24}$/i.test(item.partNo) && (
                         <span className="text-gray-400 font-mono text-[10px] block mt-0.5">({item.partNo})</span>
                       )}
                     </td>

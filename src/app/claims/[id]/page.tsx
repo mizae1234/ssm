@@ -1493,8 +1493,10 @@ export default function ClaimDetailPage() {
                               return (
                                 <TableRow key={gi.id} className="hover:bg-transparent border-slate-100">
                                   <TableCell className="py-2 text-xs">
-                                    {poItem?.description || gi.poItemId}
-                                    <p className="text-[9px] text-slate-400 font-mono mt-0.5">{poItem?.partNo}</p>
+                                    {poItem?.description || 'รายการอะไหล่'}
+                                    {poItem?.partNo && !/^c[a-z0-9]{24}$/i.test(poItem.partNo) && (
+                                      <p className="text-[9px] text-slate-400 font-mono mt-0.5">{poItem.partNo}</p>
+                                    )}
                                   </TableCell>
                                   <TableCell className="py-2 text-center text-xs font-bold text-[#0d9488]">{gi.quantity} ชิ้น</TableCell>
                                 </TableRow>
