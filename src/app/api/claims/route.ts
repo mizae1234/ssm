@@ -183,7 +183,6 @@ export async function POST(request: NextRequest) {
 
   // Create / resolve PartMasters first
   const partsToCreate = []
-  const partsArray = body.parts || []
   for (let i = 0; i < partsArray.length; i++) {
     const p = partsArray[i]
     const partNo = p.partNo?.value || ''
