@@ -50,7 +50,16 @@ export async function POST(req: NextRequest) {
       const invoices = await prisma.insuranceInvoice.findMany({
         where: { id: { in: ids } },
         include: {
-          claim: { include: { insurance: true } }
+          claim: {
+            include: {
+              insurance: true,
+              parts: {
+                include: {
+                  partMaster: true
+                }
+              }
+            }
+          }
         }
       })
       
@@ -83,7 +92,32 @@ export async function POST(req: NextRequest) {
           })
           hasAdded = true
         }
-        if (inv.partsTotal > 0) {
+        if (inv.claim.parts && inv.claim.parts.length > 0) {
+          for (const part of inv.claim.parts) {
+            rows.push({
+              'ลำดับที่*': seq,
+              'วันที่เอกสาร': formatDate(inv.invoiceDate),
+              'เลขที่เอกสาร': '',
+              'อ้างอิงถึง': inv.claim.claimNo,
+              'ลูกค้า': inv.claim.insurance?.peakCustomerId || inv.claim.insurance?.id || '',
+              'เลขทะเบียน 13 หลัก': '',
+              'เลขสาขา 5 หลัก': '',
+              'เป็นใบกำกับภาษี': '',
+              'ประเภทราคา': 1,
+              'สินค้า/บริการ': part.partMaster?.peakCode || part.partNo || 'P00033',
+              'บัญชี': ACCOUNT_REVENUE_PARTS,
+              'คำอธิบาย': `${part.partName}|${inv.claim.carPlate}|${inv.claim.insurance?.name || ''}`,
+              'จำนวน': part.quantity,
+              'ราคาต่อหน่วย': part.priceApprove,
+              'ส่วนลดต่อหน่วย': 0,
+              'อัตราภาษี': '7%',
+              'ถูกหัก ณ ที่จ่าย(ถ้ามี)': 0,
+              'หมายเหตุ': remark,
+              'กลุ่มจัดประเภท': ''
+            })
+            hasAdded = true
+          }
+        } else if (inv.partsTotal > 0) {
           rows.push({
             'ลำดับที่*': seq,
             'วันที่เอกสาร': formatDate(inv.invoiceDate),
@@ -122,12 +156,28 @@ export async function POST(req: NextRequest) {
     if (type === 'ap') {
       const supplierInvoices = await prisma.supplierInvoice.findMany({
         where: { id: { in: ids } },
-        include: { claim: true, vendor: true }
+        include: {
+          claim: true,
+          vendor: true,
+          items: {
+            include: {
+              claimPart: {
+                include: {
+                  partMaster: true
+                }
+              }
+            }
+          }
+        }
       })
       
       const garageInvoices = await prisma.garageInvoice.findMany({
         where: { id: { in: ids } },
-        include: { claim: true }
+        include: {
+          claim: true,
+          garage: true,
+          items: true
+        }
       })
 
       const rows: any[] = []
@@ -135,57 +185,127 @@ export async function POST(req: NextRequest) {
 
       for (const si of supplierInvoices) {
         const remark = buildRemark(si.claim)
-        rows.push({
-          'ลำดับที่*': seq++,
-          'วันที่เอกสาร': formatDate(si.invoiceDate),
-          'อ้างอิงถึง': si.claim.claimNo.slice(0, 32),
-          'ผู้รับเงิน/คู่ค้า': si.vendor?.peakVendorCode || si.vendor?.id || '',
-          'เลขทะเบียน 13 หลัก': si.vendor?.taxId || '',
-          'เลขสาขา 5 หลัก': si.vendor?.branchCode || '00000',
-          'เลขที่ใบกำกับฯ (ถ้ามี)': '',
-          'วันที่ใบกำกับฯ (ถ้ามี)': formatDate(si.invoiceDate),
-          'วันที่บันทึกภาษีซื้อ (ถ้ามี)': formatDate(si.invoiceDate),
-          'ประเภทราคา': 1,
-          'สินค้า/บริการ': 'P00033',
-          'บัญชี': ACCOUNT_COST_PARTS,
-          'คำอธิบาย': `ค่าอะไหล่|${si.claim.carPlate}|${si.claim.claimNo}`,
-          'จำนวน': 1,
-          'ราคาต่อหน่วย': si.totalAmount / 1.07,
-          'อัตราภาษี': '7%',
-          'หัก ณ ที่จ่าย (ถ้ามี)': 0,
-          'ชำระโดย': '',
-          'จำนวนเงินที่ชำระ': 0,
-          'ภ.ง.ด. (ถ้ามี)': si.vendor?.whtType || '53',
-          'หมายเหตุ': remark,
-          'กลุ่มจัดประเภท': ''
-        })
+        let hasAdded = false
+        if (si.items && si.items.length > 0) {
+          for (const item of si.items) {
+            const isLabor = !!item.claimLaborId
+            rows.push({
+              'ลำดับที่*': seq,
+              'วันที่เอกสาร': formatDate(si.invoiceDate),
+              'อ้างอิงถึง': si.claim.claimNo.slice(0, 32),
+              'ผู้รับเงิน/คู่ค้า': si.vendor?.peakVendorCode || si.vendor?.id || '',
+              'เลขทะเบียน 13 หลัก': si.vendor?.taxId || '',
+              'เลขสาขา 5 หลัก': si.vendor?.branchCode || '00000',
+              'เลขที่ใบกำกับฯ (ถ้ามี)': '',
+              'วันที่ใบกำกับฯ (ถ้ามี)': formatDate(si.invoiceDate),
+              'วันที่บันทึกภาษีซื้อ (ถ้ามี)': formatDate(si.invoiceDate),
+              'ประเภทราคา': 1,
+              'สินค้า/บริการ': isLabor ? 'P00035' : (item.claimPart?.partMaster?.peakCode || item.partNo || 'P00033'),
+              'บัญชี': isLabor ? ACCOUNT_COST_LABOR : ACCOUNT_COST_PARTS,
+              'คำอธิบาย': `${item.description}|${si.claim.carPlate}|${si.claim.claimNo}`,
+              'จำนวน': item.quantity,
+              'ราคาต่อหน่วย': item.unitPrice,
+              'อัตราภาษี': '7%',
+              'หัก ณ ที่จ่าย (ถ้ามี)': 0,
+              'ชำระโดย': '',
+              'จำนวนเงินที่ชำระ': 0,
+              'ภ.ง.ด. (ถ้ามี)': si.vendor?.whtType || '53',
+              'หมายเหตุ': remark,
+              'กลุ่มจัดประเภท': ''
+            })
+            hasAdded = true
+          }
+        } else {
+          rows.push({
+            'ลำดับที่*': seq,
+            'วันที่เอกสาร': formatDate(si.invoiceDate),
+            'อ้างอิงถึง': si.claim.claimNo.slice(0, 32),
+            'ผู้รับเงิน/คู่ค้า': si.vendor?.peakVendorCode || si.vendor?.id || '',
+            'เลขทะเบียน 13 หลัก': si.vendor?.taxId || '',
+            'เลขสาขา 5 หลัก': si.vendor?.branchCode || '00000',
+            'เลขที่ใบกำกับฯ (ถ้ามี)': '',
+            'วันที่ใบกำกับฯ (ถ้ามี)': formatDate(si.invoiceDate),
+            'วันที่บันทึกภาษีซื้อ (ถ้ามี)': formatDate(si.invoiceDate),
+            'ประเภทราคา': 1,
+            'สินค้า/บริการ': 'P00033',
+            'บัญชี': ACCOUNT_COST_PARTS,
+            'คำอธิบาย': `ค่าอะไหล่|${si.claim.carPlate}|${si.claim.claimNo}`,
+            'จำนวน': 1,
+            'ราคาต่อหน่วย': si.totalAmount / 1.07,
+            'อัตราภาษี': '7%',
+            'หัก ณ ที่จ่าย (ถ้ามี)': 0,
+            'ชำระโดย': '',
+            'จำนวนเงินที่ชำระ': 0,
+            'ภ.ง.ด. (ถ้ามี)': si.vendor?.whtType || '53',
+            'หมายเหตุ': remark,
+            'กลุ่มจัดประเภท': ''
+          })
+          hasAdded = true
+        }
+        if (hasAdded) {
+          seq++
+        }
       }
 
       for (const gi of garageInvoices) {
         const remark = buildRemark(gi.claim)
-        rows.push({
-          'ลำดับที่*': seq++,
-          'วันที่เอกสาร': formatDate(gi.invoiceDate),
-          'อ้างอิงถึง': gi.claim.claimNo.slice(0, 32),
-          'ผู้รับเงิน/คู่ค้า': '', // Garage may not have peakVendorCode in schema currently
-          'เลขทะเบียน 13 หลัก': '',
-          'เลขสาขา 5 หลัก': '00000',
-          'เลขที่ใบกำกับฯ (ถ้ามี)': '',
-          'วันที่ใบกำกับฯ (ถ้ามี)': formatDate(gi.invoiceDate),
-          'วันที่บันทึกภาษีซื้อ (ถ้ามี)': formatDate(gi.invoiceDate),
-          'ประเภทราคา': 1,
-          'สินค้า/บริการ': 'P00035',
-          'บัญชี': ACCOUNT_COST_LABOR,
-          'คำอธิบาย': `ค่าแรง|${gi.claim.carPlate}|${gi.claim.claimNo}`,
-          'จำนวน': 1,
-          'ราคาต่อหน่วย': gi.totalAmount / 1.07,
-          'อัตราภาษี': '7%',
-          'หัก ณ ที่จ่าย (ถ้ามี)': 0,
-          'ชำระโดย': '',
-          'จำนวนเงินที่ชำระ': 0,
-          'ภ.ง.ด. (ถ้ามี)': '53',
-          'หมายเหตุ': remark,
-        })
+        let hasAdded = false
+        if (gi.items && gi.items.length > 0) {
+          for (const item of gi.items) {
+            rows.push({
+              'ลำดับที่*': seq,
+              'วันที่เอกสาร': formatDate(gi.invoiceDate),
+              'อ้างอิงถึง': gi.claim.claimNo.slice(0, 32),
+              'ผู้รับเงิน/คู่ค้า': gi.garage?.peakVendorCode || gi.garage?.id || '',
+              'เลขทะเบียน 13 หลัก': gi.garage?.taxId || '',
+              'เลขสาขา 5 หลัก': gi.garage?.branchCode || '00000',
+              'เลขที่ใบกำกับฯ (ถ้ามี)': '',
+              'วันที่ใบกำกับฯ (ถ้ามี)': formatDate(gi.invoiceDate),
+              'วันที่บันทึกภาษีซื้อ (ถ้ามี)': formatDate(gi.invoiceDate),
+              'ประเภทราคา': 1,
+              'สินค้า/บริการ': 'P00035',
+              'บัญชี': ACCOUNT_COST_LABOR,
+              'คำอธิบาย': `${item.description}|${gi.claim.carPlate}|${gi.claim.claimNo}`,
+              'จำนวน': 1,
+              'ราคาต่อหน่วย': item.unitPrice,
+              'อัตราภาษี': '7%',
+              'หัก ณ ที่จ่าย (ถ้ามี)': 0,
+              'ชำระโดย': '',
+              'จำนวนเงินที่ชำระ': 0,
+              'ภ.ง.ด. (ถ้ามี)': gi.garage?.whtType || '53',
+              'หมายเหตุ': remark,
+            })
+            hasAdded = true
+          }
+        } else {
+          rows.push({
+            'ลำดับที่*': seq,
+            'วันที่เอกสาร': formatDate(gi.invoiceDate),
+            'อ้างอิงถึง': gi.claim.claimNo.slice(0, 32),
+            'ผู้รับเงิน/คู่ค้า': gi.garage?.peakVendorCode || gi.garage?.id || '',
+            'เลขทะเบียน 13 หลัก': gi.garage?.taxId || '',
+            'เลขสาขา 5 หลัก': gi.garage?.branchCode || '00000',
+            'เลขที่ใบกำกับฯ (ถ้ามี)': '',
+            'วันที่ใบกำกับฯ (ถ้ามี)': formatDate(gi.invoiceDate),
+            'วันที่บันทึกภาษีซื้อ (ถ้ามี)': formatDate(gi.invoiceDate),
+            'ประเภทราคา': 1,
+            'สินค้า/บริการ': 'P00035',
+            'บัญชี': ACCOUNT_COST_LABOR,
+            'คำอธิบาย': `ค่าแรง|${gi.claim.carPlate}|${gi.claim.claimNo}`,
+            'จำนวน': 1,
+            'ราคาต่อหน่วย': gi.totalAmount / 1.07,
+            'อัตราภาษี': '7%',
+            'หัก ณ ที่จ่าย (ถ้ามี)': 0,
+            'ชำระโดย': '',
+            'จำนวนเงินที่ชำระ': 0,
+            'ภ.ง.ด. (ถ้ามี)': gi.garage?.whtType || '53',
+            'หมายเหตุ': remark,
+          })
+          hasAdded = true
+        }
+        if (hasAdded) {
+          seq++
+        }
       }
 
       await prisma.supplierInvoice.updateMany({
