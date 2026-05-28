@@ -16,6 +16,7 @@ import { ClaimStatus, PaymentRequest, Quotation, InsuranceInvoice, PurchaseOrder
 import { formatDate } from '@/lib/date'
 import { ClaimInfoTab, PnLTab, TimelineTab, PaymentsTab, InsuranceInvoiceTab, ExpensesTab, DocumentsTab } from './tabs'
 import { SearchableSelect } from '@/components/ui/searchable-select'
+import { PartAutocomplete } from '@/components/ui/part-autocomplete'
 import POModal from './components/POModal'
 import QuotationModal from './components/QuotationModal'
 import GRModal from './components/GRModal'
@@ -454,6 +455,7 @@ export default function ClaimDetailPage() {
                       carBrand: claim.carBrand,
                       carModel: claim.carModel,
                       carVin: claim.carVin,
+                      carColor: claim.carColor,
                       insuredName: claim.insuredName,
                       insuranceId: claim.insuranceId,
                       garageId: claim.garageId,
@@ -605,7 +607,7 @@ export default function ClaimDetailPage() {
                   </Button>
                 )}
               </CardHeader>
-              <CardContent className="p-0 overflow-x-auto">
+              <CardContent className="p-0 overflow-x-auto pb-48">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -625,7 +627,32 @@ export default function ClaimDetailPage() {
                     {parts.map((part, idx) => (
                       <TableRow key={part.id}>
                         <TableCell>{editMode ? <Input list="part-no-list" className="h-8 min-w-[120px] font-mono text-xs" value={part.partNo} onChange={e => { const n = [...parts]; n[idx] = { ...n[idx], partNo: e.target.value }; setParts(n) }} /> : <span className="font-mono text-xs">{part.partNo}</span>}</TableCell>
-                        <TableCell>{editMode ? <Input list="parts-list" className={cn("h-8 min-w-[200px]", !part.partName?.trim() && "border-red-500 focus-visible:ring-red-500")} value={part.partName} onChange={e => { const n = [...parts]; n[idx] = { ...n[idx], partName: e.target.value }; setParts(n) }} /> : <span className="font-medium">{part.partName}</span>}</TableCell>
+                        <TableCell>
+                          {editMode ? (
+                            <PartAutocomplete
+                              value={part.partName}
+                              partsMaster={partsMaster}
+                              onChange={val => {
+                                const n = [...parts]
+                                n[idx] = { ...n[idx], partName: val }
+                                setParts(n)
+                              }}
+                              onSelect={selected => {
+                                const n = [...parts]
+                                n[idx] = { 
+                                  ...n[idx], 
+                                  partName: selected.partName, 
+                                  partNo: selected.partNo,
+                                  priceFullAmt: selected.standardPrice || n[idx].priceFullAmt || 0
+                                }
+                                setParts(n)
+                              }}
+                              className={cn("h-8 min-w-[200px] border-gray-200 bg-white", !part.partName?.trim() && "border-red-500 focus-visible:ring-red-500")}
+                            />
+                          ) : (
+                            <span className="font-medium">{part.partName}</span>
+                          )}
+                        </TableCell>
                         <TableCell className="text-right">{editMode ? <Input type="number" className="h-8 min-w-[100px] text-right" value={part.priceFullAmt || ''} onChange={e => { const n = [...parts]; n[idx] = { ...n[idx], priceFullAmt: +e.target.value }; setParts(n) }} /> : formatCurrency(part.priceFullAmt)}</TableCell>
                         <TableCell className="text-center">{editMode ? <Input type="number" className="h-8 min-w-[60px] text-center" value={part.quantity || ''} onChange={e => { const n = [...parts]; n[idx] = { ...n[idx], quantity: +e.target.value }; setParts(n) }} /> : part.quantity}</TableCell>
                         <TableCell>{editMode ? <Input list="damage-type-list" className="h-8 min-w-[80px]" value={part.damageType} onChange={e => { const n = [...parts]; n[idx] = { ...n[idx], damageType: e.target.value }; setParts(n) }} /> : <Badge variant="outline" className="text-[10px]">{part.damageType}</Badge>}</TableCell>

@@ -88,19 +88,21 @@ The document is EITHER:
   (A) A screenshot from the eGarage insurance system — shows a left sidebar with claim info fields and two tables.
   (B) A standard paper/PDF claim estimate form.
 
-For Type A (eGarage), the LEFT SIDEBAR contains:
-  - "เลขที่-Claim" or "Claim:" = claimNo
-  - "เลขรับแจ้ง" = receiveNo
+For Type A (eGarage), look at the top header area or sidebars, which contains:
+  - "เลขที่-Claim" or "Claim:" or "เลขที่ E-Claim" = claimNo
+  - "เลขรับแจ้ง" or "เลขที่รับแจ้ง" = receiveNo
   - "เลขที่เคลม" = transactionNo
-  - "ชื่อบริษัท" = insuranceName
+  - "ชื่อบริษัท" or "บริษัทประกัน" or "บริษัท" = insuranceName
   - "สาขา" = branch
-  - "ทะเบียน" = car.plate
+  - "ทะเบียน" or "ทะเบียนรถ" = car.plate
   - "จังหวัด" = car.province
   - "ยี่ห้อ" = car.brand
   - "รุ่น" = car.model
-  - "หมายเลขตัวถัง" = car.vin
+  - "หมายเลขตัวถัง" or "เลขตัวถัง" = car.vin
+  - "สีรถ" or "สี" = car.color
   - "วันที่สร้าง" = createdAt
   - "วันที่ส่ง" = sentAt
+  - "ชื่อผู้เอาประกัน" or "ผู้เอาประกัน" = car.insuredName
   Summary totals: look for "รวม" rows in tables, use "ราคาอนุมัติ" column value.
 
 RULES:
@@ -161,6 +163,7 @@ Output this exact JSON structure:
     "brand": { "value": "", "confidence": 0 },
     "model": { "value": "", "confidence": 0 },
     "vin": { "value": "", "confidence": 0 },
+    "color": { "value": "", "confidence": 0 },
     "insuredName": { "value": "", "confidence": 0 }
   },
   "summary": {

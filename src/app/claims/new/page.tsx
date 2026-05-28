@@ -45,6 +45,7 @@ const emptyDataTemplate = {
     brand: { value: '', confidence: 0 },
     model: { value: '', confidence: 0 },
     vin: { value: '', confidence: 0 },
+    color: { value: '', confidence: 0 },
     insuredName: { value: '', confidence: 0 },
   },
   labors: [],
@@ -83,7 +84,7 @@ export default function NewClaimPage() {
   }, [])
 
   useEffect(() => {
-    fetch('/api/parts-master')
+    fetch('/api/parts-master?all=true')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setPartsMaster(data)

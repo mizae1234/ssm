@@ -194,6 +194,7 @@ export async function POST(request: NextRequest) {
         carBrand: body.car?.brand?.value || '',
         carModel: body.car?.model?.value || '',
         carVin: body.car?.vin?.value || '',
+        carColor: body.car?.color?.value || '',
         province: body.car?.province?.value || '',
         insuredName: body.car?.insuredName?.value || '',
         parts: {

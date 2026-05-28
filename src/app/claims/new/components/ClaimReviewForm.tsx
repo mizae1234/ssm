@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { ArrowLeft, RotateCcw, Plus, Trash2, Save, Sparkles, AlertTriangle, CheckCircle2, Package } from 'lucide-react'
 import { cn, formatCurrency } from '@/lib/utils'
+import { PartAutocomplete } from '@/components/ui/part-autocomplete'
 
 const ThaiDatePicker = dynamic(
   () => import('@/components/ui/thai-date-picker').then(mod => mod.ThaiDatePicker),
@@ -120,6 +121,7 @@ const labelMap: Record<string, { label: string; list?: string; type?: string }> 
   brand: { label: 'ยี่ห้อ', list: 'brand-list' },
   model: { label: 'รุ่น' },
   vin: { label: 'เลขตัวถัง (VIN)' },
+  color: { label: 'สีรถ' },
   insuredName: { label: 'ชื่อผู้เอาประกัน' },
   laborTotal: { label: 'รวมค่าแรง' },
   partsTotal: { label: 'รวมค่าอะไหล่' },
@@ -544,7 +546,7 @@ export default function ClaimReviewForm({
             เพิ่มอะไหล่
           </Button>
         </CardHeader>
-        <CardContent className="overflow-x-auto">
+        <CardContent className="overflow-x-auto pb-48">
           {parts.length === 0 ? (
             <div className="text-center py-8 text-[#94a3b8]">
               <p className="text-sm">ยังไม่มีรายการอะไหล่</p>
@@ -583,18 +585,21 @@ export default function ClaimReviewForm({
                       />
                     </td>
                     <td className="p-3">
-                      <input
-                        className={cn(
-                          "w-32 bg-white border rounded px-2 py-1.5 text-sm outline-none focus:border-[#0d9488] focus:ring-1 focus:ring-[#0d9488]/20 transition-all shadow-sm",
-                          !p.partName.value?.trim()
-                            ? "border-red-500 focus:border-red-500 focus:ring-red-200"
-                            : isManualMode
-                            ? "border-gray-200"
-                            : "border-blue-200 hover:border-blue-300"
-                        )}
+                      <PartAutocomplete
                         value={p.partName.value}
-                        onChange={e => updatePartReview(i, 'partName', e.target.value)}
-                        list="parts-master-list"
+                        partsMaster={partsMaster}
+                        onChange={val => updatePartReview(i, 'partName', val)}
+                        onSelect={selected => {
+                          const newParts = [...data.parts]
+                          newParts[i].partName = { value: selected.partName, edited: true, confidence: 100 }
+                          newParts[i].partNo = { value: selected.partNo, edited: true, confidence: 100 }
+                          newParts[i].priceFull = { value: selected.standardPrice || newParts[i].priceFull?.value || 0, edited: true, confidence: 100 }
+                          setData({ ...data, parts: newParts })
+                        }}
+                        className={cn(
+                          "w-48 bg-white",
+                          !p.partName.value?.trim() && "border-red-500 focus:border-red-500"
+                        )}
                       />
                     </td>
                     <td className="p-3 text-right">

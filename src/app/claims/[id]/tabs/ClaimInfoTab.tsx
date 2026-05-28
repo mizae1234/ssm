@@ -76,6 +76,7 @@ export default function ClaimInfoTab({ claim, editMode, vendors }: ClaimTabProps
     carBrand: claim.carBrand || '',
     carModel: claim.carModel || '',
     carVin: claim.carVin || '',
+    carColor: claim.carColor || '',
     insuredName: claim.insuredName || '',
   })
 
@@ -107,6 +108,7 @@ export default function ClaimInfoTab({ claim, editMode, vendors }: ClaimTabProps
       carBrand: claim.carBrand || '',
       carModel: claim.carModel || '',
       carVin: claim.carVin || '',
+      carColor: claim.carColor || '',
       insuredName: claim.insuredName || '',
     })
     setInsuranceName(claim.insurance?.name || '')
@@ -130,6 +132,7 @@ export default function ClaimInfoTab({ claim, editMode, vendors }: ClaimTabProps
     { key: 'carBrand', label: 'ยี่ห้อ' },
     { key: 'carModel', label: 'รุ่น' },
     { key: 'carVin', label: 'VIN' },
+    { key: 'carColor', label: 'สีรถ' },
     { key: 'insuredName', label: 'ผู้เอาประกัน' },
   ]
 
