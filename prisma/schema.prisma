@@ -193,6 +193,7 @@ model POItem {
   description          String
   quantity             Int
   unitPrice            Float
+  discountPct          Float                 @default(0)
   totalPrice           Float
   supplierInvoiceItems SupplierInvoiceItem[]
   goodsReceiptItems    GoodsReceiptItem[]
@@ -212,6 +213,7 @@ model SupplierInvoiceItem {
   description       String
   quantity          Int
   unitPrice         Float
+  discountPct       Float           @default(0)
   totalPrice        Float
 }
 

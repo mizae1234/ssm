@@ -76,8 +76,8 @@ export default function POModal({
           if (existingPoItem) {
             const originalPrice = Number(p.priceApprove) || 0
             const poUnitPrice = Number(existingPoItem.unitPrice) || 0
-            let discountPct = p.discountPct || 0
-            if (originalPrice > 0) {
+            let discountPct = existingPoItem.discountPct || 0
+            if (!discountPct && originalPrice > 0) {
               discountPct = Math.max(0, Math.round((1 - poUnitPrice / originalPrice) * 100))
             }
             return { 
@@ -96,8 +96,8 @@ export default function POModal({
           if (existingPoItem) {
             const originalPrice = Number(l.priceApprove) || 0
             const poUnitPrice = Number(existingPoItem.unitPrice) || 0
-            let discountPct = l.discountPct || 0
-            if (originalPrice > 0) {
+            let discountPct = existingPoItem.discountPct || 0
+            if (!discountPct && originalPrice > 0) {
               discountPct = Math.max(0, Math.round((1 - poUnitPrice / originalPrice) * 100))
             }
             return { ...l, selected: true, description: existingPoItem.description.replace('[ค่าแรง] ', ''), priceApprove: originalPrice, discountPct }
@@ -113,7 +113,7 @@ export default function POModal({
           description: pi.description,
           quantity: pi.quantity,
           unitPrice: pi.unitPrice,
-          discountPct: 0
+          discountPct: pi.discountPct || 0
         }))
         setPoManualItems(manuals)
         setPoIncludeVat(po.includeVat ?? true)
@@ -125,7 +125,7 @@ export default function POModal({
           if (!pi) return null
           const originalPrice = Number(p.priceApprove) || 0
           const poUnitPrice = Number(pi.unitPrice) || 0
-          return originalPrice > 0 ? Math.max(0, Math.round((1 - poUnitPrice / originalPrice) * 100)) : 0
+          return pi.discountPct || (originalPrice > 0 ? Math.max(0, Math.round((1 - poUnitPrice / originalPrice) * 100)) : 0)
         }).filter((d: any): d is number => d !== null)
 
         const allLaborDiscounts = labors.map((l: any) => {
@@ -133,7 +133,7 @@ export default function POModal({
           if (!pi) return null
           const originalPrice = Number(l.priceApprove) || 0
           const poUnitPrice = Number(pi.unitPrice) || 0
-          return originalPrice > 0 ? Math.max(0, Math.round((1 - poUnitPrice / originalPrice) * 100)) : 0
+          return pi.discountPct || (originalPrice > 0 ? Math.max(0, Math.round((1 - poUnitPrice / originalPrice) * 100)) : 0)
         }).filter((d: any): d is number => d !== null)
 
         const allDiscounts = [...allPartDiscounts, ...allLaborDiscounts]
@@ -212,6 +212,7 @@ export default function POModal({
         description: p.partName,
         quantity: Number(p.quantity) || 1,
         unitPrice: discountedPrice,
+        discountPct: discount,
         totalPrice: discountedPrice * (Number(p.quantity) || 1)
       }
     })
@@ -224,6 +225,7 @@ export default function POModal({
         description: `[ค่าแรง] ${l.description}`,
         quantity: 1,
         unitPrice: discountedPrice,
+        discountPct: discount,
         totalPrice: discountedPrice
       }
     })
@@ -236,6 +238,7 @@ export default function POModal({
         description: m.description,
         quantity: Number(m.quantity) || 1,
         unitPrice: discountedPrice,
+        discountPct: discount,
         totalPrice: discountedPrice * (Number(m.quantity) || 1)
       }
     })

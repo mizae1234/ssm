@@ -61,6 +61,7 @@ export async function POST(
             description: item.description || '',
             quantity: Number(item.quantity || 1),
             unitPrice: Number(item.unitPrice || 0),
+            discountPct: Number(item.discountPct || 0),
             totalPrice: Number(item.totalPrice || 0)
           }))
         }

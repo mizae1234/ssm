@@ -215,6 +215,7 @@ export default function SupplierInvoiceModal({
           description: p.partName,
           quantity: p.quantity,
           unitPrice: unitPrice,
+          discountPct: uploadItemDiscounts[p.id] ?? 0,
           totalPrice: price
         }
       })
@@ -229,6 +230,7 @@ export default function SupplierInvoiceModal({
           description: `[ค่าแรง] ${l.description}`,
           quantity: 1,
           unitPrice: price,
+          discountPct: uploadItemDiscounts[l.id] ?? 0,
           totalPrice: price
         }
       })

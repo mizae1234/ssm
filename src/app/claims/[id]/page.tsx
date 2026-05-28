@@ -772,6 +772,7 @@ export default function ClaimDetailPage() {
                               <Button variant="outline" size="sm" className="h-7 text-xs text-blue-600 border-blue-200" onClick={() => handleSendQuotation(qt.id)}>ส่งให้ประกัน</Button>
                             )}
                             <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => window.open(`/claims/${claim.id}/pdf/quotation?qtId=${qt.id}`)}><Download className="w-3 h-3 mr-1" />PDF</Button>
+                            <Button variant="outline" size="sm" className="h-7 text-xs text-teal-700 border-teal-200 hover:bg-teal-50" onClick={() => window.open(`/claims/${claim.id}/pdf/delivery-note-ar?qtId=${qt.id}`)}><Printer className="w-3 h-3 mr-1" />พิมพ์ใบส่งของ</Button>
                             <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => window.open(`/api/claims/${claim.id}/peak-export?template=ar-invoice&qtId=${qt.id}`)}><Download className="w-3 h-3 mr-1" />PEAK</Button>
                           </div>
                         </div>

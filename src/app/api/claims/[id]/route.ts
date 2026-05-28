@@ -98,6 +98,16 @@ export async function PUT(
     }
 
     for (const p of parts) {
+      let partMasterId = null
+      if (p.partNo) {
+        const pm = await prisma.partMaster.findUnique({
+          where: { partNo: p.partNo }
+        })
+        if (pm) {
+          partMasterId = pm.id
+        }
+      }
+
       const partData = {
         partNo: p.partNo || '',
         partName: p.partName || '',
@@ -108,7 +118,8 @@ export async function PUT(
         priceOffer: Number(p.priceOffer || 0),
         priceApprove: Number(p.priceApprove || 0),
         supplier: p.supplier || '',
-        requireReturn: Boolean(p.requireReturn)
+        requireReturn: Boolean(p.requireReturn),
+        partMasterId
       }
 
       if (!p.id || p.id.startsWith('new-')) {

@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "POItem" ADD COLUMN     "discountPct" DOUBLE PRECISION NOT NULL DEFAULT 0;
+
+-- AlterTable
+ALTER TABLE "SupplierInvoiceItem" ADD COLUMN     "discountPct" DOUBLE PRECISION NOT NULL DEFAULT 0;

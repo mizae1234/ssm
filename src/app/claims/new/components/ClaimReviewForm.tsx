@@ -457,9 +457,11 @@ export default function ClaimReviewForm({
           <CardContent className="p-0">
             <div className="divide-y divide-gray-100">
               {parts.map((p: any, i: number) => {
-                const isMatch = p.partNo.value.includes('CFC') || p.partNo.value.includes('02')
-                const usageCount = Math.floor(Math.random() * 50) + 1
-                const isHighPrice = p.priceApprove.value > p.priceFull.value * 1.15
+                const matchedMaster = partsMaster.find(pm => pm.partNo === p.partNo.value)
+                const isMatch = !!matchedMaster
+                const usageCount = matchedMaster?.usageCount || 0
+                const standardPrice = matchedMaster?.standardPrice || p.priceFull.value
+                const isHighPrice = p.priceApprove.value > standardPrice * 1.15
                 const isNew = !isMatch
 
                 return (
@@ -483,14 +485,12 @@ export default function ClaimReviewForm({
                           <div className="text-xs text-[#475569] space-y-1">
                             <div>พบใน Master — ใช้ไปแล้ว <span className="font-medium text-[#0f172a]">{usageCount}</span> รายการเคลม</div>
                             <div className="flex items-center gap-2">
-                              <span>ราคากลาง <span className="font-medium">฿{formatCurrency(p.priceFull.value * 0.9)}</span></span>
-                              <span className="text-gray-300">|</span>
-                              <span>ผู้จำหน่าย X <span className="font-medium">฿{formatCurrency(p.priceFull.value * 0.85)}</span> (OEM)</span>
+                              <span>ราคากลาง <span className="font-medium">฿{formatCurrency(standardPrice)}</span></span>
                             </div>
                             {isHighPrice && (
                               <div className="flex items-center gap-1.5 text-red-600 mt-1 bg-red-50 p-1.5 rounded w-fit">
                                 <AlertTriangle className="w-3.5 h-3.5" />
-                                <span className="font-medium">ราคาสูงกว่าราคากลาง 18% — ตรวจสอบด้วย</span>
+                                <span className="font-medium">ราคาสูงกว่าราคากลาง 15% — ตรวจสอบด้วย</span>
                               </div>
                             )}
                           </div>
@@ -500,11 +500,19 @@ export default function ClaimReviewForm({
                             <div className="grid grid-cols-2 gap-3 max-w-md">
                               <div className="space-y-1">
                                 <label className="text-[#94a3b8]">ชื่อ</label>
-                                <Input className="h-7 text-xs" defaultValue={p.partName.value} />
+                                <Input 
+                                  className="h-7 text-xs" 
+                                  value={p.partName.value} 
+                                  onChange={e => updatePartReview(i, 'partName', e.target.value)}
+                                />
                               </div>
                               <div className="space-y-1">
                                 <label className="text-[#94a3b8]">หมวดหมู่</label>
-                                <select className="flex h-7 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">
+                                <select 
+                                  className="flex h-7 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                  value={p.category?.value || 'กันชน/สเกิร์ต'}
+                                  onChange={e => updatePartReview(i, 'category', e.target.value)}
+                                >
                                   <option>กันชน/สเกิร์ต</option>
                                   <option>กระจก/ฝา</option>
                                   <option>ระบบไฟ</option>
@@ -513,16 +521,33 @@ export default function ClaimReviewForm({
                               </div>
                               <div className="space-y-1">
                                 <label className="text-[#94a3b8]">ราคากลาง</label>
-                                <Input className="h-7 text-xs" defaultValue={p.priceFull.value} type="number" />
+                                <Input 
+                                  className="h-7 text-xs" 
+                                  value={p.priceFull.value} 
+                                  type="number" 
+                                  onChange={e => updatePartReview(i, 'priceFull', Number(e.target.value))}
+                                />
                               </div>
                             </div>
                             <div className="flex items-center gap-3 pt-2">
                               <span className="font-medium text-[#0f172a]">บันทึกลง Master?</span>
                               <label className="flex items-center gap-1.5 cursor-pointer">
-                                <input type="radio" name={`master-${i}`} defaultChecked className="text-[#0d9488]" /> ใช่
+                                <input 
+                                  type="radio" 
+                                  name={`master-${i}`} 
+                                  checked={p.saveToMaster?.value !== false} 
+                                  onChange={() => updatePartReview(i, 'saveToMaster', true)}
+                                  className="text-[#0d9488]" 
+                                /> ใช่
                               </label>
                               <label className="flex items-center gap-1.5 cursor-pointer">
-                                <input type="radio" name={`master-${i}`} className="text-[#0d9488]" /> ไม่ใช่
+                                <input 
+                                  type="radio" 
+                                  name={`master-${i}`} 
+                                  checked={p.saveToMaster?.value === false} 
+                                  onChange={() => updatePartReview(i, 'saveToMaster', false)}
+                                  className="text-[#0d9488]" 
+                                /> ไม่ใช่
                               </label>
                             </div>
                           </div>

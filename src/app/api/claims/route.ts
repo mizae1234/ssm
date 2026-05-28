@@ -181,6 +181,65 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // Create / resolve PartMasters first
+  const partsToCreate = []
+  const partsArray = body.parts || []
+  for (let i = 0; i < partsArray.length; i++) {
+    const p = partsArray[i]
+    const partNo = p.partNo?.value || ''
+    const partName = p.partName?.value || ''
+
+    let partMasterId = null
+    if (partNo) {
+      let pm = await prisma.partMaster.findUnique({
+        where: { partNo }
+      })
+
+      if (!pm && p.saveToMaster?.value !== false) {
+        pm = await prisma.partMaster.create({
+          data: {
+            partNo,
+            partName,
+            category: p.category?.value || null,
+            unit: 'ชิ้น',
+            standardPrice: Number(p.priceFull?.value || 0),
+            peakCode: '', // Leave peakCode blank for user to fill later
+            source: 'AUTO',
+            stock: 0,
+            isActive: true,
+            partNameAlt: []
+          }
+        })
+
+        await prisma.stockBalance.create({
+          data: {
+            partNo,
+            partName,
+            quantity: 0
+          }
+        }).catch(err => console.error('Error creating StockBalance:', err))
+      }
+
+      if (pm) {
+        partMasterId = pm.id
+      }
+    }
+
+    partsToCreate.push({
+      partNo,
+      partName,
+      priceFullAmt: Number(p.priceFull?.value || 0),
+      quantity: Number(p.quantity?.value || 1),
+      damageType: p.damageType?.value || '',
+      discountPct: Number(p.discountPct?.value || 0),
+      priceOffer: Number(p.priceOffer?.value || 0),
+      priceApprove: Number(p.priceApprove?.value || 0),
+      supplier: p.supplier?.value || '',
+      requireReturn: Boolean(p.requireReturn?.value || false),
+      partMasterId
+    })
+  }
+
   try {
     const newClaim = await prisma.claim.create({
       data: {
@@ -198,18 +257,7 @@ export async function POST(request: NextRequest) {
         province: body.car?.province?.value || '',
         insuredName: body.car?.insuredName?.value || '',
         parts: {
-          create: (body.parts || []).map((p: any) => ({
-            partNo: p.partNo?.value || '',
-            partName: p.partName?.value || '',
-            priceFullAmt: Number(p.priceFull?.value || 0),
-            quantity: Number(p.quantity?.value || 1),
-            damageType: p.damageType?.value || '',
-            discountPct: Number(p.discountPct?.value || 0),
-            priceOffer: Number(p.priceOffer?.value || 0),
-            priceApprove: Number(p.priceApprove?.value || 0),
-            supplier: p.supplier?.value || '',
-            requireReturn: Boolean(p.requireReturn?.value || false),
-          }))
+          create: partsToCreate
         },
         labors: {
           create: (body.labors || []).map((l: any) => ({

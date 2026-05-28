@@ -20,6 +20,77 @@ const DEFAULT_COMPANY = {
   signatureUrl: '',
 }
 
+// Thai Baht Text Generator
+function bahtText(num: number): string {
+  const numberText = ['ศูนย์', 'หนึ่ง', 'สอง', 'สาม', 'สี่', 'ห้า', 'หก', 'เจ็ด', 'แปด', 'เก้า']
+  const unitText = ['', 'สิบ', 'ร้อย', 'พัน', 'หมื่น', 'แสน', 'ล้าน']
+  
+  if (num === 0 || isNaN(num)) return 'ศูนย์บาทถ้วน'
+  
+  const str = num.toFixed(2).split('.')
+  const baht = str[0]
+  const satang = str[1]
+  
+  let bahtTextStr = ''
+  
+  const convert = (val: string) => {
+    let result = ''
+    const length = val.length
+    for (let i = 0; i < length; i++) {
+      const digit = parseInt(val.charAt(i), 10)
+      const place = length - i - 1
+      
+      if (digit !== 0) {
+        if (place === 1 && digit === 2) {
+          result += 'ยี่'
+        } else if (place === 1 && digit === 1) {
+          result += ''
+        } else if (place === 0 && digit === 1 && length > 1 && val.charAt(length - 2) !== '0') {
+          result += 'เอ็ด'
+        } else {
+          result += numberText[digit]
+        }
+        result += unitText[place]
+      }
+    }
+    return result
+  }
+  
+  const convertBaht = (bahtStr: string) => {
+    let result = ''
+    const chunks = []
+    let temp = bahtStr
+    while (temp.length > 0) {
+      const size = Math.min(6, temp.length)
+      chunks.unshift(temp.substring(temp.length - size))
+      temp = temp.substring(0, temp.length - size)
+    }
+    
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i]
+      result += convert(chunk)
+      if (i < chunks.length - 1 && parseInt(chunk, 10) !== 0) {
+        result += 'ล้าน'
+      }
+    }
+    return result
+  }
+  
+  bahtTextStr = convertBaht(baht)
+  
+  if (bahtTextStr !== '') {
+    bahtTextStr += 'บาท'
+  }
+  
+  if (satang === '00' || satang === '0') {
+    bahtTextStr += 'ถ้วน'
+  } else {
+    bahtTextStr += convert(satang) + 'สตางค์'
+  }
+  
+  return bahtTextStr
+}
+
 export default function PDFMockPage() {
   const params = useParams()
   const searchParams = useSearchParams()
@@ -370,91 +441,515 @@ export default function PDFMockPage() {
       partNo: item.partNo,
       description: item.description,
       quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      discountPct: item.discountPct || 0,
+      totalPrice: item.totalPrice,
     }))
     let documentDate = po.createdAt
     let noteText = 'กรุณาตรวจนับอะไหล่ให้ครบถ้วนก่อนลงนามรับของ'
-    let titleText = 'ใบส่งของ (Delivery Note)'
+    let titleText = 'ใบส่งของ/ใบส่งมอบสินค้า'
 
     if (grId) {
       const targetGR = (po.goodsReceipts || []).find((gr: any) => gr.id === grId)
       if (targetGR) {
         documentDate = targetGR.receivedAt
-        titleText = 'ใบส่งของ (Delivery Note) - ตรวจรับบางส่วน'
+        titleText = 'ใบส่งของ/ใบส่งมอบสินค้า - ตรวจรับบางส่วน'
         if (targetGR.note) {
           noteText = `หมายเหตุ: ${targetGR.note}`
         }
         itemsToRender = (targetGR.items || []).map((gi: any) => {
           const poItem = po.items?.find((pi: any) => pi.id === gi.poItemId)
+          const unitPrice = poItem?.unitPrice || 0
+          const discountPct = poItem?.discountPct || 0
+          const totalPrice = unitPrice * gi.quantity * (1 - discountPct / 100)
           return {
             id: gi.id,
             partNo: poItem?.partNo || gi.poItemId,
             description: poItem?.description || 'รายการอะไหล่',
             quantity: gi.quantity,
+            unitPrice,
+            discountPct,
+            totalPrice,
           }
         })
       }
     }
 
+    const docNo = po.poNo.replace(/^PO-?/i, 'DO-')
+
+    // Fallback company details
+    const sellerName = company.name || 'บริษัท ดับเบิ้ล เอส.เอ็ม. จำกัด'
+    const sellerAddress = company.address || 'เลขที่ 622 ซอย ลาดพร้าว 47 (สะพาน 2) ถนน ลาดพร้าว แขวงสะพานสอง เขตวังทองหลาง กรุงเทพมหานคร 10310'
+    const sellerTaxId = company.taxId || '0105553036240'
+    const sellerPhone = company.phone || '093-140-0898'
+    const sellerEmail = company.email || 'salesdoublesm@gmail.com'
+
+    const customerName = claim.insurance?.name || claim.insuredName || ''
+    const customerAddress = claim.insurance?.address || ''
+    const customerTaxId = claim.insurance?.taxId || ''
+    const customerBranch = claim.insurance?.branchCode ? (claim.insurance.branchCode === '00000' ? 'สำนักงานใหญ่' : `สาขา ${claim.insurance.branchCode}`) : 'สำนักงานใหญ่'
+
+    const subtotal = itemsToRender.reduce((sum: number, item: any) => sum + (item.totalPrice || 0), 0)
+    const vatAmount = subtotal * 0.07
+    const grandTotal = subtotal + vatAmount
+
     return (
-      <div className="bg-white min-h-screen text-black p-8 max-w-4xl mx-auto print:p-12">
-        {renderHeader(titleText, po.poNo, documentDate)}
+      <div className="bg-white min-h-screen text-black p-8 max-w-4xl mx-auto print:p-12 font-sans relative overflow-hidden print:overflow-visible">
+        
+        {/* CSS for watermark and font */}
+        <style jsx global>{`
+          @import url('https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap');
+          .font-sans {
+            font-family: 'Sarabun', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+          }
+        `}</style>
 
-        <div className="grid grid-cols-2 gap-8 mb-8 text-sm">
-          <div className="border rounded p-4">
-            <h3 className="font-semibold mb-2 border-b pb-1">ผู้จัดจำหน่าย (Vendor)</h3>
-            <p><span className="text-gray-500 w-28 inline-block">ชื่อร้าน/บริษัท:</span> {po.vendor?.name}</p>
+        {/* Watermark "ใบเคลม" */}
+        <div style={{
+          position: 'absolute',
+          top: '55%',
+          left: '50%',
+          transform: 'translate(-50%, -50%) rotate(-15deg)',
+          border: '4px dashed rgba(244, 63, 94, 0.15)',
+          color: 'rgba(244, 63, 94, 0.15)',
+          fontSize: '5rem',
+          fontWeight: 'bold',
+          padding: '16px 48px',
+          borderRadius: '16px',
+          pointerEvents: 'none',
+          zIndex: 0,
+          whiteSpace: 'nowrap',
+          userSelect: 'none'
+        }}>
+          ใบเคลม
+        </div>
+
+        {/* Header section */}
+        <div className="flex justify-between items-start mb-6 z-10 relative">
+          <div className="flex gap-4">
+            <div className="w-20 h-20 bg-gray-100 flex items-center justify-center font-bold text-gray-400 rounded overflow-hidden border">
+              {company.logoUrl ? (
+                <img src={company.logoUrl} alt="Logo" className="w-full h-full object-contain" />
+              ) : (
+                <svg className="w-16 h-16" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M20 55C20 55 24 45 40 40C56 35 78 40 85 45C92 50 90 55 90 55H20Z" fill="#0d9488" />
+                  <circle cx="35" cy="55" r="8" fill="#f97316" stroke="white" strokeWidth="2" />
+                  <circle cx="75" cy="55" r="8" fill="#f97316" stroke="white" strokeWidth="2" />
+                  <text x="50%" y="85" dominantBaseline="middle" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a" fontFamily="sans-serif">SSM</text>
+                </svg>
+              )}
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">{sellerName}</h1>
+              <p className="text-[10px] text-gray-500 font-semibold tracking-wider mb-1">CO., LTD.</p>
+              <p className="text-xs text-gray-600 mt-1 max-w-md leading-relaxed">{sellerAddress}</p>
+              <p className="text-xs text-gray-600">โทร. {sellerPhone} | อีเมล: {sellerEmail}</p>
+              <p className="text-xs text-gray-600">เลขประจำตัวผู้เสียภาษี: {sellerTaxId} (สำนักงานใหญ่)</p>
+            </div>
           </div>
-          <div className="border rounded p-4">
-            <h3 className="font-semibold mb-2 border-b pb-1">สถานที่จัดส่ง</h3>
-            <p className="whitespace-pre-wrap">{po.deliveryAddress || [claim.garage?.name, claim.garage?.address, claim.garage?.province].filter(Boolean).join(' ').trim()}</p>
+          <div className="text-right">
+            <div className="text-xs text-gray-500 mb-1">หน้า 1/1 (ต้นฉบับ)</div>
+            <h2 className="text-2xl font-bold text-teal-700 tracking-wide">{titleText}</h2>
+            <div className="mt-3 bg-teal-50/50 border border-teal-150 rounded-xl p-3 text-left text-xs space-y-1.5 min-w-[240px]">
+              <div className="flex justify-between">
+                <span className="text-gray-500">เลขที่เอกสาร:</span>
+                <span className="font-semibold text-gray-950">{docNo}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">วันที่ออก:</span>
+                <span className="font-semibold text-gray-950">{formatDate(documentDate)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">วันที่ตอบรับ:</span>
+                <span className="font-semibold text-gray-950">-</span>
+              </div>
+              <div className="flex justify-between border-t border-teal-100/50 pt-1.5 mt-1.5">
+                <span className="text-gray-500">เลขเคลม:</span>
+                <span className="font-semibold text-teal-800">{claim.claimNo}</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        <table className="w-full text-sm mb-8 border-collapse">
-          <thead>
-            <tr className="border-b-2 border-gray-800 text-left">
-              <th className="py-2 px-2 w-12">ลำดับ</th>
-              <th className="py-2 px-2">รหัสอะไหล่</th>
-              <th className="py-2 px-2">รายการ</th>
-              <th className="py-2 px-2 text-right">จำนวน</th>
-              <th className="py-2 px-2 text-center">ตรวจรับ</th>
-            </tr>
-          </thead>
-          <tbody>
-            {itemsToRender.map((item: any, i: number) => (
-              <tr key={item.id} className="border-b border-gray-200">
-                <td className="py-3 px-2 text-gray-600">{i + 1}</td>
-                <td className="py-3 px-2 font-mono text-xs">{item.partNo}</td>
-                <td className="py-3 px-2">{item.description}</td>
-                <td className="py-3 px-2 text-right">{item.quantity}</td>
-                <td className="py-3 px-2 text-center">☐</td>
+        {/* Customer Info Grid */}
+        <div className="grid grid-cols-2 gap-8 mb-6 text-xs z-10 relative">
+          <div className="border rounded-xl p-4 bg-slate-50/30">
+            <h3 className="font-bold text-gray-800 mb-2 border-b pb-1 text-teal-700">ลูกค้า / บริษัทประกัน</h3>
+            <p className="font-semibold">{customerName}</p>
+            {customerAddress && <p className="text-gray-600 mt-1 leading-relaxed">{customerAddress}</p>}
+            {customerTaxId && <p className="text-gray-600 mt-1">เลขประจำตัวผู้เสียภาษี: {customerTaxId} ({customerBranch})</p>}
+          </div>
+          <div className="border rounded-xl p-4 bg-slate-50/30">
+            <h3 className="font-bold text-gray-800 mb-2 border-b pb-1 text-teal-700">สถานที่จัดส่ง (ที่อยู่ส่งของ)</h3>
+            <p className="font-semibold">{claim.garage?.name || 'ไม่ระบุอู่'}</p>
+            {claim.garage?.address && <p className="text-gray-600 mt-1 leading-relaxed">{claim.garage.address}</p>}
+            {claim.garage?.phone && <p className="text-gray-600 mt-1">โทร: {claim.garage.phone}</p>}
+            <div className="border-t border-dashed border-gray-200 mt-2 pt-2 space-y-0.5">
+              <p className="text-gray-600">ผู้เอาประกัน: {claim.insuredName}</p>
+              <p className="text-gray-600">ทะเบียนรถ: {claim.carPlate}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Items Table */}
+        <div className="z-10 relative">
+          <table className="w-full text-xs mb-6 border-collapse">
+            <thead>
+              <tr className="bg-teal-50/70 border-b border-teal-200 text-left text-teal-800 font-bold">
+                <th className="py-2.5 px-2 text-center w-10">ลำดับ</th>
+                <th className="py-2.5 px-2">รายการ</th>
+                <th className="py-2.5 px-2 text-right w-16">จำนวน</th>
+                <th className="py-2.5 px-2 text-right w-24">ราคา</th>
+                <th className="py-2.5 px-2 text-right w-20">ส่วนลด</th>
+                <th className="py-2.5 px-2 text-center w-12">VAT</th>
+                <th className="py-2.5 px-2 text-right w-28">มูลค่าก่อนภาษี</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-
-        <div className="mt-8 text-sm border rounded p-4 bg-gray-50">
-          <h4 className="font-semibold mb-1">หมายเหตุ</h4>
-          <p className="text-gray-600">{noteText}</p>
+            </thead>
+            <tbody className="divide-y divide-gray-150">
+              {itemsToRender.map((item: any, i: number) => {
+                const subtotal = item.totalPrice
+                const priceBeforeDiscount = item.unitPrice
+                return (
+                  <tr key={item.id} className="hover:bg-slate-50/50 transition">
+                    <td className="py-2.5 px-2 text-center text-gray-550">{i + 1}</td>
+                    <td className="py-2.5 px-2 text-gray-900 font-medium">
+                      {item.description}
+                      {item.partNo && item.partNo !== '-' && (
+                        <span className="text-gray-400 font-mono text-[10px] block mt-0.5">({item.partNo})</span>
+                      )}
+                    </td>
+                    <td className="py-2.5 px-2 text-right text-gray-700 font-mono">{Number(item.quantity).toFixed(2)}</td>
+                    <td className="py-2.5 px-2 text-right text-gray-700 font-mono">{formatCurrency(priceBeforeDiscount)}</td>
+                    <td className="py-2.5 px-2 text-right text-gray-700 font-mono">
+                      {item.discountPct > 0 ? `${Number(item.discountPct).toFixed(2)}%` : '-'}
+                    </td>
+                    <td className="py-2.5 px-2 text-center text-gray-700">7%</td>
+                    <td className="py-2.5 px-2 text-right text-gray-900 font-mono font-medium">{formatCurrency(subtotal)}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
 
-        <div className="mt-16 grid grid-cols-3 gap-8 text-center text-sm">
-          <div>
-            <div className="border-b border-gray-400 w-40 mx-auto mb-2"></div>
-            <p>ผู้ส่งของ</p>
-            <p className="text-gray-500 text-xs mt-1">วันที่ ____/____/____</p>
+        {/* Totals & Summary Block */}
+        <div className="grid grid-cols-[1fr_320px] gap-8 mb-8 text-xs z-10 relative">
+          
+          {/* Left Side: Baht Text & Notes */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 border-t pt-3">
+              <span className="font-bold text-gray-700">จำนวนเงินทั้งสิ้น (ตัวอักษร):</span>
+              <span className="font-semibold text-teal-800 italic">({bahtText(grandTotal)})</span>
+            </div>
+            {noteText && (
+              <div className="bg-slate-50 border border-slate-100 rounded-lg p-3">
+                <span className="font-bold text-gray-750 block mb-1">หมายเหตุ:</span>
+                <p className="text-gray-600 whitespace-pre-wrap">{noteText}</p>
+              </div>
+            )}
           </div>
-          <div>
-            <div className="border-b border-gray-400 w-40 mx-auto mb-2"></div>
-            <p>ผู้ขนส่ง</p>
-            <p className="text-gray-500 text-xs mt-1">วันที่ ____/____/____</p>
-          </div>
-          <div>
-            <div className="border-b border-gray-400 w-40 mx-auto mb-2"></div>
-            <p>ผู้รับของ (อู่)</p>
-            <p className="text-gray-500 text-xs mt-1">วันที่ ____/____/____</p>
+
+          {/* Right Side: Totals */}
+          <div className="bg-teal-50/40 border border-teal-100/70 rounded-xl p-4 space-y-2 font-medium">
+            <div className="flex justify-between text-gray-600">
+              <span>มูลค่าไม่มีหรือยกเว้นภาษี:</span>
+              <span className="font-mono text-gray-900">0.00</span>
+            </div>
+            <div className="flex justify-between text-gray-600">
+              <span>มูลค่าที่คำนวณภาษี 7%:</span>
+              <span className="font-mono text-gray-900">{formatCurrency(subtotal)}</span>
+            </div>
+            <div className="flex justify-between text-gray-600">
+              <span>ภาษีมูลค่าเพิ่ม 7%:</span>
+              <span className="font-mono text-gray-900">{formatCurrency(vatAmount)}</span>
+            </div>
+            <div className="flex justify-between text-teal-900 font-bold border-t border-teal-100 pt-2">
+              <span>จำนวนเงินทั้งสิ้น:</span>
+              <span className="font-mono text-base">{formatCurrency(grandTotal)}</span>
+            </div>
+            <div className="flex justify-between text-gray-500 text-[10px] border-t border-dashed pt-1.5">
+              <span>จำนวนเงินถูกหัก ณ ที่จ่าย:</span>
+              <span className="font-mono">0.00</span>
+            </div>
+            <div className="flex justify-between text-teal-900 font-bold border-t border-teal-200 pt-2 text-sm">
+              <span>จำนวนเงินที่ชำระ:</span>
+              <span className="font-mono text-base">{formatCurrency(grandTotal)}</span>
+            </div>
           </div>
         </div>
+
+        {/* Warning Remark */}
+        <div className="border border-rose-100 rounded-xl p-3 bg-rose-50/30 text-xs text-rose-600 font-semibold mb-12 z-10 relative">
+          * กรุณาตรวจสอบสินค้าที่ได้รับหากพ้นกำหนด 7 วันนับจากวันที่ส่งสินค้า ทางร้านจะไม่รับเปลี่ยนหรือคืน
+        </div>
+
+        {/* Signatures Footer */}
+        <div className="grid grid-cols-2 gap-16 text-center text-xs z-10 relative mt-auto">
+          <div>
+            <div className="border-b border-gray-400 w-48 mx-auto mb-2 mt-8"></div>
+            <p className="font-bold text-gray-800">ผู้รับสินค้า</p>
+            <p className="text-gray-500 text-[10px] mt-1">วันที่ ____/____/____</p>
+          </div>
+          <div>
+            <div className="border-b border-gray-400 w-48 mx-auto mb-2 mt-8"></div>
+            <p className="font-bold text-gray-800">ผู้ส่ง</p>
+            <p className="text-gray-500 text-[10px] mt-1">วันที่ ____/____/____</p>
+          </div>
+        </div>
+
+      </div>
+    )
+  }
+
+  if (type === 'delivery-note-ar') {
+    if (!quotation) return <div className="p-8 text-center">ไม่พบใบเสนอราคา</div>
+
+    // Combine labor and parts
+    const itemsToRender = [
+      ...(quotation.laborItems || []).map((l: any) => ({
+        id: l.id,
+        partNo: '-',
+        description: l.description,
+        quantity: 1,
+        unitPrice: l.unitPrice,
+        discountPct: l.discountPct || 0,
+        totalPrice: l.totalPrice,
+      })),
+      ...(quotation.partItems || []).map((p: any) => ({
+        id: p.id,
+        partNo: p.partNo || '-',
+        description: p.partName,
+        quantity: p.quantity,
+        unitPrice: p.unitPrice,
+        discountPct: p.discountPct || 0,
+        totalPrice: p.totalPrice,
+      }))
+    ]
+
+    const docNo = quotation.quotationNo.replace(/^QO-?/i, 'DO-')
+    const documentDate = quotation.quotationDate
+    const validUntil = quotation.validUntil
+
+    // Fallback company details
+    const sellerName = company.name || 'บริษัท ดับเบิ้ล เอส.เอ็ม. จำกัด'
+    const sellerAddress = company.address || 'เลขที่ 622 ซอย ลาดพร้าว 47 (สะพาน 2) ถนน ลาดพร้าว แขวงสะพานสอง เขตวังทองหลาง กรุงเทพมหานคร 10310'
+    const sellerTaxId = company.taxId || '0105553036240'
+    const sellerPhone = company.phone || '093-140-0898'
+    const sellerEmail = company.email || 'salesdoublesm@gmail.com'
+
+    const customerName = claim.insurance?.name || claim.insuredName || ''
+    const customerAddress = claim.insurance?.address || ''
+    const customerTaxId = claim.insurance?.taxId || ''
+    const customerBranch = claim.insurance?.branchCode ? (claim.insurance.branchCode === '00000' ? 'สำนักงานใหญ่' : `สาขา ${claim.insurance.branchCode}`) : 'สำนักงานใหญ่'
+
+    return (
+      <div className="bg-white min-h-screen text-black p-8 max-w-4xl mx-auto print:p-12 font-sans relative overflow-hidden print:overflow-visible">
+        
+        {/* CSS for watermark and font */}
+        <style jsx global>{`
+          @import url('https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap');
+          .font-sans {
+            font-family: 'Sarabun', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+          }
+        `}</style>
+
+        {/* Watermark "ใบเคลม" */}
+        <div style={{
+          position: 'absolute',
+          top: '55%',
+          left: '50%',
+          transform: 'translate(-50%, -50%) rotate(-15deg)',
+          border: '4px dashed rgba(244, 63, 94, 0.15)',
+          color: 'rgba(244, 63, 94, 0.15)',
+          fontSize: '5rem',
+          fontWeight: 'bold',
+          padding: '16px 48px',
+          borderRadius: '16px',
+          pointerEvents: 'none',
+          zIndex: 0,
+          whiteSpace: 'nowrap',
+          userSelect: 'none'
+        }}>
+          ใบเคลม
+        </div>
+
+        {/* Header section */}
+        <div className="flex justify-between items-start mb-6 z-10 relative">
+          <div className="flex gap-4">
+            <div className="w-20 h-20 bg-gray-100 flex items-center justify-center font-bold text-gray-400 rounded overflow-hidden border">
+              {company.logoUrl ? (
+                <img src={company.logoUrl} alt="Logo" className="w-full h-full object-contain" />
+              ) : (
+                <svg className="w-16 h-16" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M20 55C20 55 24 45 40 40C56 35 78 40 85 45C92 50 90 55 90 55H20Z" fill="#0d9488" />
+                  <circle cx="35" cy="55" r="8" fill="#f97316" stroke="white" strokeWidth="2" />
+                  <circle cx="75" cy="55" r="8" fill="#f97316" stroke="white" strokeWidth="2" />
+                  <text x="50%" y="85" dominantBaseline="middle" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a" fontFamily="sans-serif">SSM</text>
+                </svg>
+              )}
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">{sellerName}</h1>
+              <p className="text-[10px] text-gray-500 font-semibold tracking-wider mb-1">CO., LTD.</p>
+              <p className="text-xs text-gray-600 mt-1 max-w-md leading-relaxed">{sellerAddress}</p>
+              <p className="text-xs text-gray-600">โทร. {sellerPhone} | อีเมล: {sellerEmail}</p>
+              <p className="text-xs text-gray-600">เลขประจำตัวผู้เสียภาษี: {sellerTaxId} (สำนักงานใหญ่)</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-xs text-gray-500 mb-1">หน้า 1/1 (ต้นฉบับ)</div>
+            <h2 className="text-2xl font-bold text-teal-700 tracking-wide">ใบส่งของ/ใบส่งมอบสินค้า</h2>
+            <div className="mt-3 bg-teal-50/50 border border-teal-150 rounded-xl p-3 text-left text-xs space-y-1.5 min-w-[240px]">
+              <div className="flex justify-between">
+                <span className="text-gray-500">เลขที่เอกสาร:</span>
+                <span className="font-semibold text-gray-950">{docNo}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">วันที่ออก:</span>
+                <span className="font-semibold text-gray-950">{formatDate(documentDate)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">วันที่ตอบรับ:</span>
+                <span className="font-semibold text-gray-950">-</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">ใช้ได้ถึง:</span>
+                <span className="font-semibold text-gray-950">{formatDate(validUntil)}</span>
+              </div>
+              <div className="flex justify-between border-t border-teal-100/50 pt-1.5 mt-1.5">
+                <span className="text-gray-500">เลขเคลม:</span>
+                <span className="font-semibold text-teal-800">{claim.claimNo}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Customer Info Grid */}
+        <div className="grid grid-cols-2 gap-8 mb-6 text-xs z-10 relative">
+          <div className="border rounded-xl p-4 bg-slate-50/30">
+            <h3 className="font-bold text-gray-800 mb-2 border-b pb-1 text-teal-700">ลูกค้า / บริษัทประกัน</h3>
+            <p className="font-semibold">{customerName}</p>
+            {customerAddress && <p className="text-gray-600 mt-1 leading-relaxed">{customerAddress}</p>}
+            {customerTaxId && <p className="text-gray-600 mt-1">เลขประจำตัวผู้เสียภาษี: {customerTaxId} ({customerBranch})</p>}
+          </div>
+          <div className="border rounded-xl p-4 bg-slate-50/30">
+            <h3 className="font-bold text-gray-800 mb-2 border-b pb-1 text-teal-700">สถานที่จัดส่ง (ที่อยู่ส่งของ)</h3>
+            <p className="font-semibold">{claim.garage?.name || 'ไม่ระบุอู่'}</p>
+            {claim.garage?.address && <p className="text-gray-600 mt-1 leading-relaxed">{claim.garage.address}</p>}
+            {claim.garage?.phone && <p className="text-gray-600 mt-1">โทร: {claim.garage.phone}</p>}
+            <div className="border-t border-dashed border-gray-200 mt-2 pt-2 space-y-0.5">
+              <p className="text-gray-600">ผู้เอาประกัน: {claim.insuredName}</p>
+              <p className="text-gray-600">ทะเบียนรถ: {claim.carPlate}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Items Table */}
+        <div className="z-10 relative">
+          <table className="w-full text-xs mb-6 border-collapse">
+            <thead>
+              <tr className="bg-teal-50/70 border-b border-teal-200 text-left text-teal-800 font-bold">
+                <th className="py-2.5 px-2 text-center w-10">ลำดับ</th>
+                <th className="py-2.5 px-2">รายการ</th>
+                <th className="py-2.5 px-2 text-right w-16">จำนวน</th>
+                <th className="py-2.5 px-2 text-right w-24">ราคา</th>
+                <th className="py-2.5 px-2 text-right w-20">ส่วนลด</th>
+                <th className="py-2.5 px-2 text-center w-12">VAT</th>
+                <th className="py-2.5 px-2 text-right w-28">มูลค่าก่อนภาษี</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-150">
+              {itemsToRender.map((item: any, i: number) => {
+                const subtotal = item.totalPrice
+                const priceBeforeDiscount = item.unitPrice
+                return (
+                  <tr key={item.id} className="hover:bg-slate-50/50 transition">
+                    <td className="py-2.5 px-2 text-center text-gray-550">{i + 1}</td>
+                    <td className="py-2.5 px-2 text-gray-900 font-medium">
+                      {item.description}
+                      {item.partNo && item.partNo !== '-' && (
+                        <span className="text-gray-400 font-mono text-[10px] block mt-0.5">({item.partNo})</span>
+                      )}
+                    </td>
+                    <td className="py-2.5 px-2 text-right text-gray-700 font-mono">{Number(item.quantity).toFixed(2)}</td>
+                    <td className="py-2.5 px-2 text-right text-gray-700 font-mono">{formatCurrency(priceBeforeDiscount)}</td>
+                    <td className="py-2.5 px-2 text-right text-gray-700 font-mono">
+                      {item.discountPct > 0 ? `${Number(item.discountPct).toFixed(2)}%` : '-'}
+                    </td>
+                    <td className="py-2.5 px-2 text-center text-gray-700">7%</td>
+                    <td className="py-2.5 px-2 text-right text-gray-900 font-mono font-medium">{formatCurrency(subtotal)}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Totals & Summary Block */}
+        <div className="grid grid-cols-[1fr_320px] gap-8 mb-8 text-xs z-10 relative">
+          
+          {/* Left Side: Baht Text & Notes */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 border-t pt-3">
+              <span className="font-bold text-gray-700">จำนวนเงินทั้งสิ้น (ตัวอักษร):</span>
+              <span className="font-semibold text-teal-800 italic">({bahtText(quotation.grandTotal)})</span>
+            </div>
+            {quotation.note && (
+              <div className="bg-slate-50 border border-slate-100 rounded-lg p-3">
+                <span className="font-bold text-gray-750 block mb-1">หมายเหตุ:</span>
+                <p className="text-gray-600 whitespace-pre-wrap">{quotation.note}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Right Side: Totals */}
+          <div className="bg-teal-50/40 border border-teal-100/70 rounded-xl p-4 space-y-2 font-medium">
+            <div className="flex justify-between text-gray-600">
+              <span>มูลค่าไม่มีหรือยกเว้นภาษี:</span>
+              <span className="font-mono text-gray-900">0.00</span>
+            </div>
+            <div className="flex justify-between text-gray-600">
+              <span>มูลค่าที่คำนวณภาษี 7%:</span>
+              <span className="font-mono text-gray-900">{formatCurrency(quotation.subtotal)}</span>
+            </div>
+            <div className="flex justify-between text-gray-600">
+              <span>ภาษีมูลค่าเพิ่ม 7%:</span>
+              <span className="font-mono text-gray-900">{formatCurrency(quotation.vatAmount)}</span>
+            </div>
+            <div className="flex justify-between text-teal-900 font-bold border-t border-teal-100 pt-2">
+              <span>จำนวนเงินทั้งสิ้น:</span>
+              <span className="font-mono text-base">{formatCurrency(quotation.grandTotal)}</span>
+            </div>
+            <div className="flex justify-between text-gray-500 text-[10px] border-t border-dashed pt-1.5">
+              <span>จำนวนเงินถูกหัก ณ ที่จ่าย:</span>
+              <span className="font-mono">0.00</span>
+            </div>
+            <div className="flex justify-between text-teal-900 font-bold border-t border-teal-200 pt-2 text-sm">
+              <span>จำนวนเงินที่ชำระ:</span>
+              <span className="font-mono text-base">{formatCurrency(quotation.grandTotal)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Warning Remark */}
+        <div className="border border-rose-100 rounded-xl p-3 bg-rose-50/30 text-xs text-rose-600 font-semibold mb-12 z-10 relative">
+          * กรุณาตรวจสอบสินค้าที่ได้รับหากพ้นกำหนด 7 วันนับจากวันที่ส่งสินค้า ทางร้านจะไม่รับเปลี่ยนหรือคืน
+        </div>
+
+        {/* Signatures Footer */}
+        <div className="grid grid-cols-2 gap-16 text-center text-xs z-10 relative mt-auto">
+          <div>
+            <div className="border-b border-gray-400 w-48 mx-auto mb-2 mt-8"></div>
+            <p className="font-bold text-gray-800">ผู้รับสินค้า</p>
+            <p className="text-gray-500 text-[10px] mt-1">วันที่ ____/____/____</p>
+          </div>
+          <div>
+            <div className="border-b border-gray-400 w-48 mx-auto mb-2 mt-8"></div>
+            <p className="font-bold text-gray-800">ผู้ส่ง</p>
+            <p className="text-gray-500 text-[10px] mt-1">วันที่ ____/____/____</p>
+          </div>
+        </div>
+
       </div>
     )
   }
