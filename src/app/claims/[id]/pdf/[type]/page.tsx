@@ -354,11 +354,18 @@ export default function PDFMockPage() {
             <p><span className="text-gray-500 w-28 inline-block">ชื่อร้าน/บริษัท:</span> {po.vendor?.name}</p>
             <p><span className="text-gray-500 w-28 inline-block">ประเภท:</span> {po.poType === 'PARTS' ? 'อะไหล่' : 'ค่าแรง'}</p>
             <p><span className="text-gray-500 w-28 inline-block">การจัดส่ง:</span> {po.deliveryMode === 'DIRECT_TO_GARAGE' ? 'ส่งตรงอู่' : 'รับเอง'}</p>
-            {po.deliveryMode === 'DIRECT_TO_GARAGE' && (
-              <p className="mt-1 flex items-start">
+            {po.deliveryAddress ? (
+              <div className="mt-2 flex items-start text-xs border-t pt-2 border-dashed">
                 <span className="text-gray-500 w-28 inline-block shrink-0">ที่อยู่จัดส่ง:</span>
-                <span className="text-gray-900 font-semibold">{po.deliveryAddress || `${claim.garage?.name || ''} ${claim.garage?.address || ''}`.trim() || '-'}</span>
-              </p>
+                <span className="text-gray-900 font-semibold whitespace-pre-wrap flex-1">{po.deliveryAddress}</span>
+              </div>
+            ) : (
+              po.deliveryMode === 'DIRECT_TO_GARAGE' && (
+                <div className="mt-2 flex items-start text-xs border-t pt-2 border-dashed">
+                  <span className="text-gray-500 w-28 inline-block shrink-0">ที่อยู่จัดส่ง:</span>
+                  <span className="text-gray-900 font-semibold flex-1">{`${claim.garage?.name || ''}\n${claim.garage?.address || ''}`.trim() || '-'}</span>
+                </div>
+              )
             )}
           </div>
           <div className="border rounded p-4">
@@ -575,9 +582,15 @@ export default function PDFMockPage() {
           </div>
           <div className="border rounded-xl p-4 bg-slate-50/30">
             <h3 className="font-bold text-gray-800 mb-2 border-b pb-1 text-teal-700">สถานที่จัดส่ง (ที่อยู่ส่งของ)</h3>
-            <p className="font-semibold">{claim.garage?.name || 'ไม่ระบุอู่'}</p>
-            {claim.garage?.address && <p className="text-gray-600 mt-1 leading-relaxed">{claim.garage.address}</p>}
-            {claim.garage?.phone && <p className="text-gray-600 mt-1">โทร: {claim.garage.phone}</p>}
+            {po.deliveryAddress ? (
+              <p className="font-semibold whitespace-pre-wrap leading-relaxed">{po.deliveryAddress}</p>
+            ) : (
+              <>
+                <p className="font-semibold">{claim.garage?.name || 'ไม่ระบุอู่'}</p>
+                {claim.garage?.address && <p className="text-gray-600 mt-1 leading-relaxed">{claim.garage.address}</p>}
+                {claim.garage?.phone && <p className="text-gray-600 mt-1">โทร: {claim.garage.phone}</p>}
+              </>
+            )}
             <div className="border-t border-dashed border-gray-200 mt-2 pt-2 space-y-0.5">
               <p className="text-gray-600">ยี่ห้อ/รุ่น รถ: {claim.carBrand} {claim.carModel}</p>
               <p className="text-gray-600">ทะเบียนรถ: {claim.carPlate}</p>
