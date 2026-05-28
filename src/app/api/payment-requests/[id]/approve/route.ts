@@ -35,7 +35,8 @@ export async function POST(
         const count = await prisma.aPPayment.count({
           where: { id: { startsWith: prefix } }
         })
-        const seq = String(count + 1).padStart(5, '0')
+        const nextNo = 48 + count
+        const seq = String(nextNo).padStart(5, '0')
         const paymentId = `${prefix}${seq}`
 
         await prisma.aPPayment.create({
