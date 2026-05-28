@@ -35,49 +35,105 @@ export default function SupplierInvoiceModal({
   const [uploadedFile, setUploadedFile] = useState<{ name: string, url: string, type: string, file?: File } | null>(null)
   const [uploadMapSelections, setUploadMapSelections] = useState<Record<string, boolean>>({})
   const [uploadItemPrices, setUploadItemPrices] = useState<Record<string, number>>({})
+  const [uploadItemDiscounts, setUploadItemDiscounts] = useState<Record<string, number>>({})
+  const [globalDiscountPct, setGlobalDiscountPct] = useState<string>('')
   const [customInvoiceNo, setCustomInvoiceNo] = useState('')
   const [invoiceIncludeVat, setInvoiceIncludeVat] = useState(true)
   const [invoiceVatPct, setInvoiceVatPct] = useState(7)
   const [isSaving, setIsSaving] = useState(false)
+
+  // Helpers defined at top of body so they are available to useEffect
+  const globalPoItems = claim?.purchaseOrders?.filter((po: any) => po.status !== 'CANCELLED').flatMap((po: any) => po.items.map((item: any) => ({ ...item, poId: po.id, poNo: po.poNo, poStatus: po.status }))) || []
+  
+  const getPartBaseAmt = (p: any) => {
+    const poi = globalPoItems.find((x: any) => x.partNo === p.partNo)
+    return poi ? (poi.unitPrice * (poi.quantity || 1)) : (p.priceApprove * p.quantity)
+  }
+
+  const getLaborBaseAmt = (l: any) => {
+    const pol = globalPoItems.find((x: any) => x.description?.includes(l.description))
+    return pol ? pol.unitPrice : l.priceApprove
+  }
+
+  const getPartPrice = (p: any) => {
+    if (uploadItemPrices[p.id] !== undefined) return uploadItemPrices[p.id]
+    const disc = uploadItemDiscounts[p.id] ?? 0
+    return getPartBaseAmt(p) * (1 - disc / 100)
+  }
+
+  const getLaborPrice = (l: any) => {
+    if (uploadItemPrices[l.id] !== undefined) return uploadItemPrices[l.id]
+    const disc = uploadItemDiscounts[l.id] ?? 0
+    return getLaborBaseAmt(l) * (1 - disc / 100)
+  }
+
+  const handleGlobalDiscountChange = (val: string) => {
+    setGlobalDiscountPct(val)
+    const pct = Number(val) || 0
+    
+    const nextDiscounts = { ...uploadItemDiscounts }
+    const nextPrices = { ...uploadItemPrices }
+    
+    visibleParts.forEach(p => {
+      nextDiscounts[p.id] = pct
+      const base = getPartBaseAmt(p)
+      nextPrices[p.id] = base * (1 - pct / 100)
+    })
+    
+    visibleLabors.forEach(l => {
+      nextDiscounts[l.id] = pct
+      const base = getLaborBaseAmt(l)
+      nextPrices[l.id] = base * (1 - pct / 100)
+    })
+    
+    setUploadItemDiscounts(nextDiscounts)
+    setUploadItemPrices(nextPrices)
+  }
 
   useEffect(() => {
     if (!isOpen) return
     setUploadedFile(null)
     
     const initialSelections: Record<string, boolean> = {}
-    parts.filter(p => p.paymentStatus !== 'INVOICED' && p.paymentStatus !== 'PAID').forEach(p => {
+    const initialPrices: Record<string, number> = {}
+    const initialDiscounts: Record<string, number> = {}
+
+    const activeParts = parts.filter(p => p.paymentStatus !== 'INVOICED' && p.paymentStatus !== 'PAID')
+    const activeLabors = labors.filter(l => l.paymentStatus !== 'INVOICED' && l.paymentStatus !== 'PAID')
+
+    activeParts.forEach(p => {
       initialSelections[p.id] = true
+      const poi = globalPoItems.find((x: any) => x.partNo === p.partNo)
+      const base = poi ? (poi.unitPrice * (poi.quantity || 1)) : (p.priceApprove * p.quantity)
+      const disc = poi ? 0 : (p.discountPct || 0)
+      initialDiscounts[p.id] = disc
+      initialPrices[p.id] = base * (1 - disc / 100)
     })
-    labors.filter(l => l.paymentStatus !== 'INVOICED' && l.paymentStatus !== 'PAID').forEach(l => {
+
+    activeLabors.forEach(l => {
       initialSelections[l.id] = true
+      const pol = globalPoItems.find((x: any) => x.description?.includes(l.description))
+      const base = pol ? pol.unitPrice : l.priceApprove
+      const disc = pol ? 0 : (l.discountPct || 0)
+      initialDiscounts[l.id] = disc
+      initialPrices[l.id] = base * (1 - disc / 100)
     })
+
     setUploadMapSelections(initialSelections)
-    
-    setUploadItemPrices({})
+    setUploadItemPrices(initialPrices)
+    setUploadItemDiscounts(initialDiscounts)
     setCustomInvoiceNo('')
     setInvoiceIncludeVat(true)
     setInvoiceVatPct(7)
-  }, [isOpen, parts, labors])
+    setGlobalDiscountPct('')
+  }, [isOpen, parts, labors, claim])
 
   if (!isOpen) return null
-
-  // Helpers
-  const globalPoItems = claim.purchaseOrders?.filter((po: any) => po.status !== 'CANCELLED').flatMap((po: any) => po.items.map((item: any) => ({ ...item, poId: po.id, poNo: po.poNo, poStatus: po.status }))) || []
-  
-  const getPartAmt = (p: any) => {
-    const poi = globalPoItems.find((x: any) => x.partNo === p.partNo)
-    return poi ? (poi.unitPrice * (poi.quantity || 1)) : (p.priceApprove * p.quantity)
-  }
-
-  const getLaborAmt = (l: any) => {
-    const pol = globalPoItems.find((x: any) => x.description?.includes(l.description))
-    return pol ? pol.unitPrice : l.priceApprove
-  }
-
   const visibleParts = parts.filter(p => p.paymentStatus !== 'INVOICED' && p.paymentStatus !== 'PAID')
   const visibleLabors = labors.filter(l => l.paymentStatus !== 'INVOICED' && l.paymentStatus !== 'PAID')
 
-  const sub = parts.filter(p => uploadMapSelections[p.id]).reduce((s, p) => s + (uploadItemPrices[p.id] ?? getPartAmt(p)), 0) + labors.filter(l => uploadMapSelections[l.id]).reduce((s, l) => s + (uploadItemPrices[l.id] ?? getLaborAmt(l)), 0)
+  const sub = parts.filter(p => uploadMapSelections[p.id]).reduce((s, p) => s + getPartPrice(p), 0) + 
+              labors.filter(l => uploadMapSelections[l.id]).reduce((s, l) => s + getLaborPrice(l), 0)
   const vat = invoiceIncludeVat ? Math.round(sub * (invoiceVatPct / 100)) : 0
   const validPOs = claim.purchaseOrders?.filter((po: any) => po.status !== 'CANCELLED') || []
   const vendorData = validPOs[0]?.vendorId ? vendors.find((v: any) => v.id === validPOs[0].vendorId) : vendors[0]
@@ -103,9 +159,9 @@ export default function SupplierInvoiceModal({
       const firstVendorId = validPOs[0]?.vendorId || vendors[0]?.id || claim.garageId || 'ven-p01'
 
       const partItems = selParts.map(p => {
-        const editedPrice = uploadItemPrices[p.id]
+        const price = getPartPrice(p)
+        const unitPrice = price / p.quantity
         const poItem = validPOs.flatMap((po: any) => po.items).find((pi: any) => pi.partNo === p.partNo)
-        const unitPrice = editedPrice !== undefined ? editedPrice / p.quantity : (poItem ? poItem.unitPrice : p.priceApprove)
         return {
           poItemId: poItem?.id || validPOs[0]?.items?.[0]?.id,
           claimPartId: p.id,
@@ -113,22 +169,21 @@ export default function SupplierInvoiceModal({
           description: p.partName,
           quantity: p.quantity,
           unitPrice: unitPrice,
-          totalPrice: unitPrice * p.quantity
+          totalPrice: price
         }
       })
 
       const laborItems = selLabors.map(l => {
-        const editedPrice = uploadItemPrices[l.id]
+        const price = getLaborPrice(l)
         const poLabor = validPOs.flatMap((po: any) => po.items).find((pi: any) => pi.description?.includes(l.description))
-        const unitPrice = editedPrice !== undefined ? editedPrice : (poLabor ? poLabor.unitPrice : l.priceApprove)
         return {
           claimPartId: null,
           claimLaborId: l.id,
           partNo: '',
           description: `[ค่าแรง] ${l.description}`,
           quantity: 1,
-          unitPrice: unitPrice,
-          totalPrice: unitPrice
+          unitPrice: price,
+          totalPrice: price
         }
       })
 
@@ -167,7 +222,6 @@ export default function SupplierInvoiceModal({
 
   const isAllPartsSelected = visibleParts.length > 0 && visibleParts.every(p => !!uploadMapSelections[p.id])
   const isAllLaborsSelected = visibleLabors.length > 0 && visibleLabors.every(l => !!uploadMapSelections[l.id])
-
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={onClose}>
       <Card className="w-full max-w-2xl shadow-2xl max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
@@ -215,15 +269,30 @@ export default function SupplierInvoiceModal({
               </>
             )}
           </label>
-          <div>
-            <label className="text-sm font-medium text-[#475569]">เลขที่ใบวางบิล (Invoice No.)</label>
-            <Input 
-              className="mt-1" 
-              placeholder="ใส่เลขที่จริงจากผู้จัดจำหน่าย หรือเว้นว่างระบบสร้างให้อัตโนมัติ" 
-              value={customInvoiceNo} 
-              onChange={e => setCustomInvoiceNo(e.target.value)} 
-              disabled={isSaving}
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-[#475569]">เลขที่ใบวางบิล (Invoice No.)</label>
+              <Input 
+                className="mt-1" 
+                placeholder="ใส่เลขที่จริงจากผู้จัดจำหน่าย..." 
+                value={customInvoiceNo} 
+                onChange={e => setCustomInvoiceNo(e.target.value)} 
+                disabled={isSaving}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-[#475569]">ส่วนลดทั้งหมด (%)</label>
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                className="mt-1"
+                placeholder="ใส่เปอร์เซ็นต์ส่วนลดเพื่อใช้กับทุกรายการ..."
+                value={globalDiscountPct}
+                onChange={e => handleGlobalDiscountChange(e.target.value)}
+                disabled={isSaving}
+              />
+            </div>
           </div>
           <div>
             <h4 className="text-sm font-semibold mb-3 text-slate-800">Invoice นี้ cover รายการไหนบ้าง?</h4>
@@ -261,40 +330,67 @@ export default function SupplierInvoiceModal({
                   <TableRow className="bg-slate-50/30">
                     <TableHead className="w-10"></TableHead>
                     <TableHead className="text-xs">รายการ</TableHead>
-                    <TableHead className="text-xs text-right w-36">ราคา (แก้ไขได้)</TableHead>
+                    <TableHead className="text-xs text-right w-24">ส่วนลด (%)</TableHead>
+                    <TableHead className="text-xs text-right w-32">ราคา (แก้ไขได้)</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {visibleParts.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={3} className="text-center p-4 text-xs text-slate-400 italic">ไม่มีรายการอะไหล่ที่รอดำเนินการวางบิล</TableCell>
+                      <TableCell colSpan={4} className="text-center p-4 text-xs text-slate-400 italic">ไม่มีรายการอะไหล่ที่รอดำเนินการวางบิล</TableCell>
                     </TableRow>
                   ) : (
-                    visibleParts.map(p => (
-                      <TableRow key={p.id} className={uploadMapSelections[p.id] ? 'bg-blue-50/30' : ''}>
-                        <TableCell>
-                          <input 
-                            type="checkbox" 
-                            checked={!!uploadMapSelections[p.id]} 
-                            disabled={isSaving}
-                            onChange={e => setUploadMapSelections(prev => ({ ...prev, [p.id]: e.target.checked }))} 
-                            className="w-4 h-4 rounded accent-[#0d9488]" 
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium text-xs">
-                          {p.partName} <span className="text-[10px] text-[#94a3b8] font-mono block mt-0.5">{p.partNo}</span>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Input 
-                            type="number" 
-                            className="h-8 text-xs text-right w-32 ml-auto" 
-                            value={uploadItemPrices[p.id] ?? getPartAmt(p)} 
-                            disabled={isSaving}
-                            onChange={e => setUploadItemPrices(prev => ({ ...prev, [p.id]: Number(e.target.value) || 0 }))} 
-                          />
-                        </TableCell>
-                      </TableRow>
-                    ))
+                    visibleParts.map(p => {
+                      const base = getPartBaseAmt(p)
+                      const disc = uploadItemDiscounts[p.id] ?? 0
+                      const price = uploadItemPrices[p.id] ?? (base * (1 - disc / 100))
+                      return (
+                        <TableRow key={p.id} className={uploadMapSelections[p.id] ? 'bg-blue-50/30' : ''}>
+                          <TableCell>
+                            <input 
+                              type="checkbox" 
+                              checked={!!uploadMapSelections[p.id]} 
+                              disabled={isSaving}
+                              onChange={e => setUploadMapSelections(prev => ({ ...prev, [p.id]: e.target.checked }))} 
+                              className="w-4 h-4 rounded accent-[#0d9488]" 
+                            />
+                          </TableCell>
+                          <TableCell className="font-medium text-xs">
+                            {p.partName} <span className="text-[10px] text-[#94a3b8] font-mono block mt-0.5">{p.partNo}</span>
+                            <span className="text-[10px] text-gray-400 block mt-0.5">ราคาอ้างอิง: ฿{formatCurrency(base)}</span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Input 
+                              type="number" 
+                              min={0}
+                              max={100}
+                              className="h-8 text-xs text-right w-16 ml-auto" 
+                              value={uploadItemDiscounts[p.id] ?? ''} 
+                              disabled={isSaving}
+                              onChange={e => {
+                                const newDisc = Number(e.target.value) || 0
+                                setUploadItemDiscounts(prev => ({ ...prev, [p.id]: newDisc }))
+                                setUploadItemPrices(prev => ({ ...prev, [p.id]: base * (1 - newDisc / 100) }))
+                              }} 
+                            />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Input 
+                              type="number" 
+                              className="h-8 text-xs text-right w-28 ml-auto" 
+                              value={price} 
+                              disabled={isSaving}
+                              onChange={e => {
+                                const newPrice = Number(e.target.value) || 0
+                                setUploadItemPrices(prev => ({ ...prev, [p.id]: newPrice }))
+                                const newDisc = base > 0 ? Math.max(0, Math.round((1 - newPrice / base) * 100)) : 0
+                                setUploadItemDiscounts(prev => ({ ...prev, [p.id]: newDisc }))
+                              }} 
+                            />
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })
                   )}
                 </TableBody>
               </Table>
@@ -333,40 +429,67 @@ export default function SupplierInvoiceModal({
                   <TableRow className="bg-slate-50/30">
                     <TableHead className="w-10"></TableHead>
                     <TableHead className="text-xs">รายการ</TableHead>
-                    <TableHead className="text-xs text-right w-36">ราคา (แก้ไขได้)</TableHead>
+                    <TableHead className="text-xs text-right w-24">ส่วนลด (%)</TableHead>
+                    <TableHead className="text-xs text-right w-32">ราคา (แก้ไขได้)</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {visibleLabors.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={3} className="text-center p-4 text-xs text-slate-400 italic">ไม่มีรายการค่าแรงที่รอดำเนินการวางบิล</TableCell>
+                      <TableCell colSpan={4} className="text-center p-4 text-xs text-slate-400 italic">ไม่มีรายการค่าแรงที่รอดำเนินการวางบิล</TableCell>
                     </TableRow>
                   ) : (
-                    visibleLabors.map(l => (
-                      <TableRow key={l.id} className={uploadMapSelections[l.id] ? 'bg-blue-50/30' : ''}>
-                        <TableCell>
-                          <input 
-                            type="checkbox" 
-                            checked={!!uploadMapSelections[l.id]} 
-                            disabled={isSaving}
-                            onChange={e => setUploadMapSelections(prev => ({ ...prev, [l.id]: e.target.checked }))} 
-                            className="w-4 h-4 rounded accent-[#0d9488]" 
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium text-xs">
-                          {l.description}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Input 
-                            type="number" 
-                            className="h-8 text-xs text-right w-32 ml-auto" 
-                            value={uploadItemPrices[l.id] ?? getLaborAmt(l)} 
-                            disabled={isSaving}
-                            onChange={e => setUploadItemPrices(prev => ({ ...prev, [l.id]: Number(e.target.value) || 0 }))} 
-                          />
-                        </TableCell>
-                      </TableRow>
-                    ))
+                    visibleLabors.map(l => {
+                      const base = getLaborBaseAmt(l)
+                      const disc = uploadItemDiscounts[l.id] ?? 0
+                      const price = uploadItemPrices[l.id] ?? (base * (1 - disc / 100))
+                      return (
+                        <TableRow key={l.id} className={uploadMapSelections[l.id] ? 'bg-blue-50/30' : ''}>
+                          <TableCell>
+                            <input 
+                              type="checkbox" 
+                              checked={!!uploadMapSelections[l.id]} 
+                              disabled={isSaving}
+                              onChange={e => setUploadMapSelections(prev => ({ ...prev, [l.id]: e.target.checked }))} 
+                              className="w-4 h-4 rounded accent-[#0d9488]" 
+                            />
+                          </TableCell>
+                          <TableCell className="font-medium text-xs">
+                            {l.description}
+                            <span className="text-[10px] text-gray-400 block mt-0.5">ราคาอ้างอิง: ฿{formatCurrency(base)}</span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Input 
+                              type="number" 
+                              min={0}
+                              max={100}
+                              className="h-8 text-xs text-right w-16 ml-auto" 
+                              value={uploadItemDiscounts[l.id] ?? ''} 
+                              disabled={isSaving}
+                              onChange={e => {
+                                const newDisc = Number(e.target.value) || 0
+                                setUploadItemDiscounts(prev => ({ ...prev, [l.id]: newDisc }))
+                                setUploadItemPrices(prev => ({ ...prev, [l.id]: base * (1 - newDisc / 100) }))
+                              }} 
+                            />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Input 
+                              type="number" 
+                              className="h-8 text-xs text-right w-28 ml-auto" 
+                              value={price} 
+                              disabled={isSaving}
+                              onChange={e => {
+                                const newPrice = Number(e.target.value) || 0
+                                setUploadItemPrices(prev => ({ ...prev, [l.id]: newPrice }))
+                                const newDisc = base > 0 ? Math.max(0, Math.round((1 - newPrice / base) * 100)) : 0
+                                setUploadItemDiscounts(prev => ({ ...prev, [l.id]: newDisc }))
+                              }} 
+                            />
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })
                   )}
                 </TableBody>
               </Table>

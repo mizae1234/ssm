@@ -38,7 +38,8 @@ export default function POModal({
   const [poDeliveryAddress, setPoDeliveryAddress] = useState<string>('')
   const [poModalParts, setPoModalParts] = useState<any[]>([])
   const [poModalLabors, setPoModalLabors] = useState<any[]>([])
-  const [poManualItems, setPoManualItems] = useState<{ id: string; description: string; quantity: number; unitPrice: number }[]>([])
+  const [poManualItems, setPoManualItems] = useState<{ id: string; description: string; quantity: number; unitPrice: number; discountPct: number }[]>([])
+  const [globalDiscountPct, setGlobalDiscountPct] = useState<string>('')
   const [poIncludeVat, setPoIncludeVat] = useState(true)
   const [poVatPct, setPoVatPct] = useState(7)
   const [isSaving, setIsSaving] = useState(false)
@@ -53,6 +54,14 @@ export default function POModal({
     setPoModalLabors(poModalLabors.map(l => ({ ...l, selected: checked })))
   }
 
+  const handleGlobalDiscountChange = (val: string) => {
+    setGlobalDiscountPct(val)
+    const pct = Number(val) || 0
+    setPoModalParts(prev => prev.map(p => ({ ...p, discountPct: pct })))
+    setPoModalLabors(prev => prev.map(l => ({ ...l, discountPct: pct })))
+    setPoManualItems(prev => prev.map(m => ({ ...m, discountPct: pct })))
+  }
+
   useEffect(() => {
     if (!isOpen) return
 
@@ -65,16 +74,35 @@ export default function POModal({
         setPoModalParts(parts.map((p: any) => {
           const existingPoItem = po.items.find((pi: any) => pi.partNo === p.partNo || pi.description === p.partName)
           if (existingPoItem) {
-            return { ...p, selected: true, partName: existingPoItem.description, quantity: existingPoItem.quantity, priceApprove: existingPoItem.unitPrice }
+            const originalPrice = Number(p.priceApprove) || 0
+            const poUnitPrice = Number(existingPoItem.unitPrice) || 0
+            let discountPct = p.discountPct || 0
+            if (originalPrice > 0) {
+              discountPct = Math.max(0, Math.round((1 - poUnitPrice / originalPrice) * 100))
+            }
+            return { 
+              ...p, 
+              selected: true, 
+              partName: existingPoItem.description, 
+              quantity: existingPoItem.quantity, 
+              priceApprove: originalPrice, 
+              discountPct 
+            }
           }
-          return { ...p, selected: false }
+          return { ...p, selected: false, discountPct: p.discountPct || 0 }
         }))
         setPoModalLabors(labors.map((l: any) => {
           const existingPoItem = po.items.find((pi: any) => pi.description === `[ค่าแรง] ${l.description}`)
           if (existingPoItem) {
-            return { ...l, selected: true, description: existingPoItem.description.replace('[ค่าแรง] ', ''), priceApprove: existingPoItem.unitPrice }
+            const originalPrice = Number(l.priceApprove) || 0
+            const poUnitPrice = Number(existingPoItem.unitPrice) || 0
+            let discountPct = l.discountPct || 0
+            if (originalPrice > 0) {
+              discountPct = Math.max(0, Math.round((1 - poUnitPrice / originalPrice) * 100))
+            }
+            return { ...l, selected: true, description: existingPoItem.description.replace('[ค่าแรง] ', ''), priceApprove: originalPrice, discountPct }
           }
-          return { ...l, selected: false }
+          return { ...l, selected: false, discountPct: l.discountPct || 0 }
         }))
         const manuals = po.items.filter((pi: any) => {
           const isPart = parts.some(p => pi.partNo === p.partNo || pi.description === p.partName)
@@ -84,11 +112,36 @@ export default function POModal({
           id: pi.id || `manual-${Math.random()}`,
           description: pi.description,
           quantity: pi.quantity,
-          unitPrice: pi.unitPrice
+          unitPrice: pi.unitPrice,
+          discountPct: 0
         }))
         setPoManualItems(manuals)
         setPoIncludeVat(po.includeVat ?? true)
         setPoVatPct(po.vatPct ?? 7)
+
+        // Reconstruct global discount if all PO items share the same discountPct
+        const allPartDiscounts = parts.map((p: any) => {
+          const pi = po.items.find((x: any) => x.partNo === p.partNo || x.description === p.partName)
+          if (!pi) return null
+          const originalPrice = Number(p.priceApprove) || 0
+          const poUnitPrice = Number(pi.unitPrice) || 0
+          return originalPrice > 0 ? Math.max(0, Math.round((1 - poUnitPrice / originalPrice) * 100)) : 0
+        }).filter((d: any): d is number => d !== null)
+
+        const allLaborDiscounts = labors.map((l: any) => {
+          const pi = po.items.find((x: any) => x.description === `[ค่าแรง] ${l.description}`)
+          if (!pi) return null
+          const originalPrice = Number(l.priceApprove) || 0
+          const poUnitPrice = Number(pi.unitPrice) || 0
+          return originalPrice > 0 ? Math.max(0, Math.round((1 - poUnitPrice / originalPrice) * 100)) : 0
+        }).filter((d: any): d is number => d !== null)
+
+        const allDiscounts = [...allPartDiscounts, ...allLaborDiscounts]
+        if (allDiscounts.length > 0 && allDiscounts.every(d => d === allDiscounts[0])) {
+          setGlobalDiscountPct(String(allDiscounts[0]))
+        } else {
+          setGlobalDiscountPct('')
+        }
       }
     } else {
       if (vendors.length > 0) {
@@ -99,19 +152,40 @@ export default function POModal({
         setPoVendorName('')
       }
       setPoDeliveryAddress(claim.garage?.name ? `${claim.garage.name}\n${claim.garage.address || ''} ${claim.garage.province || ''}`.trim() : '')
-      setPoModalParts(parts.map(p => ({ ...p, selected: p.status === 'approved' })))
-      setPoModalLabors(labors.map(l => ({ ...l, selected: false })))
+      setPoModalParts(parts.map(p => ({ ...p, selected: p.status === 'approved', discountPct: p.discountPct || 0 })))
+      setPoModalLabors(labors.map(l => ({ ...l, selected: false, discountPct: l.discountPct || 0 })))
       setPoManualItems([])
       setPoIncludeVat(true)
       setPoVatPct(7)
+      setGlobalDiscountPct('')
     }
   }, [isOpen, editPOId, claim, parts, labors, vendors])
 
   if (!isOpen) return null
 
-  const poPartsTot = poModalParts.filter(p => p.selected).reduce((sum, p) => sum + ((Number(p.priceApprove) || 0) * (Number(p.quantity) || 1)), 0)
-  const poLaborsTot = poModalLabors.filter(l => l.selected).reduce((sum, l) => sum + (Number(l.priceApprove) || 0), 0)
-  const poManualTot = poManualItems.reduce((sum, m) => sum + ((Number(m.unitPrice) || 0) * (Number(m.quantity) || 1)), 0)
+  const poPartsTot = poModalParts.filter(p => p.selected).reduce((sum, p) => {
+    const originalPrice = Number(p.priceApprove) || 0
+    const qty = Number(p.quantity) || 1
+    const discount = Number(p.discountPct) || 0
+    const discountedPrice = originalPrice * (1 - discount / 100)
+    return sum + (discountedPrice * qty)
+  }, 0)
+
+  const poLaborsTot = poModalLabors.filter(l => l.selected).reduce((sum, l) => {
+    const originalPrice = Number(l.priceApprove) || 0
+    const discount = Number(l.discountPct) || 0
+    const discountedPrice = originalPrice * (1 - discount / 100)
+    return sum + discountedPrice
+  }, 0)
+
+  const poManualTot = poManualItems.reduce((sum, m) => {
+    const originalPrice = Number(m.unitPrice) || 0
+    const qty = Number(m.quantity) || 1
+    const discount = Number(m.discountPct) || 0
+    const discountedPrice = originalPrice * (1 - discount / 100)
+    return sum + (discountedPrice * qty)
+  }, 0)
+
   const poTot = poPartsTot + poLaborsTot + poManualTot
   const vatAmt = poIncludeVat ? Math.round(poTot * (poVatPct / 100)) : 0
 
@@ -129,27 +203,42 @@ export default function POModal({
     setIsSaving(true)
     const poNo = editPOId ? claim.purchaseOrders.find((p: any) => p.id === editPOId)?.poNo : undefined
 
-    const partItems = selectedParts.map(p => ({
-      partNo: p.partNo,
-      description: p.partName,
-      quantity: Number(p.quantity) || 1,
-      unitPrice: Number(p.priceApprove) || 0,
-      totalPrice: (Number(p.priceApprove) || 0) * (Number(p.quantity) || 1)
-    }))
-    const laborItems = selectedLabors.map(l => ({
-      partNo: '',
-      description: `[ค่าแรง] ${l.description}`,
-      quantity: 1,
-      unitPrice: Number(l.priceApprove) || 0,
-      totalPrice: Number(l.priceApprove) || 0
-    }))
-    const manualItems = poManualItems.filter(m => m.description.trim()).map(m => ({
-      partNo: '',
-      description: m.description,
-      quantity: Number(m.quantity) || 1,
-      unitPrice: Number(m.unitPrice) || 0,
-      totalPrice: (Number(m.unitPrice) || 0) * (Number(m.quantity) || 1)
-    }))
+    const partItems = selectedParts.map(p => {
+      const originalPrice = Number(p.priceApprove) || 0
+      const discount = Number(p.discountPct) || 0
+      const discountedPrice = originalPrice * (1 - discount / 100)
+      return {
+        partNo: p.partNo,
+        description: p.partName,
+        quantity: Number(p.quantity) || 1,
+        unitPrice: discountedPrice,
+        totalPrice: discountedPrice * (Number(p.quantity) || 1)
+      }
+    })
+    const laborItems = selectedLabors.map(l => {
+      const originalPrice = Number(l.priceApprove) || 0
+      const discount = Number(l.discountPct) || 0
+      const discountedPrice = originalPrice * (1 - discount / 100)
+      return {
+        partNo: '',
+        description: `[ค่าแรง] ${l.description}`,
+        quantity: 1,
+        unitPrice: discountedPrice,
+        totalPrice: discountedPrice
+      }
+    })
+    const manualItems = poManualItems.filter(m => m.description.trim()).map(m => {
+      const originalPrice = Number(m.unitPrice) || 0
+      const discount = Number(m.discountPct) || 0
+      const discountedPrice = originalPrice * (1 - discount / 100)
+      return {
+        partNo: '',
+        description: m.description,
+        quantity: Number(m.quantity) || 1,
+        unitPrice: discountedPrice,
+        totalPrice: discountedPrice * (Number(m.quantity) || 1)
+      }
+    })
 
     const payload = {
       poNo,
@@ -215,6 +304,18 @@ export default function POModal({
                   }}
                   placeholder="เลือกผู้จัดจำหน่าย..."
                 />
+                <div className="mt-3">
+                  <label className="text-sm font-medium text-[#475569]">ส่วนลดทั้งหมด (%)</label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={100}
+                    placeholder="ใส่เปอร์เซ็นต์ส่วนลดเพื่อใช้กับทุกรายการ..."
+                    value={globalDiscountPct}
+                    onChange={e => handleGlobalDiscountChange(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
               </div>
               <div>
                 <label className="text-sm font-medium text-[#475569]">ที่อยู่สำหรับจัดส่ง (ใบส่งของ) <span className="text-rose-500">*</span></label>
@@ -256,22 +357,43 @@ export default function POModal({
                     </TableHead>
                     <TableHead>รายการอะไหล่</TableHead>
                     <TableHead className="w-20 text-center">จำนวน</TableHead>
-                    <TableHead className="w-32 text-right">ราคา/หน่วย</TableHead>
-                    <TableHead className="w-32 text-right">รวม</TableHead>
+                    <TableHead className="w-28 text-right">ราคา/หน่วย</TableHead>
+                    <TableHead className="w-24 text-right">ส่วนลด (%)</TableHead>
+                    <TableHead className="w-28 text-right">รวม</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {poModalParts.map((p, i) => (
-                    <TableRow key={p.id}>
-                      <TableCell><input type="checkbox" checked={p.selected} onChange={e => { const n = [...poModalParts]; n[i].selected = e.target.checked; setPoModalParts(n) }} className="w-4 h-4" /></TableCell>
-                      <TableCell><Input className="h-8 text-sm" value={p.partName} onChange={e => { const n = [...poModalParts]; n[i].partName = e.target.value; setPoModalParts(n) }} /></TableCell>
-                      <TableCell><Input type="number" className="h-8 text-sm text-center" value={p.quantity || ''} onChange={e => { const n = [...poModalParts]; n[i].quantity = Number(e.target.value); setPoModalParts(n) }} /></TableCell>
-                      <TableCell><Input type="number" className="h-8 text-sm text-right" value={p.priceApprove || ''} onChange={e => { const n = [...poModalParts]; n[i].priceApprove = Number(e.target.value); setPoModalParts(n) }} /></TableCell>
-                      <TableCell className="text-right font-medium text-sm pt-3">฿{formatCurrency((Number(p.priceApprove) || 0) * (Number(p.quantity) || 1))}</TableCell>
-                    </TableRow>
-                  ))}
+                  {poModalParts.map((p, i) => {
+                    const originalPrice = Number(p.priceApprove) || 0
+                    const qty = Number(p.quantity) || 1
+                    const discount = Number(p.discountPct) || 0
+                    const rowTotal = originalPrice * qty * (1 - discount / 100)
+                    return (
+                      <TableRow key={p.id}>
+                        <TableCell><input type="checkbox" checked={p.selected} onChange={e => { const n = [...poModalParts]; n[i].selected = e.target.checked; setPoModalParts(n) }} className="w-4 h-4" /></TableCell>
+                        <TableCell><Input className="h-8 text-sm" value={p.partName} onChange={e => { const n = [...poModalParts]; n[i].partName = e.target.value; setPoModalParts(n) }} /></TableCell>
+                        <TableCell><Input type="number" className="h-8 text-sm text-center" value={p.quantity || ''} onChange={e => { const n = [...poModalParts]; n[i].quantity = Number(e.target.value); setPoModalParts(n) }} /></TableCell>
+                        <TableCell><Input type="number" className="h-8 text-sm text-right" value={p.priceApprove || ''} onChange={e => { const n = [...poModalParts]; n[i].priceApprove = Number(e.target.value); setPoModalParts(n) }} /></TableCell>
+                        <TableCell>
+                          <Input 
+                            type="number" 
+                            min={0} 
+                            max={100} 
+                            className="h-8 text-sm text-right" 
+                            value={p.discountPct ?? ''} 
+                            onChange={e => { 
+                              const n = [...poModalParts]
+                              n[i].discountPct = Number(e.target.value) || 0
+                              setPoModalParts(n) 
+                            }} 
+                          />
+                        </TableCell>
+                        <TableCell className="text-right font-medium text-sm pt-3">฿{formatCurrency(rowTotal)}</TableCell>
+                      </TableRow>
+                    )
+                  })}
                   {poModalParts.length === 0 && (
-                    <TableRow><TableCell colSpan={5} className="text-center py-4 text-gray-500">ไม่มีรายการอะไหล่</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={6} className="text-center py-4 text-gray-500">ไม่มีรายการอะไหล่</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
@@ -294,19 +416,41 @@ export default function POModal({
                       />
                     </TableHead>
                     <TableHead>รายการค่าแรง</TableHead>
-                    <TableHead className="w-32 text-right">ราคา</TableHead>
+                    <TableHead className="w-28 text-right">ราคา</TableHead>
+                    <TableHead className="w-24 text-right">ส่วนลด (%)</TableHead>
+                    <TableHead className="w-28 text-right">รวม</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {poModalLabors.map((l: any, i: number) => (
-                    <TableRow key={l.id}>
-                      <TableCell><input type="checkbox" checked={l.selected} onChange={e => { const n = [...poModalLabors]; n[i].selected = e.target.checked; setPoModalLabors(n) }} className="w-4 h-4" /></TableCell>
-                      <TableCell><Input className="h-8 text-sm" value={l.description} onChange={e => { const n = [...poModalLabors]; n[i].description = e.target.value; setPoModalLabors(n) }} /></TableCell>
-                      <TableCell className="text-right"><Input type="number" className="h-8 text-sm text-right w-28 ml-auto" value={l.priceApprove || ''} onChange={e => { const n = [...poModalLabors]; n[i].priceApprove = Number(e.target.value); setPoModalLabors(n) }} /></TableCell>
-                    </TableRow>
-                  ))}
+                  {poModalLabors.map((l: any, i: number) => {
+                    const originalPrice = Number(l.priceApprove) || 0
+                    const discount = Number(l.discountPct) || 0
+                    const rowTotal = originalPrice * (1 - discount / 100)
+                    return (
+                      <TableRow key={l.id}>
+                        <TableCell><input type="checkbox" checked={l.selected} onChange={e => { const n = [...poModalLabors]; n[i].selected = e.target.checked; setPoModalLabors(n) }} className="w-4 h-4" /></TableCell>
+                        <TableCell><Input className="h-8 text-sm" value={l.description} onChange={e => { const n = [...poModalLabors]; n[i].description = e.target.value; setPoModalLabors(n) }} /></TableCell>
+                        <TableCell><Input type="number" className="h-8 text-sm text-right w-28 ml-auto" value={l.priceApprove || ''} onChange={e => { const n = [...poModalLabors]; n[i].priceApprove = Number(e.target.value); setPoModalLabors(n) }} /></TableCell>
+                        <TableCell>
+                          <Input 
+                            type="number" 
+                            min={0} 
+                            max={100} 
+                            className="h-8 text-sm text-right w-20 ml-auto" 
+                            value={l.discountPct ?? ''} 
+                            onChange={e => { 
+                              const n = [...poModalLabors]
+                              n[i].discountPct = Number(e.target.value) || 0
+                              setPoModalLabors(n) 
+                            }} 
+                          />
+                        </TableCell>
+                        <TableCell className="text-right font-medium text-sm pt-3">฿{formatCurrency(rowTotal)}</TableCell>
+                      </TableRow>
+                    )
+                  })}
                   {poModalLabors.length === 0 && (
-                    <TableRow><TableCell colSpan={3} className="text-center py-4 text-gray-500">ไม่มีรายการค่าแรง</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={5} className="text-center py-4 text-gray-500">ไม่มีรายการค่าแรง</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
@@ -316,7 +460,7 @@ export default function POModal({
             <div className="border rounded-lg overflow-hidden mt-4">
               <div className="bg-green-50 px-4 py-2 border-b flex items-center justify-between">
                 <h4 className="text-sm font-semibold text-green-800">รายการเพิ่มเติม (Manual)</h4>
-                <Button variant="outline" size="sm" className="h-7 text-xs text-green-700 border-green-300 hover:bg-green-100" onClick={() => setPoManualItems([...poManualItems, { id: `manual-${Date.now()}`, description: '', quantity: 1, unitPrice: 0 }])}>
+                <Button variant="outline" size="sm" className="h-7 text-xs text-green-700 border-green-300 hover:bg-green-100" onClick={() => setPoManualItems([...poManualItems, { id: `manual-${Date.now()}`, description: '', quantity: 1, unitPrice: 0, discountPct: Number(globalDiscountPct) || 0 }])}>
                   <Plus className="w-3 h-3 mr-1" />เพิ่มรายการ
                 </Button>
               </div>
@@ -325,23 +469,44 @@ export default function POModal({
                   <TableRow>
                     <TableHead>รายการ</TableHead>
                     <TableHead className="w-20 text-center">จำนวน</TableHead>
-                    <TableHead className="w-32 text-right">ราคา/หน่วย</TableHead>
-                    <TableHead className="w-32 text-right">รวม</TableHead>
+                    <TableHead className="w-28 text-right">ราคา/หน่วย</TableHead>
+                    <TableHead className="w-24 text-right">ส่วนลด (%)</TableHead>
+                    <TableHead className="w-28 text-right">รวม</TableHead>
                     <TableHead className="w-10"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {poManualItems.map((m, i) => (
-                    <TableRow key={m.id}>
-                      <TableCell><Input className="h-8 text-sm" placeholder="ชื่อรายการ เช่น ค่าขนส่ง" value={m.description} onChange={e => { const n = [...poManualItems]; n[i].description = e.target.value; setPoManualItems(n) }} /></TableCell>
-                      <TableCell><Input type="number" className="h-8 text-sm text-center" value={m.quantity || ''} onChange={e => { const n = [...poManualItems]; n[i].quantity = Number(e.target.value); setPoManualItems(n) }} /></TableCell>
-                      <TableCell><Input type="number" className="h-8 text-sm text-right" value={m.unitPrice || ''} onChange={e => { const n = [...poManualItems]; n[i].unitPrice = Number(e.target.value); setPoManualItems(n) }} /></TableCell>
-                      <TableCell className="text-right font-medium text-sm pt-3">฿{formatCurrency((Number(m.unitPrice) || 0) * (Number(m.quantity) || 1))}</TableCell>
-                      <TableCell><button onClick={() => setPoManualItems(poManualItems.filter((_, idx) => idx !== i))} className="text-gray-400 hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button></TableCell>
-                    </TableRow>
-                  ))}
+                  {poManualItems.map((m, i) => {
+                    const originalPrice = Number(m.unitPrice) || 0
+                    const qty = Number(m.quantity) || 1
+                    const discount = Number(m.discountPct) || 0
+                    const rowTotal = originalPrice * qty * (1 - discount / 100)
+                    return (
+                      <TableRow key={m.id}>
+                        <TableCell><Input className="h-8 text-sm" placeholder="ชื่อรายการ เช่น ค่าขนส่ง" value={m.description} onChange={e => { const n = [...poManualItems]; n[i].description = e.target.value; setPoManualItems(n) }} /></TableCell>
+                        <TableCell><Input type="number" className="h-8 text-sm text-center" value={m.quantity || ''} onChange={e => { const n = [...poManualItems]; n[i].quantity = Number(e.target.value); setPoManualItems(n) }} /></TableCell>
+                        <TableCell><Input type="number" className="h-8 text-sm text-right" value={m.unitPrice || ''} onChange={e => { const n = [...poManualItems]; n[i].unitPrice = Number(e.target.value); setPoManualItems(n) }} /></TableCell>
+                        <TableCell>
+                          <Input 
+                            type="number" 
+                            min={0} 
+                            max={100} 
+                            className="h-8 text-sm text-right" 
+                            value={m.discountPct ?? ''} 
+                            onChange={e => { 
+                              const n = [...poManualItems]
+                              n[i].discountPct = Number(e.target.value) || 0
+                              setPoManualItems(n) 
+                            }} 
+                          />
+                        </TableCell>
+                        <TableCell className="text-right font-medium text-sm pt-3">฿{formatCurrency(rowTotal)}</TableCell>
+                        <TableCell><button onClick={() => setPoManualItems(poManualItems.filter((_, idx) => idx !== i))} className="text-gray-400 hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button></TableCell>
+                      </TableRow>
+                    )
+                  })}
                   {poManualItems.length === 0 && (
-                    <TableRow><TableCell colSpan={5} className="text-center py-4 text-gray-400 text-sm">ยังไม่มีรายการเพิ่มเติม — กดปุ่ม "เพิ่มรายการ" ด้านบน</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={6} className="text-center py-4 text-gray-400 text-sm">ยังไม่มีรายการเพิ่มเติม — กดปุ่ม "เพิ่มรายการ" ด้านบน</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
