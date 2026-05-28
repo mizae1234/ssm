@@ -8,8 +8,8 @@ export async function GET(
   const claim = await prisma.claim.findUnique({
     where: { id: params.id },
     include: {
-      insurance: { select: { id: true, name: true, branch: true, taxId: true, branchCode: true, peakCustomerId: true } },
-      garage: { select: { id: true, name: true, phone: true } },
+      insurance: { select: { id: true, name: true, branch: true, taxId: true, branchCode: true, peakCustomerId: true, address: true } },
+      garage: { select: { id: true, name: true, phone: true, address: true } },
       parts: { include: { partMaster: { select: { id: true, partNo: true, partName: true, standardPrice: true } } } },
       labors: true,
       purchaseOrders: { 
@@ -22,7 +22,11 @@ export async function GET(
           },
           goodsReceipts: {
             include: {
-              items: true
+              items: {
+                include: {
+                  poItem: true
+                }
+              }
             }
           }
         } 
@@ -160,8 +164,8 @@ export async function PUT(
   const updatedClaim = await prisma.claim.findUnique({
     where: { id: params.id },
     include: {
-      insurance: { select: { id: true, name: true, branch: true, taxId: true, branchCode: true, peakCustomerId: true } },
-      garage: { select: { id: true, name: true, phone: true } },
+      insurance: { select: { id: true, name: true, branch: true, taxId: true, branchCode: true, peakCustomerId: true, address: true } },
+      garage: { select: { id: true, name: true, phone: true, address: true } },
       parts: { include: { partMaster: { select: { id: true, partNo: true, partName: true, standardPrice: true } } } },
       labors: true,
       purchaseOrders: { 
@@ -174,7 +178,11 @@ export async function PUT(
           },
           goodsReceipts: {
             include: {
-              items: true
+              items: {
+                include: {
+                  poItem: true
+                }
+              }
             }
           }
         } 

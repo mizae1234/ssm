@@ -354,6 +354,12 @@ export default function PDFMockPage() {
             <p><span className="text-gray-500 w-28 inline-block">ชื่อร้าน/บริษัท:</span> {po.vendor?.name}</p>
             <p><span className="text-gray-500 w-28 inline-block">ประเภท:</span> {po.poType === 'PARTS' ? 'อะไหล่' : 'ค่าแรง'}</p>
             <p><span className="text-gray-500 w-28 inline-block">การจัดส่ง:</span> {po.deliveryMode === 'DIRECT_TO_GARAGE' ? 'ส่งตรงอู่' : 'รับเอง'}</p>
+            {po.deliveryMode === 'DIRECT_TO_GARAGE' && (
+              <p className="mt-1 flex items-start">
+                <span className="text-gray-500 w-28 inline-block shrink-0">ที่อยู่จัดส่ง:</span>
+                <span className="text-gray-900 font-semibold">{po.deliveryAddress || `${claim.garage?.name || ''} ${claim.garage?.address || ''}`.trim() || '-'}</span>
+              </p>
+            )}
           </div>
           <div className="border rounded p-4">
             <h3 className="font-semibold mb-2 border-b pb-1">อ้างอิง</h3>
@@ -463,7 +469,7 @@ export default function PDFMockPage() {
           noteText = `หมายเหตุ: ${targetGR.note}`
         }
         itemsToRender = (targetGR.items || []).map((gi: any) => {
-          const poItem = po.items?.find((pi: any) => pi.id === gi.poItemId)
+          const poItem = gi.poItem || po.items?.find((pi: any) => pi.id === gi.poItemId)
           const originalFullPrice = poItem 
             ? (poItem.discountPct < 100 ? Math.round((poItem.unitPrice / (1 - poItem.discountPct / 100)) * 100) / 100 : poItem.unitPrice)
             : 0

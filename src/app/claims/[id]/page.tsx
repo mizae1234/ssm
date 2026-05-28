@@ -1489,7 +1489,7 @@ export default function ClaimDetailPage() {
                           </TableHeader>
                           <TableBody>
                             {(gr.items || []).map((gi: any) => {
-                              const poItem = grHistoryPO.items.find((pi: any) => pi.id === gi.poItemId)
+                              const poItem = gi.poItem || grHistoryPO.items?.find((pi: any) => pi.id === gi.poItemId)
                               return (
                                 <TableRow key={gi.id} className="hover:bg-transparent border-slate-100">
                                   <TableCell className="py-2 text-xs">
