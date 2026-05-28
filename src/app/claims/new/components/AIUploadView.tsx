@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { ArrowLeft, Upload, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -18,6 +18,46 @@ export default function AIUploadView({
   showToast
 }: AIUploadViewProps) {
   const [dragOver, setDragOver] = useState(false)
+
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const files = e.clipboardData?.files
+      if (files && files.length > 0) {
+        const file = files[0]
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf']
+        const ext = file.name.split('.').pop()?.toLowerCase() || ''
+        const allowedExts = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'pdf']
+        if (allowedTypes.includes(file.type) || allowedExts.includes(ext)) {
+          showToast('📋 วางไฟล์จาก Clipboard สำเร็จ')
+          onExtract(file)
+          e.preventDefault()
+          return
+        }
+      }
+
+      const items = e.clipboardData?.items
+      if (items) {
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i]
+          if (item.type.indexOf('image') !== -1) {
+            const file = item.getAsFile()
+            if (file) {
+              const renamedFile = new File([file], `clipboard-screenshot-${Date.now()}.png`, { type: file.type })
+              showToast('📋 วางรูปภาพจาก Clipboard สำเร็จ')
+              onExtract(renamedFile)
+              e.preventDefault()
+              break
+            }
+          }
+        }
+      }
+    }
+
+    window.addEventListener('paste', handlePaste)
+    return () => {
+      window.removeEventListener('paste', handlePaste)
+    }
+  }, [onExtract, showToast])
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]

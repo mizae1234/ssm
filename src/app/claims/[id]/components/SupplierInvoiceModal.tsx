@@ -42,6 +42,52 @@ export default function SupplierInvoiceModal({
   const [invoiceVatPct, setInvoiceVatPct] = useState(7)
   const [isSaving, setIsSaving] = useState(false)
 
+  useEffect(() => {
+    if (!isOpen) return
+
+    const handlePaste = (e: ClipboardEvent) => {
+      if (isSaving) return
+
+      const files = e.clipboardData?.files
+      if (files && files.length > 0) {
+        const file = files[0]
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf']
+        const ext = file.name.split('.').pop()?.toLowerCase() || ''
+        const allowedExts = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'pdf']
+        if (allowedTypes.includes(file.type) || allowedExts.includes(ext)) {
+          const url = URL.createObjectURL(file)
+          setUploadedFile({ name: file.name, url, type: file.type, file })
+          showToast('📋 วางไฟล์จาก Clipboard สำเร็จ')
+          e.preventDefault()
+          return
+        }
+      }
+
+      const items = e.clipboardData?.items
+      if (items) {
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i]
+          if (item.type.indexOf('image') !== -1) {
+            const file = item.getAsFile()
+            if (file) {
+              const renamedFile = new File([file], `clipboard-invoice-${Date.now()}.png`, { type: file.type })
+              const url = URL.createObjectURL(renamedFile)
+              setUploadedFile({ name: renamedFile.name, url, type: renamedFile.type, file: renamedFile })
+              showToast('📋 วางรูปภาพจาก Clipboard สำเร็จ')
+              e.preventDefault()
+              break
+            }
+          }
+        }
+      }
+    }
+
+    window.addEventListener('paste', handlePaste)
+    return () => {
+      window.removeEventListener('paste', handlePaste)
+    }
+  }, [isOpen, isSaving, showToast])
+
   // Helpers defined at top of body so they are available to useEffect
   const globalPoItems = claim?.purchaseOrders?.filter((po: any) => po.status !== 'CANCELLED').flatMap((po: any) => po.items.map((item: any) => ({ ...item, poId: po.id, poNo: po.poNo, poStatus: po.status }))) || []
   
