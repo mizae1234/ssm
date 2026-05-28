@@ -24,6 +24,7 @@ export default function PartsMasterPage() {
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [filterSource, setFilterSource] = useState<'ALL' | 'AUTO' | 'MANUAL'>('ALL')
+  const [showNoPeakOnly, setShowNoPeakOnly] = useState(false)
   const [parts, setParts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
@@ -61,6 +62,7 @@ export default function PartsMasterPage() {
       limit: String(itemsPerPage),
     })
     if (debouncedSearch) params.set('search', debouncedSearch)
+    if (showNoPeakOnly) params.set('noPeak', 'true')
     
     fetch(`/api/parts-master?${params}`).then(res => res.json()).then(data => {
       setParts(data.data || [])
@@ -71,7 +73,7 @@ export default function PartsMasterPage() {
       console.error(err)
       setLoading(false)
     })
-  }, [currentPage, debouncedSearch, reloadTrigger])
+  }, [currentPage, debouncedSearch, showNoPeakOnly, reloadTrigger])
 
   const filteredParts = filterSource === 'ALL' ? parts : parts.filter(p => p.source === filterSource)
 
@@ -268,10 +270,19 @@ export default function PartsMasterPage() {
               <Button variant={filterSource === 'AUTO' ? 'default' : 'outline'} onClick={() => setFilterSource('AUTO')} className={cn("h-9", filterSource === 'AUTO' ? "bg-emerald-600 hover:bg-emerald-700" : "")}>สร้างออโต้</Button>
               <Button variant={filterSource === 'MANUAL' ? 'default' : 'outline'} onClick={() => setFilterSource('MANUAL')} className={cn("h-9", filterSource === 'MANUAL' ? "bg-gray-600 hover:bg-gray-700" : "")}>คีย์มือ</Button>
             </div>
-            <Button variant="outline" className="ml-auto">
-              <Filter className="w-4 h-4 mr-2" />
-              Filter เพิ่มเติม
-            </Button>
+            <div className="flex items-center gap-2 border-l pl-4 border-gray-100">
+              <Button
+                variant={showNoPeakOnly ? 'default' : 'outline'}
+                onClick={() => {
+                  setShowNoPeakOnly(!showNoPeakOnly)
+                  setCurrentPage(1)
+                }}
+                className={cn("h-9", showNoPeakOnly ? "bg-amber-600 hover:bg-amber-700 text-white" : "")}
+              >
+                <AlertTriangle className="w-4 h-4 mr-2" />
+                ยังไม่มีรหัส PEAK
+              </Button>
+            </div>
           </div>
 
           <div className="overflow-x-auto">

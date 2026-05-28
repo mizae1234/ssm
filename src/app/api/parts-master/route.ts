@@ -9,12 +9,31 @@ export async function GET(request: NextRequest) {
   const all = searchParams.get('all') === 'true'
   const exportExcel = searchParams.get('export') === 'true'
 
+  const noPeak = searchParams.get('noPeak') === 'true'
+
   const where: any = {}
+  const conditions: any[] = []
+
   if (search) {
-    where.OR = [
-      { partNo: { contains: search, mode: 'insensitive' } },
-      { partName: { contains: search, mode: 'insensitive' } },
-    ]
+    conditions.push({
+      OR: [
+        { partNo: { contains: search, mode: 'insensitive' } },
+        { partName: { contains: search, mode: 'insensitive' } },
+      ]
+    })
+  }
+
+  if (noPeak) {
+    conditions.push({
+      OR: [
+        { peakCode: null },
+        { peakCode: '' }
+      ]
+    })
+  }
+
+  if (conditions.length > 0) {
+    where.AND = conditions
   }
 
   if (exportExcel) {
