@@ -511,25 +511,6 @@ export default function PDFMockPage() {
           }
         `}</style>
 
-        {/* Watermark "ใบเคลม" */}
-        <div style={{
-          position: 'absolute',
-          top: '55%',
-          left: '50%',
-          transform: 'translate(-50%, -50%) rotate(-15deg)',
-          border: '4px dashed rgba(244, 63, 94, 0.15)',
-          color: 'rgba(244, 63, 94, 0.15)',
-          fontSize: '5rem',
-          fontWeight: 'bold',
-          padding: '16px 48px',
-          borderRadius: '16px',
-          pointerEvents: 'none',
-          zIndex: 0,
-          whiteSpace: 'nowrap',
-          userSelect: 'none'
-        }}>
-          ใบเคลม
-        </div>
 
         {/* Header section */}
         <div className="flex justify-between items-start mb-6 z-10 relative">
@@ -760,25 +741,6 @@ export default function PDFMockPage() {
           }
         `}</style>
 
-        {/* Watermark "ใบเคลม" */}
-        <div style={{
-          position: 'absolute',
-          top: '55%',
-          left: '50%',
-          transform: 'translate(-50%, -50%) rotate(-15deg)',
-          border: '4px dashed rgba(244, 63, 94, 0.15)',
-          color: 'rgba(244, 63, 94, 0.15)',
-          fontSize: '5rem',
-          fontWeight: 'bold',
-          padding: '16px 48px',
-          borderRadius: '16px',
-          pointerEvents: 'none',
-          zIndex: 0,
-          whiteSpace: 'nowrap',
-          userSelect: 'none'
-        }}>
-          ใบเคลม
-        </div>
 
         {/* Header section */}
         <div className="flex justify-between items-start mb-6 z-10 relative">
