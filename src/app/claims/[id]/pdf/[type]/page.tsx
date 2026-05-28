@@ -436,15 +436,20 @@ export default function PDFMockPage() {
   if (type === 'delivery-note') {
     if (!po) return <div className="p-8 text-center">ไม่พบใบสั่งซื้อ</div>
 
-    let itemsToRender = (po.items || []).map((item: any) => ({
-      id: item.id,
-      partNo: item.partNo,
-      description: item.description,
-      quantity: item.quantity,
-      unitPrice: item.unitPrice,
-      discountPct: item.discountPct || 0,
-      totalPrice: item.totalPrice,
-    }))
+    let itemsToRender = (po.items || []).map((item: any) => {
+      const originalFullPrice = item.discountPct < 100 
+        ? Math.round((item.unitPrice / (1 - item.discountPct / 100)) * 100) / 100 
+        : item.unitPrice
+      return {
+        id: item.id,
+        partNo: item.partNo,
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: originalFullPrice,
+        discountPct: item.discountPct || 0,
+        totalPrice: originalFullPrice * item.quantity * (1 - (item.discountPct || 0) / 100),
+      }
+    })
     let documentDate = po.createdAt
     let noteText = 'กรุณาตรวจนับอะไหล่ให้ครบถ้วนก่อนลงนามรับของ'
     let titleText = 'ใบส่งของ/ใบส่งมอบสินค้า'
@@ -459,15 +464,17 @@ export default function PDFMockPage() {
         }
         itemsToRender = (targetGR.items || []).map((gi: any) => {
           const poItem = po.items?.find((pi: any) => pi.id === gi.poItemId)
-          const unitPrice = poItem?.unitPrice || 0
+          const originalFullPrice = poItem 
+            ? (poItem.discountPct < 100 ? Math.round((poItem.unitPrice / (1 - poItem.discountPct / 100)) * 100) / 100 : poItem.unitPrice)
+            : 0
           const discountPct = gi.discountPct !== undefined && gi.discountPct !== null ? gi.discountPct : (poItem?.discountPct || 0)
-          const totalPrice = unitPrice * gi.quantity * (1 - discountPct / 100)
+          const totalPrice = originalFullPrice * gi.quantity * (1 - discountPct / 100)
           return {
             id: gi.id,
             partNo: poItem?.partNo || gi.poItemId,
             description: poItem?.description || 'รายการอะไหล่',
             quantity: gi.quantity,
-            unitPrice,
+            unitPrice: originalFullPrice,
             discountPct,
             totalPrice,
           }
@@ -585,7 +592,7 @@ export default function PDFMockPage() {
             {claim.garage?.address && <p className="text-gray-600 mt-1 leading-relaxed">{claim.garage.address}</p>}
             {claim.garage?.phone && <p className="text-gray-600 mt-1">โทร: {claim.garage.phone}</p>}
             <div className="border-t border-dashed border-gray-200 mt-2 pt-2 space-y-0.5">
-              <p className="text-gray-600">ผู้เอาประกัน: {claim.insuredName}</p>
+              <p className="text-gray-600">ยี่ห้อ/รุ่น รถ: {claim.carBrand} {claim.carModel}</p>
               <p className="text-gray-600">ทะเบียนรถ: {claim.carPlate}</p>
             </div>
           </div>
@@ -838,7 +845,7 @@ export default function PDFMockPage() {
             {claim.garage?.address && <p className="text-gray-600 mt-1 leading-relaxed">{claim.garage.address}</p>}
             {claim.garage?.phone && <p className="text-gray-600 mt-1">โทร: {claim.garage.phone}</p>}
             <div className="border-t border-dashed border-gray-200 mt-2 pt-2 space-y-0.5">
-              <p className="text-gray-600">ผู้เอาประกัน: {claim.insuredName}</p>
+              <p className="text-gray-600">ยี่ห้อ/รุ่น รถ: {claim.carBrand} {claim.carModel}</p>
               <p className="text-gray-600">ทะเบียนรถ: {claim.carPlate}</p>
             </div>
           </div>

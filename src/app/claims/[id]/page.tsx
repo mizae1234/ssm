@@ -272,6 +272,26 @@ export default function ClaimDetailPage() {
     }
   }
 
+  const handleCancelGR = async (grId: string) => {
+    if (!window.confirm('คุณต้องการยกเลิกการตรวจรับของ (GR) รายการนี้ใช่หรือไม่? สต็อกสินค้าจะถูกปรับปรุงคืน และสถานะของ PO/ใบเคลมจะถูกคำนวณใหม่')) {
+      return
+    }
+    try {
+      const res = await fetch(`/api/gr/${grId}`, {
+        method: 'DELETE'
+      })
+      if (!res.ok) {
+        const errData = await res.json()
+        throw new Error(errData.error || 'Failed to cancel Goods Receipt')
+      }
+      showToast('ยกเลิกการตรวจรับของสำเร็จ')
+      await refreshClaim()
+      setShowGRHistoryModal(false)
+    } catch (err: any) {
+      setErrorModalMsg(`เกิดข้อผิดพลาดในการยกเลิกการตรวจรับของ: ${err.message}`)
+    }
+  }
+
 
 
   const handleSendQuotation = async (qtId: string) => {
@@ -1447,6 +1467,14 @@ export default function ClaimDetailPage() {
                               <Printer className="w-3 h-3" />พิมพ์ใบส่งของ
                             </Button>
                           </Link>
+                          <Button 
+                            size="sm" 
+                            variant="destructive" 
+                            className="h-6 text-[10px] px-2 py-0.5 flex items-center gap-1 font-semibold bg-rose-600 hover:bg-rose-700 text-white"
+                            onClick={() => handleCancelGR(gr.id)}
+                          >
+                            <Trash2 className="w-3 h-3" />ยกเลิกรับของ
+                          </Button>
                         </div>
                       </div>
                       

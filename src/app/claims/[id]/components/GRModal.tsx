@@ -29,9 +29,20 @@ export default function GRModal({
 }: GRModalProps) {
   const [grQuantities, setGrQuantities] = useState<Record<string, number>>({})
   const [grDiscounts, setGrDiscounts] = useState<Record<string, number>>({})
+  const [globalDiscountPct, setGlobalDiscountPct] = useState<string>('')
   const [grReceivedBy, setGrReceivedBy] = useState('admin')
   const [grNote, setGrNote] = useState('')
   const [isSaving, setIsSaving] = useState(false)
+
+  const handleGlobalDiscountChange = (val: string) => {
+    setGlobalDiscountPct(val)
+    const pct = Number(val) || 0
+    const newDiscounts: Record<string, number> = {}
+    po.items.forEach((item: any) => {
+      newDiscounts[item.id] = pct
+    })
+    setGrDiscounts(newDiscounts)
+  }
 
   useEffect(() => {
     if (!isOpen || !po) return
@@ -44,6 +55,7 @@ export default function GRModal({
     })
     setGrQuantities(initQ)
     setGrDiscounts(initD)
+    setGlobalDiscountPct('')
     setGrReceivedBy('admin')
     setGrNote('')
   }, [isOpen, po])
@@ -108,9 +120,24 @@ export default function GRModal({
           </button>
         </CardHeader>
         <CardContent className="space-y-4 pt-4">
-          <div className="text-sm bg-slate-50 p-3 rounded-lg flex flex-wrap gap-x-6 gap-y-1 text-slate-600">
-            <div>ผู้จำหน่าย: <strong className="text-slate-800">{po.vendor?.name}</strong></div>
-            <div>เลขที่เคลม: <strong className="text-slate-800">{claim.claimNo}</strong></div>
+          <div className="text-sm bg-slate-50 p-3 rounded-lg flex flex-wrap gap-x-6 gap-y-1 text-slate-650 items-center justify-between">
+            <div className="flex flex-wrap gap-x-6 gap-y-1">
+              <div>ผู้จำหน่าย: <strong className="text-slate-800">{po.vendor?.name}</strong></div>
+              <div>เลขที่เคลม: <strong className="text-slate-800">{claim.claimNo}</strong></div>
+            </div>
+            <div className="flex items-center gap-2 border-l pl-4 border-slate-200">
+              <span className="text-xs font-semibold text-slate-500">ส่วนลดหัวบิล (%):</span>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={globalDiscountPct}
+                onChange={e => handleGlobalDiscountChange(e.target.value)}
+                className="w-16 text-center bg-white border border-slate-200 focus:ring-1 focus:ring-[#0d9488] focus:border-[#0d9488] rounded py-1 px-1 text-sm font-semibold text-slate-800 disabled:bg-slate-100 disabled:text-slate-400"
+                placeholder="0"
+                disabled={isSaving}
+              />
+            </div>
           </div>
 
           <div className="overflow-x-auto max-h-[300px] border rounded-lg">
@@ -133,7 +160,9 @@ export default function GRModal({
                   const remaining = Math.max(0, item.quantity - prevRec)
                   const currentVal = grQuantities[item.id] || 0
                   const discountVal = grDiscounts[item.id] ?? 0
-                  const unitPrice = item.unitPrice || 0
+                  const unitPrice = item.discountPct < 100 
+                    ? Math.round((item.unitPrice / (1 - item.discountPct / 100)) * 100) / 100 
+                    : item.unitPrice
                   const rowTotal = unitPrice * currentVal * (1 - discountVal / 100)
 
                   return (
