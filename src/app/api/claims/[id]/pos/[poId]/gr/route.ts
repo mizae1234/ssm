@@ -92,7 +92,8 @@ export async function POST(
               .filter(item => item.quantity > 0)
               .map(item => ({
                 poItemId: item.poItemId,
-                quantity: item.quantity
+                quantity: item.quantity,
+                discountPct: item.discountPct !== undefined && item.discountPct !== null ? Number(item.discountPct) : 0
               }))
           }
         },

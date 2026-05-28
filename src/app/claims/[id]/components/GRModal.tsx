@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { formatCurrency } from '@/lib/utils'
 
 interface GRModalProps {
   isOpen: boolean
@@ -27,6 +28,7 @@ export default function GRModal({
   setErrorModalMsg
 }: GRModalProps) {
   const [grQuantities, setGrQuantities] = useState<Record<string, number>>({})
+  const [grDiscounts, setGrDiscounts] = useState<Record<string, number>>({})
   const [grReceivedBy, setGrReceivedBy] = useState('admin')
   const [grNote, setGrNote] = useState('')
   const [isSaving, setIsSaving] = useState(false)
@@ -34,11 +36,14 @@ export default function GRModal({
   useEffect(() => {
     if (!isOpen || !po) return
     const initQ: Record<string, number> = {}
+    const initD: Record<string, number> = {}
     po.items.forEach((item: any) => {
       const prevRec = (item.goodsReceiptItems || []).reduce((s: number, g: any) => s + g.quantity, 0)
       initQ[item.id] = Math.max(0, item.quantity - prevRec)
+      initD[item.id] = item.discountPct || 0
     })
     setGrQuantities(initQ)
+    setGrDiscounts(initD)
     setGrReceivedBy('admin')
     setGrNote('')
   }, [isOpen, po])
@@ -52,7 +57,11 @@ export default function GRModal({
     }
     const payloadItems = Object.entries(grQuantities)
       .filter(([_, q]) => q > 0)
-      .map(([id, q]) => ({ poItemId: id, quantity: q }))
+      .map(([id, q]) => ({ 
+        poItemId: id, 
+        quantity: q, 
+        discountPct: grDiscounts[id] ?? 0 
+      }))
 
     if (payloadItems.length === 0) {
       showToast('กรุณาระบุจำนวนตรวจรับอย่างน้อย 1 ชิ้น')
@@ -88,7 +97,7 @@ export default function GRModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
-      <Card className="w-full max-w-2xl shadow-2xl" onClick={e => e.stopPropagation()}>
+      <Card className="w-full max-w-4xl shadow-2xl" onClick={e => e.stopPropagation()}>
         <CardHeader className="flex flex-row items-center justify-between border-b pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
             <Package className="w-5 h-5 text-[#0d9488]" />
@@ -109,10 +118,13 @@ export default function GRModal({
               <TableHeader>
                 <TableRow className="bg-slate-50">
                   <TableHead>ชิ้นส่วนอะไหล่</TableHead>
-                  <TableHead className="text-center w-24">สั่งซื้อ</TableHead>
-                  <TableHead className="text-center w-24">รับแล้ว</TableHead>
-                  <TableHead className="text-center w-24">ค้างส่ง</TableHead>
-                  <TableHead className="text-center w-32">จำนวนที่ตรวจรับรอบนี้</TableHead>
+                  <TableHead className="text-right w-24">ราคาเต็ม</TableHead>
+                  <TableHead className="text-center w-28">ส่วนลด (%)</TableHead>
+                  <TableHead className="text-center w-20">สั่งซื้อ</TableHead>
+                  <TableHead className="text-center w-20">รับแล้ว</TableHead>
+                  <TableHead className="text-center w-20">ค้างส่ง</TableHead>
+                  <TableHead className="text-center w-28">ตรวจรับรอบนี้</TableHead>
+                  <TableHead className="text-right w-28">ยอดรวมรอบนี้</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -120,12 +132,30 @@ export default function GRModal({
                   const prevRec = (item.goodsReceiptItems || []).reduce((s: number, g: any) => s + g.quantity, 0)
                   const remaining = Math.max(0, item.quantity - prevRec)
                   const currentVal = grQuantities[item.id] || 0
+                  const discountVal = grDiscounts[item.id] ?? 0
+                  const unitPrice = item.unitPrice || 0
+                  const rowTotal = unitPrice * currentVal * (1 - discountVal / 100)
 
                   return (
                     <TableRow key={item.id}>
                       <TableCell className="font-medium">
                         {item.description}
                         <p className="text-[10px] text-slate-400 font-mono mt-0.5">{item.partNo}</p>
+                      </TableCell>
+                      <TableCell className="text-right">฿{formatCurrency(unitPrice)}</TableCell>
+                      <TableCell className="text-center">
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          disabled={remaining === 0 || isSaving}
+                          value={discountVal}
+                          onChange={e => {
+                            const val = Math.min(100, Math.max(0, parseFloat(e.target.value) || 0))
+                            setGrDiscounts(prev => ({ ...prev, [item.id]: val }))
+                          }}
+                          className="w-16 text-center bg-white border border-slate-200 focus:ring-1 focus:ring-[#0d9488] focus:border-[#0d9488] rounded py-1 px-1 text-sm font-semibold text-slate-800 disabled:bg-slate-100 disabled:text-slate-400"
+                        />
                       </TableCell>
                       <TableCell className="text-center">{item.quantity}</TableCell>
                       <TableCell className="text-center text-slate-500">{prevRec}</TableCell>
@@ -141,8 +171,11 @@ export default function GRModal({
                             const val = Math.min(remaining, Math.max(0, parseInt(e.target.value) || 0))
                             setGrQuantities(prev => ({ ...prev, [item.id]: val }))
                           }}
-                          className="w-20 text-center bg-white border border-slate-200 focus:ring-1 focus:ring-[#0d9488] focus:border-[#0d9488] rounded py-1 px-1.5 text-sm font-semibold text-slate-800 disabled:bg-slate-100 disabled:text-slate-400"
+                          className="w-16 text-center bg-white border border-slate-200 focus:ring-1 focus:ring-[#0d9488] focus:border-[#0d9488] rounded py-1 px-1 text-sm font-semibold text-slate-800 disabled:bg-slate-100 disabled:text-slate-400"
                         />
+                      </TableCell>
+                      <TableCell className="text-right font-semibold text-[#0d9488]">
+                        ฿{formatCurrency(rowTotal)}
                       </TableCell>
                     </TableRow>
                   )

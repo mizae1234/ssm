@@ -460,7 +460,7 @@ export default function PDFMockPage() {
         itemsToRender = (targetGR.items || []).map((gi: any) => {
           const poItem = po.items?.find((pi: any) => pi.id === gi.poItemId)
           const unitPrice = poItem?.unitPrice || 0
-          const discountPct = poItem?.discountPct || 0
+          const discountPct = gi.discountPct !== undefined && gi.discountPct !== null ? gi.discountPct : (poItem?.discountPct || 0)
           const totalPrice = unitPrice * gi.quantity * (1 - discountPct / 100)
           return {
             id: gi.id,
