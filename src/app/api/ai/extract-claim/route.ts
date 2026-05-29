@@ -124,15 +124,14 @@ LABOR TABLE columns: #, Group, รายการ, เส้นหาย, %, ร
   - discountPct = % column
   - SKIP rows labeled "ส่วนลด/ส่วนเพิ่ม", "คงเหลือ", "รวม"
 
-PARTS TABLE — split into two side-by-side sections:
-  Left: "ศูนย์/ผู้ซ่อม" | Right: "บริษัทประกัน"
+PARTS TABLE — split into sections (e.g., "ศูนย์/ผู้ซ่อม", "ร้านอะไหล่", "บริษัทประกัน"):
   - partNo = หมายเลขอะไหล่
   - partName = รายการ
   - priceFull = ราคาเดิม
   - quantity = จำนวน
-  - damageType = ประเภท under ศูนย์
+  - damageType = ประเภท under "ร้านอะไหล่" section (if exists, extract from "ประเภท" under "ร้านอะไหล่" column; otherwise fallback to "ประเภท" under "ศูนย์/ผู้ซ่อม")
   - priceOffer = ราคาเสนอ under ศูนย์
-  - priceApprove = ราคาอนุมัติ under บริษัทประกัน (RIGHT section)
+  - priceApprove = ราคาอนุมัติ under บริษัทประกัน
   - discountPct = % under บริษัทประกัน
   - requireReturn = true if row has red "คืนซาก" tag
   - If "สถานะ" column says "ไม่อนุมัติ", set priceApprove = 0
