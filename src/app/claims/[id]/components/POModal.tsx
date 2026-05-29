@@ -73,36 +73,36 @@ export default function POModal({
         setPoDeliveryAddress(po.deliveryAddress || '')
         setPoModalParts(parts.map((p: any) => {
           const existingPoItem = po.items.find((pi: any) => pi.partNo === p.partNo || pi.description === p.partName)
+          const basePrice = Number(p.priceFullAmt) || 0
           if (existingPoItem) {
-            const originalPrice = Number(p.priceApprove) || 0
             const poUnitPrice = Number(existingPoItem.unitPrice) || 0
             let discountPct = existingPoItem.discountPct || 0
-            if (!discountPct && originalPrice > 0) {
-              discountPct = Math.max(0, Math.round((1 - poUnitPrice / originalPrice) * 100))
+            if (!discountPct && basePrice > 0) {
+              discountPct = Math.max(0, Math.round((1 - poUnitPrice / basePrice) * 100))
             }
             return { 
               ...p, 
               selected: true, 
               partName: existingPoItem.description, 
               quantity: existingPoItem.quantity, 
-              priceApprove: originalPrice, 
+              priceApprove: basePrice, 
               discountPct 
             }
           }
-          return { ...p, selected: false, discountPct: p.discountPct || 0 }
+          return { ...p, selected: false, priceApprove: basePrice, discountPct: p.discountPct || 0 }
         }))
         setPoModalLabors(labors.map((l: any) => {
           const existingPoItem = po.items.find((pi: any) => pi.description === `[ค่าแรง] ${l.description}`)
+          const basePrice = Number(l.priceOffer) || 0
           if (existingPoItem) {
-            const originalPrice = Number(l.priceApprove) || 0
             const poUnitPrice = Number(existingPoItem.unitPrice) || 0
             let discountPct = existingPoItem.discountPct || 0
-            if (!discountPct && originalPrice > 0) {
-              discountPct = Math.max(0, Math.round((1 - poUnitPrice / originalPrice) * 100))
+            if (!discountPct && basePrice > 0) {
+              discountPct = Math.max(0, Math.round((1 - poUnitPrice / basePrice) * 100))
             }
-            return { ...l, selected: true, description: existingPoItem.description.replace('[ค่าแรง] ', ''), priceApprove: originalPrice, discountPct }
+            return { ...l, selected: true, description: existingPoItem.description.replace('[ค่าแรง] ', ''), priceApprove: basePrice, discountPct }
           }
-          return { ...l, selected: false, discountPct: l.discountPct || 0 }
+          return { ...l, selected: false, priceApprove: basePrice, discountPct: l.discountPct || 0 }
         }))
         const manuals = po.items.filter((pi: any) => {
           const isPart = parts.some(p => pi.partNo === p.partNo || pi.description === p.partName)
@@ -123,7 +123,7 @@ export default function POModal({
         const allPartDiscounts = parts.map((p: any) => {
           const pi = po.items.find((x: any) => x.partNo === p.partNo || x.description === p.partName)
           if (!pi) return null
-          const originalPrice = Number(p.priceApprove) || 0
+          const originalPrice = Number(p.priceFullAmt) || 0
           const poUnitPrice = Number(pi.unitPrice) || 0
           return pi.discountPct || (originalPrice > 0 ? Math.max(0, Math.round((1 - poUnitPrice / originalPrice) * 100)) : 0)
         }).filter((d: any): d is number => d !== null)
@@ -131,7 +131,7 @@ export default function POModal({
         const allLaborDiscounts = labors.map((l: any) => {
           const pi = po.items.find((x: any) => x.description === `[ค่าแรง] ${l.description}`)
           if (!pi) return null
-          const originalPrice = Number(l.priceApprove) || 0
+          const originalPrice = Number(l.priceOffer) || 0
           const poUnitPrice = Number(pi.unitPrice) || 0
           return pi.discountPct || (originalPrice > 0 ? Math.max(0, Math.round((1 - poUnitPrice / originalPrice) * 100)) : 0)
         }).filter((d: any): d is number => d !== null)
@@ -152,8 +152,8 @@ export default function POModal({
         setPoVendorName('')
       }
       setPoDeliveryAddress(claim.garage?.name ? `${claim.garage.name}\n${claim.garage.address || ''} ${claim.garage.province || ''}`.trim() : '')
-      setPoModalParts(parts.map(p => ({ ...p, selected: p.status === 'approved', discountPct: p.discountPct || 0 })))
-      setPoModalLabors(labors.map(l => ({ ...l, selected: false, discountPct: l.discountPct || 0 })))
+      setPoModalParts(parts.map(p => ({ ...p, selected: p.status === 'approved', priceApprove: p.priceFullAmt || 0, discountPct: p.discountPct || 0 })))
+      setPoModalLabors(labors.map(l => ({ ...l, selected: false, priceApprove: l.priceOffer || 0, discountPct: l.discountPct || 0 })))
       setPoManualItems([])
       setPoIncludeVat(true)
       setPoVatPct(7)
