@@ -384,20 +384,27 @@ export default function PDFMockPage() {
               <th className="py-2 px-2">รายการ</th>
               <th className="py-2 px-2 text-right">จำนวน</th>
               <th className="py-2 px-2 text-right">ราคา/หน่วย</th>
-              <th className="py-2 px-2 text-right">จำนวนเงิน</th>
+              <th className="py-2 px-2 text-right">ส่วนลด</th>
+              <th className="py-2 px-2 text-right">รวม</th>
             </tr>
           </thead>
           <tbody>
-            {(po.items || []).map((item: any, i: number) => (
-              <tr key={item.id} className="border-b border-gray-200">
-                <td className="py-2 px-2 text-gray-600">{i + 1}</td>
-                <td className="py-2 px-2 font-mono text-xs">{item.partNo && !/^c[a-z0-9]{24}$/i.test(item.partNo) ? item.partNo : ''}</td>
-                <td className="py-2 px-2">{item.description}</td>
-                <td className="py-2 px-2 text-right">{item.quantity}</td>
-                <td className="py-2 px-2 text-right">{formatCurrency(item.unitPrice)}</td>
-                <td className="py-2 px-2 text-right">{formatCurrency(item.totalPrice)}</td>
-              </tr>
-            ))}
+            {(po.items || []).map((item: any, i: number) => {
+              const originalFullPrice = item.discountPct < 100 
+                ? Math.round((item.unitPrice / (1 - item.discountPct / 100)) * 100) / 100 
+                : item.unitPrice
+              return (
+                <tr key={item.id} className="border-b border-gray-200">
+                  <td className="py-2 px-2 text-gray-600">{i + 1}</td>
+                  <td className="py-2 px-2 font-mono text-xs">{item.partNo && !/^c[a-z0-9]{24}$/i.test(item.partNo) ? item.partNo : ''}</td>
+                  <td className="py-2 px-2">{item.description}</td>
+                  <td className="py-2 px-2 text-right">{item.quantity}</td>
+                  <td className="py-2 px-2 text-right">{formatCurrency(originalFullPrice)}</td>
+                  <td className="py-2 px-2 text-right">{item.discountPct > 0 ? `${item.discountPct}%` : '-'}</td>
+                  <td className="py-2 px-2 text-right">{formatCurrency(item.totalPrice)}</td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
 
@@ -471,7 +478,7 @@ export default function PDFMockPage() {
       const targetGR = (po.goodsReceipts || []).find((gr: any) => gr.id === grId)
       if (targetGR) {
         documentDate = targetGR.receivedAt
-        titleText = 'ใบส่งของ/ใบส่งมอบสินค้า - ตรวจรับบางส่วน'
+        titleText = 'ใบส่งของ/ใบส่งมอบสินค้า'
         if (targetGR.note) {
           noteText = `หมายเหตุ: ${targetGR.note}`
         }
