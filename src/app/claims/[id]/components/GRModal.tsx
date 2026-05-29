@@ -64,7 +64,7 @@ export default function GRModal({
 
   const handleSave = async () => {
     if (!grReceivedBy.trim()) {
-      showToast('กรุณาระบุชื่อผู้ตรวจรับของ')
+      showToast('กรุณาระบุชื่อผู้ส่งมอบสินค้า (ผู้ขาย)')
       return
     }
     const payloadItems = Object.entries(grQuantities)
@@ -76,7 +76,7 @@ export default function GRModal({
       }))
 
     if (payloadItems.length === 0) {
-      showToast('กรุณาระบุจำนวนตรวจรับอย่างน้อย 1 ชิ้น')
+      showToast('กรุณาระบุจำนวนส่งมอบสินค้าอย่างน้อย 1 ชิ้น')
       return
     }
 
@@ -97,7 +97,7 @@ export default function GRModal({
         throw new Error(err.error || 'บันทึกไม่สำเร็จ')
       }
 
-      showToast('บันทึกตรวจรับสินค้าสำเร็จ')
+      showToast('บันทึกการส่งมอบสินค้าสำเร็จ')
       onSuccess()
       onClose()
     } catch (err: any) {
@@ -113,7 +113,7 @@ export default function GRModal({
         <CardHeader className="flex flex-row items-center justify-between border-b pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
             <Package className="w-5 h-5 text-[#0d9488]" />
-            บันทึกการตรวจรับของ (GR) - {po.poNo}
+            บันทึกการส่งมอบสินค้า (ขายของ) - {po.poNo}
           </CardTitle>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600" disabled={isSaving}>
             <X className="w-5 h-5" />
@@ -148,9 +148,9 @@ export default function GRModal({
                   <TableHead className="text-right w-24">ราคาเต็ม</TableHead>
                   <TableHead className="text-center w-28">ส่วนลด (%)</TableHead>
                   <TableHead className="text-center w-20">สั่งซื้อ</TableHead>
-                  <TableHead className="text-center w-20">รับแล้ว</TableHead>
+                  <TableHead className="text-center w-20">ส่งแล้ว</TableHead>
                   <TableHead className="text-center w-20">ค้างส่ง</TableHead>
-                  <TableHead className="text-center w-28">ตรวจรับรอบนี้</TableHead>
+                  <TableHead className="text-center w-28">ส่งมอบรอบนี้</TableHead>
                   <TableHead className="text-right w-28">ยอดรวมรอบนี้</TableHead>
                 </TableRow>
               </TableHeader>
@@ -215,12 +215,12 @@ export default function GRModal({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-semibold text-[#475569] uppercase tracking-wider block mb-1">ผู้ตรวจรับของ</label>
+              <label className="text-xs font-semibold text-[#475569] uppercase tracking-wider block mb-1">ผู้ส่งมอบสินค้า / ผู้บันทึกขาย</label>
               <Input 
                 type="text" 
                 value={grReceivedBy} 
                 onChange={e => setGrReceivedBy(e.target.value)} 
-                placeholder="กรอกชื่อผู้รับของ..."
+                placeholder="กรอกชื่อผู้ส่งมอบ..."
                 disabled={isSaving}
               />
             </div>
@@ -230,7 +230,7 @@ export default function GRModal({
                 type="text" 
                 value={grNote} 
                 onChange={e => setGrNote(e.target.value)} 
-                placeholder="ระบุหมายเหตุการรับ..."
+                placeholder="ระบุหมายเหตุการส่งมอบ..."
                 disabled={isSaving}
               />
             </div>
@@ -244,7 +244,7 @@ export default function GRModal({
               onClick={handleSave}
             >
               <CheckCircle2 className="w-4 h-4 mr-1.5" />
-              {isSaving ? 'กำลังบันทึก...' : 'บันทึกรับของ'}
+              {isSaving ? 'กำลังบันทึก...' : 'บันทึกการส่งมอบ (ขายสินค้า)'}
             </Button>
           </div>
         </CardContent>

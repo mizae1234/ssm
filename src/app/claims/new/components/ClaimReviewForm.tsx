@@ -190,6 +190,9 @@ export default function ClaimReviewForm({
       if (matched) {
         newParts[i].partNo = { value: matched.partNo, edited: true, confidence: 100 }
         newParts[i].priceFull = { value: matched.standardPrice || newParts[i].priceFull?.value || 0, edited: true, confidence: 100 }
+        const discount = Number(newParts[i].discountPct?.value || 0)
+        const priceFull = matched.standardPrice || newParts[i].priceFull?.value || 0
+        newParts[i].priceApprove = { value: priceFull * (1 - discount / 100), edited: true, confidence: 100 }
       }
     }
 
@@ -209,6 +212,7 @@ export default function ClaimReviewForm({
           partNo: { value: '', confidence: 0 },
           partName: { value: '', confidence: 0 },
           priceFull: { value: 0, confidence: 0 },
+          discountPct: { value: 0, confidence: 0 },
           quantity: { value: 1, confidence: 0 },
           damageType: { value: '', confidence: 0 },
           priceApprove: { value: 0, confidence: 0 },
@@ -590,6 +594,7 @@ export default function ClaimReviewForm({
                   <th className="text-left p-3 font-semibold text-[#475569]">รหัส</th>
                   <th className="text-left p-3 font-semibold text-[#475569]">ชื่ออะไหล่</th>
                   <th className="text-right p-3 font-semibold text-[#475569]">ราคาเต็ม</th>
+                  <th className="text-right p-3 font-semibold text-[#475569]">ส่วนลด %</th>
                   <th className="text-center p-3 font-semibold text-[#475569]">จำนวน</th>
                   <th className="text-left p-3 font-semibold text-[#475569]">ประเภท</th>
                   <th className="text-right p-3 font-semibold text-[#475569]">ราคาอนุมัติ</th>
@@ -621,6 +626,9 @@ export default function ClaimReviewForm({
                           newParts[i].partName = { value: selected.partName, edited: true, confidence: 100 }
                           newParts[i].partNo = { value: selected.partNo, edited: true, confidence: 100 }
                           newParts[i].priceFull = { value: selected.standardPrice || newParts[i].priceFull?.value || 0, edited: true, confidence: 100 }
+                          const discount = Number(newParts[i].discountPct?.value || 0)
+                          const priceFull = selected.standardPrice || newParts[i].priceFull?.value || 0
+                          newParts[i].priceApprove = { value: priceFull * (1 - discount / 100), edited: true, confidence: 100 }
                           setData({ ...data, parts: newParts })
                         }}
                         className={cn(
@@ -638,7 +646,41 @@ export default function ClaimReviewForm({
                           isManualMode ? "border-gray-200" : "border-blue-200 hover:border-blue-300"
                         )}
                         value={p.priceFull.value}
-                        onChange={e => updatePartReview(i, 'priceFull', e.target.value)}
+                        onChange={e => {
+                          const val = e.target.value;
+                          const priceFull = +val;
+                          const discount = Number(p.discountPct?.value || 0);
+                          const newParts = [...data.parts];
+                          newParts[i] = {
+                            ...newParts[i],
+                            priceFull: { ...newParts[i].priceFull, value: val, edited: true },
+                            priceApprove: { ...newParts[i].priceApprove, value: priceFull * (1 - discount / 100), edited: true }
+                          };
+                          setData({ ...data, parts: newParts });
+                        }}
+                      />
+                    </td>
+                    <td className="p-3 text-right">
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        className={cn(
+                          "w-16 bg-white border rounded px-2 py-1.5 text-sm outline-none text-right focus:border-[#0d9488] focus:ring-1 focus:ring-[#0d9488]/20 transition-all shadow-sm",
+                          isManualMode ? "border-gray-200" : "border-blue-200 hover:border-blue-300"
+                        )}
+                        value={p.discountPct?.value !== undefined ? p.discountPct.value : 0}
+                        onChange={e => {
+                          const val = e.target.value;
+                          const discount = +val;
+                          const priceFull = Number(p.priceFull?.value || 0);
+                          const newParts = [...data.parts];
+                          newParts[i] = {
+                            ...newParts[i],
+                            discountPct: { ...newParts[i].discountPct, value: discount, edited: true },
+                            priceApprove: { ...newParts[i].priceApprove, value: priceFull * (1 - discount / 100), edited: true }
+                          };
+                          setData({ ...data, parts: newParts });
+                        }}
                       />
                     </td>
                     <td className="p-3 text-center">

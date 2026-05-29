@@ -273,7 +273,7 @@ export default function ClaimDetailPage() {
   }
 
   const handleCancelGR = async (grId: string) => {
-    if (!window.confirm('คุณต้องการยกเลิกการตรวจรับของ (GR) รายการนี้ใช่หรือไม่? สต็อกสินค้าจะถูกปรับปรุงคืน และสถานะของ PO/ใบเคลมจะถูกคำนวณใหม่')) {
+    if (!window.confirm('คุณต้องการยกเลิกการส่งของ / ขายสินค้า รายการนี้ใช่หรือไม่? สต็อกสินค้าจะถูกปรับปรุงคืน และสถานะของ PO/ใบเคลมจะถูกคำนวณใหม่')) {
       return
     }
     try {
@@ -284,11 +284,11 @@ export default function ClaimDetailPage() {
         const errData = await res.json()
         throw new Error(errData.error || 'Failed to cancel Goods Receipt')
       }
-      showToast('ยกเลิกการตรวจรับของสำเร็จ')
+      showToast('ยกเลิกการส่งของ / ขายสินค้า สำเร็จ')
       await refreshClaim()
       setShowGRHistoryModal(false)
     } catch (err: any) {
-      setErrorModalMsg(`เกิดข้อผิดพลาดในการยกเลิกการตรวจรับของ: ${err.message}`)
+      setErrorModalMsg(`เกิดข้อผิดพลาดในการยกเลิกการส่งของ / ขายสินค้า: ${err.message}`)
     }
   }
 
@@ -974,7 +974,7 @@ export default function ClaimDetailPage() {
                                 setSelectedPOForGR(po)
                                 setShowGRModal(true)
                               }}>
-                                <Package className="w-3 h-3 mr-1" />ตรวจรับสินค้า (GR)
+                                <Package className="w-3 h-3 mr-1" />ส่งมอบสินค้า (ขาย)
                               </Button>
                             )}
                             <Link href={`/claims/${claim.id}/pdf/purchase-order?poId=${po.id}`} target="_blank">
@@ -1495,7 +1495,7 @@ export default function ClaimDetailPage() {
             <CardHeader className="flex flex-row items-center justify-between border-b pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
                 <History className="w-5 h-5 text-teal-600" />
-                ประวัติการตรวจรับของ - {grHistoryPO.poNo}
+                ประวัติการส่งมอบสินค้า (ขายของ) - {grHistoryPO.poNo}
               </CardTitle>
               <button onClick={() => setShowGRHistoryModal(false)} className="text-gray-400 hover:text-gray-600">
                 <X className="w-5 h-5" />
@@ -1503,7 +1503,7 @@ export default function ClaimDetailPage() {
             </CardHeader>
             <CardContent className="space-y-4 pt-4 max-h-[450px] overflow-y-auto">
               {(!grHistoryPO.goodsReceipts || grHistoryPO.goodsReceipts.length === 0) ? (
-                <div className="text-center py-8 text-slate-400 text-sm">ไม่มีประวัติการตรวจรับสินค้า</div>
+                <div className="text-center py-8 text-slate-400 text-sm">ไม่มีประวัติการส่งมอบสินค้า</div>
               ) : (
                 <div className="space-y-4">
                   {grHistoryPO.goodsReceipts.map((gr: any, idx: number) => (
