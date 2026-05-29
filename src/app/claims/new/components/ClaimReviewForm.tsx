@@ -136,6 +136,7 @@ interface ClaimReviewFormProps {
   setData: (data: any) => void
   isManualMode: boolean
   partsMaster: any[]
+  insurances?: any[]
   onBack: () => void
   onSave: () => void
   onReupload?: () => void
@@ -146,6 +147,7 @@ export default function ClaimReviewForm({
   setData,
   isManualMode,
   partsMaster,
+  insurances = [],
   onBack,
   onSave,
   onReupload
@@ -737,13 +739,21 @@ export default function ClaimReviewForm({
       </datalist>
 
       <datalist id="insurance-list">
-        <option value="ธนชาตประกันภัย" />
-        <option value="วิริยะประกันภัย" />
-        <option value="สินมั่นคงประกันภัย" />
-        <option value="ทิพยประกันภัย" />
-        <option value="กรุงเทพประกันภัย" />
-        <option value="เมืองไทยประกันภัย" />
-        <option value="คุ้มภัยโตเกียวมารีน" />
+        {insurances.length > 0 ? (
+          insurances.map((ins: any) => (
+            <option key={ins.id} value={ins.name} />
+          ))
+        ) : (
+          <>
+            <option value="ธนชาตประกันภัย" />
+            <option value="วิริยะประกันภัย" />
+            <option value="สินมั่นคงประกันภัย" />
+            <option value="ทิพยประกันภัย" />
+            <option value="กรุงเทพประกันภัย" />
+            <option value="เมืองไทยประกันภัย" />
+            <option value="คุ้มภัยโตเกียวมารีน" />
+          </>
+        )}
       </datalist>
 
       <datalist id="branch-list">

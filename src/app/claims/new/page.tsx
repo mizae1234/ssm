@@ -76,6 +76,7 @@ export default function NewClaimPage() {
   const [data, setData] = useState<any>(null)
   const [isManualMode, setIsManualMode] = useState(false)
   const [partsMaster, setPartsMaster] = useState<any[]>([])
+  const [insurances, setInsurances] = useState<any[]>([])
   const [toast, setToast] = useState<string | null>(null)
   
   const showToast = useCallback((msg: string) => { 
@@ -88,6 +89,13 @@ export default function NewClaimPage() {
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setPartsMaster(data)
+      })
+      .catch(console.error)
+
+    fetch('/api/insurances?simple=true')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setInsurances(data)
       })
       .catch(console.error)
   }, [])
@@ -287,6 +295,7 @@ export default function NewClaimPage() {
           setData={setData}
           isManualMode={isManualMode}
           partsMaster={partsMaster}
+          insurances={insurances}
           onBack={() => setStep('choose')}
           onSave={handleSave}
           onReupload={isManualMode ? undefined : () => setStep('upload')}
