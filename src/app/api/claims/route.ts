@@ -185,8 +185,23 @@ export async function POST(request: NextRequest) {
   const partsToCreate = []
   for (let i = 0; i < partsArray.length; i++) {
     const p = partsArray[i]
-    const partNo = p.partNo?.value || ''
-    const partName = p.partName?.value || ''
+    
+    // Helper to safely extract value from either a wrapped object (e.g. { value: x }) or directly
+    const getVal = (field: any, defaultVal: any = '') => {
+      if (field === undefined || field === null) return defaultVal
+      if (typeof field === 'object' && 'value' in field) {
+        return field.value !== undefined && field.value !== null ? field.value : defaultVal
+      }
+      return field
+    }
+
+    const rawPartNo = getVal(p.partNo, '')
+    const partNo = typeof rawPartNo === 'string' ? rawPartNo.trim() : String(rawPartNo).trim()
+    
+    const rawPartName = getVal(p.partName, '')
+    const partName = typeof rawPartName === 'string' ? rawPartName.trim() : String(rawPartName).trim()
+
+    const saveToMasterVal = p.saveToMaster !== undefined ? getVal(p.saveToMaster) : true
 
     let partMasterId = null
     if (partNo) {
@@ -194,14 +209,14 @@ export async function POST(request: NextRequest) {
         where: { partNo }
       })
 
-      if (!pm && p.saveToMaster?.value !== false) {
+      if (!pm && saveToMasterVal !== false) {
         pm = await prisma.partMaster.create({
           data: {
             partNo,
             partName,
-            category: p.category?.value || null,
+            category: getVal(p.category, null),
             unit: 'ชิ้น',
-            standardPrice: Number(p.priceFull?.value || 0),
+            standardPrice: Number(getVal(p.priceFull, 0)),
             peakCode: '', // Leave peakCode blank for user to fill later
             source: 'AUTO',
             stock: 0,
@@ -227,14 +242,14 @@ export async function POST(request: NextRequest) {
     partsToCreate.push({
       partNo,
       partName,
-      priceFullAmt: Number(p.priceFull?.value || 0),
-      quantity: Number(p.quantity?.value || 1),
-      damageType: p.damageType?.value || '',
-      discountPct: Number(p.discountPct?.value || 0),
-      priceOffer: Number(p.priceOffer?.value || 0),
-      priceApprove: Number(p.priceApprove?.value || 0),
-      supplier: p.supplier?.value || '',
-      requireReturn: Boolean(p.requireReturn?.value || false),
+      priceFullAmt: Number(getVal(p.priceFull, 0)),
+      quantity: Number(getVal(p.quantity, 1)),
+      damageType: getVal(p.damageType, ''),
+      discountPct: Number(getVal(p.discountPct, 0)),
+      priceOffer: Number(getVal(p.priceOffer, 0)),
+      priceApprove: Number(getVal(p.priceApprove, 0)),
+      supplier: getVal(p.supplier, ''),
+      requireReturn: Boolean(getVal(p.requireReturn, false)),
       partMasterId
     })
   }

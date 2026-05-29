@@ -130,18 +130,44 @@ export async function PUT(
 
     for (const p of parts) {
       let partMasterId = null
-      if (p.partNo) {
-        const pm = await prisma.partMaster.findUnique({
-          where: { partNo: p.partNo }
+      const partNo = p.partNo?.trim()
+      const partName = p.partName?.trim()
+      if (partNo) {
+        let pm = await prisma.partMaster.findUnique({
+          where: { partNo }
         })
+        if (!pm) {
+          pm = await prisma.partMaster.create({
+            data: {
+              partNo,
+              partName: partName || '',
+              category: p.category || null,
+              unit: 'ชิ้น',
+              standardPrice: Number(p.priceFullAmt || 0),
+              peakCode: '',
+              source: 'AUTO',
+              stock: 0,
+              isActive: true,
+              partNameAlt: []
+            }
+          })
+          
+          await prisma.stockBalance.create({
+            data: {
+              partNo,
+              partName: partName || '',
+              quantity: 0
+            }
+          }).catch(err => console.error('Error creating StockBalance in PUT:', err))
+        }
         if (pm) {
           partMasterId = pm.id
         }
       }
 
       const partData = {
-        partNo: p.partNo || '',
-        partName: p.partName || '',
+        partNo: partNo || '',
+        partName: partName || '',
         priceFullAmt: Number(p.priceFullAmt || 0),
         quantity: Number(p.quantity || 1),
         damageType: p.damageType || 'เปลี่ยน',
