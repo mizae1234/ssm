@@ -38,6 +38,7 @@ interface AIFieldProps {
   type?: string
   list?: string
   isManual?: boolean
+  inputMode?: "search" | "text" | "none" | "tel" | "url" | "email" | "numeric" | "decimal"
 }
 
 function AIField({
@@ -48,7 +49,8 @@ function AIField({
   onReset,
   type = 'text',
   list,
-  isManual = false
+  isManual = false,
+  inputMode
 }: AIFieldProps) {
   const [edited, setEdited] = useState(false)
   const state: ConfState = edited ? 'edited' : confidence >= 85 ? 'ai-high' : 'ai-low'
@@ -82,7 +84,8 @@ function AIField({
         ) : (
           <input
             type={type}
-            value={value}
+            inputMode={inputMode}
+            value={inputMode === 'decimal' && typeof value === 'number' ? value.toFixed(2) : value}
             onChange={e => {
               setEdited(true)
               onChange(e.target.value)
@@ -97,7 +100,7 @@ function AIField({
               setEdited(false)
               onReset()
             }}
-            className="p-1 mr-1 text-gray-400 hover:text-gray-650"
+            className="p-1 mr-1 text-gray-400 hover:text-gray-655"
           >
             <RotateCcw className="w-3.5 h-3.5" />
           </button>
@@ -422,7 +425,7 @@ export default function ClaimReviewForm({
                           "w-24 bg-white border rounded px-2 py-1.5 text-sm outline-none text-right focus:border-[#0d9488] focus:ring-1 focus:ring-[#0d9488]/20 transition-all shadow-sm",
                           isManualMode ? "border-gray-200" : "border-blue-200 hover:border-blue-300"
                         )}
-                        value={l.priceOffer.value}
+                        value={typeof l.priceOffer.value === 'number' ? l.priceOffer.value.toFixed(2) : l.priceOffer.value}
                         onChange={e => updateLaborReview(i, 'priceOffer', e.target.value)}
                       />
                     </td>
@@ -434,7 +437,7 @@ export default function ClaimReviewForm({
                           "w-24 border rounded px-2 py-1.5 text-sm outline-none text-right font-semibold text-[#0d9488] focus:bg-white focus:border-[#0d9488] focus:ring-1 focus:ring-[#0d9488]/20 transition-all shadow-sm",
                           isManualMode ? "bg-white border-gray-200" : "bg-blue-50/50 border-blue-200 hover:border-blue-300"
                         )}
-                        value={l.priceApprove.value}
+                        value={typeof l.priceApprove.value === 'number' ? l.priceApprove.value.toFixed(2) : l.priceApprove.value}
                         onChange={e => updateLaborReview(i, 'priceApprove', e.target.value)}
                       />
                     </td>
@@ -645,7 +648,7 @@ export default function ClaimReviewForm({
                           "w-24 bg-white border rounded px-2 py-1.5 text-sm outline-none text-right focus:border-[#0d9488] focus:ring-1 focus:ring-[#0d9488]/20 transition-all shadow-sm",
                           isManualMode ? "border-gray-200" : "border-blue-200 hover:border-blue-300"
                         )}
-                        value={p.priceFull.value}
+                        value={typeof p.priceFull.value === 'number' ? p.priceFull.value.toFixed(2) : p.priceFull.value}
                         onChange={e => {
                           const val = e.target.value;
                           const priceFull = +val;
@@ -713,7 +716,7 @@ export default function ClaimReviewForm({
                           "w-24 border rounded px-2 py-1.5 text-sm outline-none text-right font-semibold text-[#0d9488] focus:bg-white focus:border-[#0d9488] focus:ring-1 focus:ring-[#0d9488]/20 transition-all shadow-sm",
                           isManualMode ? "bg-white border-gray-200" : "bg-blue-50/50 border-blue-200 hover:border-blue-300"
                         )}
-                        value={p.priceApprove.value}
+                        value={typeof p.priceApprove.value === 'number' ? p.priceApprove.value.toFixed(2) : p.priceApprove.value}
                         onChange={e => updatePartReview(i, 'priceApprove', e.target.value)}
                       />
                     </td>
@@ -753,7 +756,8 @@ export default function ClaimReviewForm({
                 confidence={field.confidence}
                 onChange={(val) => updateSummaryData(key, val)}
                 onReset={() => {}}
-                type="number"
+                type="text"
+                inputMode="decimal"
                 isManual={isManualMode}
               />
             ))}
