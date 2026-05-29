@@ -73,20 +73,89 @@ export async function PUT(
       return NextResponse.json({ error: 'รหัสอะไหล่ และ ชื่ออะไหล่ จำเป็นต้องระบุ' }, { status: 400 })
     }
 
-    const updated = await prisma.partMaster.update({
+    const oldPart = await prisma.partMaster.findUnique({
       where: { id: params.id },
-      data: {
-        partNo: body.partNo,
-        partName: body.partName,
-        category: body.category || null,
-        unit: body.unit || 'ชิ้น',
-        standardPrice: body.standardPrice !== null && body.standardPrice !== undefined ? Number(body.standardPrice) : null,
-        purchasePrice: body.purchasePrice !== null && body.purchasePrice !== undefined ? Number(body.purchasePrice) : null,
-        description: body.description || null,
-        peakCode: body.peakCode || null,
-        stock: body.stock !== undefined ? Number(body.stock) : undefined,
-        isActive: body.isActive !== undefined ? String(body.isActive) === 'true' : undefined,
+      select: { partNo: true }
+    })
+    
+    if (!oldPart) {
+      return NextResponse.json({ error: 'ไม่พบอะไหล่นี้ในระบบ' }, { status: 404 })
+    }
+
+    const oldPartNo = oldPart.partNo
+    const newPartNo = body.partNo
+
+    if (oldPartNo !== newPartNo) {
+      const duplicate = await prisma.partMaster.findUnique({
+        where: { partNo: newPartNo }
+      })
+      if (duplicate) {
+        return NextResponse.json({ error: 'รหัสอะไหล่ใหม่นี้มีอยู่ในระบบแล้ว' }, { status: 400 })
       }
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      // 1. If partNo changed, update all tables referencing partNo
+      if (oldPartNo !== newPartNo) {
+        // Update PartVendorPrice
+        await tx.partVendorPrice.updateMany({
+          where: { partNo: oldPartNo },
+          data: { partNo: newPartNo }
+        })
+
+        // Update StockBalance
+        await tx.stockBalance.updateMany({
+          where: { partNo: oldPartNo },
+          data: { partNo: newPartNo }
+        })
+
+        // Update StockMovement
+        await tx.stockMovement.updateMany({
+          where: { partNo: oldPartNo },
+          data: { partNo: newPartNo }
+        })
+
+        // Update ClaimPart
+        await tx.claimPart.updateMany({
+          where: { partNo: oldPartNo },
+          data: { partNo: newPartNo }
+        })
+
+        // Update POItem
+        await tx.pOItem.updateMany({
+          where: { partNo: oldPartNo },
+          data: { partNo: newPartNo }
+        })
+
+        // Update SupplierInvoiceItem
+        await tx.supplierInvoiceItem.updateMany({
+          where: { partNo: oldPartNo },
+          data: { partNo: newPartNo }
+        })
+
+        // Update QuotationPart
+        await tx.quotationPart.updateMany({
+          where: { partNo: oldPartNo },
+          data: { partNo: newPartNo }
+        })
+      }
+
+      // 2. Update the PartMaster itself
+      return await tx.partMaster.update({
+        where: { id: params.id },
+        data: {
+          partNo: newPartNo,
+          partName: body.partName,
+          category: body.category || null,
+          unit: body.unit || 'ชิ้น',
+          standardPrice: body.standardPrice !== null && body.standardPrice !== undefined ? Number(body.standardPrice) : null,
+          purchasePrice: body.purchasePrice !== null && body.purchasePrice !== undefined ? Number(body.purchasePrice) : null,
+          description: body.description || null,
+          peakCode: body.peakCode || null,
+          stock: body.stock !== undefined ? Number(body.stock) : undefined,
+          isActive: body.isActive !== undefined ? String(body.isActive) === 'true' : undefined,
+        }
+      })
     })
     
     return NextResponse.json(updated)

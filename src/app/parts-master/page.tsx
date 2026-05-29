@@ -426,11 +426,10 @@ export default function PartsMasterPage() {
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-[#475569]">รหัสอะไหล่ (Part No.) <span className="text-red-500">*</span></label>
                 <Input
-                  disabled={!isNew}
                   placeholder="เช่น 12345-ABC"
                   value={selectedPart.partNo || ''}
                   onChange={e => setSelectedPart({ ...selectedPart, partNo: e.target.value })}
-                  className="bg-gray-50 border-gray-200"
+                  className="border-gray-200"
                 />
               </div>
 

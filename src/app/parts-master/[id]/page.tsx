@@ -421,10 +421,10 @@ export default function PartMasterDetailPage() {
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-600">รหัสอะไหล่ (Part No.) <span className="text-rose-500">*</span></label>
                 <Input
-                  disabled={true} // Cannot modify partNo once created
                   placeholder="เช่น 12345-ABC"
                   value={selectedPart.partNo || ''}
-                  className="bg-slate-50 border-slate-200"
+                  onChange={e => setSelectedPart({ ...selectedPart, partNo: e.target.value })}
+                  className="border-slate-200"
                 />
               </div>
 
