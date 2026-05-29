@@ -521,10 +521,22 @@ export default function ClaimReviewForm({
                               </div>
                               <div className="space-y-1">
                                 <label className="text-[#94a3b8]">ชื่อ</label>
-                                <Input 
-                                  className="h-7 text-xs" 
-                                  value={p.partName.value} 
-                                  onChange={e => updatePartReview(i, 'partName', e.target.value)}
+                                <PartAutocomplete
+                                  value={p.partName.value}
+                                  partsMaster={partsMaster}
+                                  onChange={val => updatePartReview(i, 'partName', val)}
+                                  onSelect={selected => {
+                                    const newParts = [...data.parts]
+                                    newParts[i].partName = { value: selected.partName, edited: true, confidence: 100 }
+                                    newParts[i].partNo = { value: selected.partNo, edited: true, confidence: 100 }
+                                    newParts[i].priceFull = { value: selected.standardPrice || newParts[i].priceFull?.value || 0, edited: true, confidence: 100 }
+                                    const discount = Number(newParts[i].discountPct?.value || 0)
+                                    const priceFull = selected.standardPrice || newParts[i].priceFull?.value || 0
+                                    newParts[i].priceApprove = { value: priceFull * (1 - discount / 100), edited: true, confidence: 100 }
+                                    setData({ ...data, parts: newParts })
+                                  }}
+                                  className="h-7 text-xs bg-white w-full"
+                                  placeholder="พิมพ์ค้นหาชื่ออะไหล่..."
                                 />
                               </div>
                               <div className="space-y-1">
