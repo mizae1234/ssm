@@ -29,6 +29,7 @@ export default function GRModal({
 }: GRModalProps) {
   const [grQuantities, setGrQuantities] = useState<Record<string, number>>({})
   const [grDiscounts, setGrDiscounts] = useState<Record<string, number>>({})
+  const [grUnitPrices, setGrUnitPrices] = useState<Record<string, number>>({})
   const [globalDiscountPct, setGlobalDiscountPct] = useState<string>('')
   const [grReceivedBy, setGrReceivedBy] = useState('admin')
   const [grNote, setGrNote] = useState('')
@@ -48,17 +49,25 @@ export default function GRModal({
     if (!isOpen || !po) return
     const initQ: Record<string, number> = {}
     const initD: Record<string, number> = {}
+    const initP: Record<string, number> = {}
     po.items.forEach((item: any) => {
       const prevRec = (item.goodsReceiptItems || []).reduce((s: number, g: any) => s + g.quantity, 0)
       initQ[item.id] = Math.max(0, item.quantity - prevRec)
       initD[item.id] = item.discountPct || 0
+      
+      const matchingPart = (claim?.parts || []).find((cp: any) => cp.partNo === item.partNo)
+      const defaultUnitPrice = matchingPart?.priceApprove ?? (item.discountPct < 100 
+        ? Math.round((item.unitPrice / (1 - item.discountPct / 100)) * 100) / 100 
+        : item.unitPrice)
+      initP[item.id] = defaultUnitPrice
     })
     setGrQuantities(initQ)
     setGrDiscounts(initD)
+    setGrUnitPrices(initP)
     setGlobalDiscountPct('')
     setGrReceivedBy('admin')
     setGrNote('')
-  }, [isOpen, po])
+  }, [isOpen, po, claim])
 
   if (!isOpen || !po) return null
 
@@ -72,7 +81,8 @@ export default function GRModal({
       .map(([id, q]) => ({ 
         poItemId: id, 
         quantity: q, 
-        discountPct: grDiscounts[id] ?? 0 
+        discountPct: grDiscounts[id] ?? 0,
+        unitPrice: grUnitPrices[id] ?? 0
       }))
 
     if (payloadItems.length === 0) {
@@ -145,7 +155,7 @@ export default function GRModal({
               <TableHeader>
                 <TableRow className="bg-slate-50">
                   <TableHead>ชิ้นส่วนอะไหล่</TableHead>
-                  <TableHead className="text-right w-24">ราคาเต็ม</TableHead>
+                  <TableHead className="text-right w-32">ราคาเต็ม</TableHead>
                   <TableHead className="text-center w-28">ส่วนลด (%)</TableHead>
                   <TableHead className="text-center w-20">สั่งซื้อ</TableHead>
                   <TableHead className="text-center w-20">ส่งแล้ว</TableHead>
@@ -160,9 +170,7 @@ export default function GRModal({
                   const remaining = Math.max(0, item.quantity - prevRec)
                   const currentVal = grQuantities[item.id] || 0
                   const discountVal = grDiscounts[item.id] ?? 0
-                  const unitPrice = item.discountPct < 100 
-                    ? Math.round((item.unitPrice / (1 - item.discountPct / 100)) * 100) / 100 
-                    : item.unitPrice
+                  const unitPrice = grUnitPrices[item.id] ?? 0
                   const rowTotal = unitPrice * currentVal * (1 - discountVal / 100)
 
                   return (
@@ -171,7 +179,23 @@ export default function GRModal({
                         {item.description}
                         <p className="text-[10px] text-slate-400 font-mono mt-0.5">{item.partNo}</p>
                       </TableCell>
-                      <TableCell className="text-right">฿{formatCurrency(unitPrice)}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <span className="text-slate-500">฿</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="any"
+                            disabled={remaining === 0 || isSaving}
+                            value={unitPrice}
+                            onChange={e => {
+                              const val = Math.max(0, parseFloat(e.target.value) || 0)
+                              setGrUnitPrices(prev => ({ ...prev, [item.id]: val }))
+                            }}
+                            className="w-24 text-right bg-white border border-slate-200 focus:ring-1 focus:ring-[#0d9488] focus:border-[#0d9488] rounded py-1 px-1 text-sm font-semibold text-slate-800 disabled:bg-slate-100 disabled:text-slate-400 font-mono"
+                          />
+                        </div>
+                      </TableCell>
                       <TableCell className="text-center">
                         <input
                           type="number"

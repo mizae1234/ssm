@@ -236,6 +236,7 @@ model GoodsReceiptItem {
   poItem         POItem       @relation(fields: [poItemId], references: [id], onDelete: Cascade)
   quantity       Int
   discountPct    Float        @default(0)
+  unitPrice      Float?       @default(0)
 }
 
 

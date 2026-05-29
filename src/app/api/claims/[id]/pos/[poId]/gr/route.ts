@@ -93,7 +93,8 @@ export async function POST(
               .map(item => ({
                 poItemId: item.poItemId,
                 quantity: item.quantity,
-                discountPct: item.discountPct !== undefined && item.discountPct !== null ? Number(item.discountPct) : 0
+                discountPct: item.discountPct !== undefined && item.discountPct !== null ? Number(item.discountPct) : 0,
+                unitPrice: item.unitPrice !== undefined && item.unitPrice !== null ? Number(item.unitPrice) : 0
               }))
           }
         },

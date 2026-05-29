@@ -173,9 +173,12 @@ export default function PDFMockPage() {
           }
           tempItems = (targetGR.items || []).map((gi: any) => {
             const poItem = gi.poItem || po.items?.find((pi: any) => pi.id === gi.poItemId)
-            const originalFullPrice = poItem 
-              ? (poItem.discountPct < 100 ? Math.round((poItem.unitPrice / (1 - poItem.discountPct / 100)) * 100) / 100 : poItem.unitPrice)
-              : 0
+            const hasCustomPrice = gi.unitPrice !== undefined && gi.unitPrice !== null && gi.unitPrice > 0
+            const originalFullPrice = hasCustomPrice
+              ? gi.unitPrice
+              : (poItem 
+                  ? (poItem.discountPct < 100 ? Math.round((poItem.unitPrice / (1 - poItem.discountPct / 100)) * 100) / 100 : poItem.unitPrice)
+                  : 0)
             const discountPct = gi.discountPct !== undefined && gi.discountPct !== null ? gi.discountPct : (poItem?.discountPct || 0)
             const totalPrice = originalFullPrice * gi.quantity * (1 - discountPct / 100)
             return {
@@ -186,6 +189,7 @@ export default function PDFMockPage() {
               unitPrice: originalFullPrice,
               discountPct,
               totalPrice,
+              isCustomPrice: hasCustomPrice,
             }
           })
         }
@@ -193,6 +197,9 @@ export default function PDFMockPage() {
 
       // Check if we should override unit prices with selling price (priceApprove) from claim parts!
       tempItems = tempItems.map((item: any) => {
+        if (item.isCustomPrice) {
+          return item
+        }
         const matchingPart = (claim.parts || []).find((cp: any) => cp.partNo === item.partNo)
         if (matchingPart) {
           // If we found a matching claim part, use its priceApprove (selling price) as the unitPrice!
