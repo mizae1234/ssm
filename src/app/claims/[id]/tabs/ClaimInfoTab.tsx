@@ -26,6 +26,10 @@ function AutocompleteSelect({ label, value, options, onChange, editMode }: {
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
+  useEffect(() => {
+    setSearch('')
+  }, [editMode])
+
   const filtered = options.filter(o => o.name.toLowerCase().includes(search.toLowerCase()))
 
   if (!editMode) {
@@ -43,9 +47,19 @@ function AutocompleteSelect({ label, value, options, onChange, editMode }: {
       <div className="relative w-56" ref={ref}>
         <Input
           className="h-8 text-sm text-right pr-8"
-          value={search || value}
-          onChange={e => { setSearch(e.target.value); setOpen(true) }}
-          onFocus={() => { setSearch(''); setOpen(true) }}
+          value={search !== '' || open ? search : value}
+          onChange={e => {
+            const val = e.target.value
+            setSearch(val)
+            setOpen(true)
+            const matched = options.find(o => o.name.toLowerCase() === val.toLowerCase())
+            if (matched) {
+              onChange(matched.id, matched.name)
+            } else {
+              onChange('', val)
+            }
+          }}
+          onFocus={() => { setSearch(value); setOpen(true) }}
           placeholder="ค้นหา..."
         />
         {open && filtered.length > 0 && (
@@ -95,7 +109,7 @@ export default function ClaimInfoTab({ claim, editMode, vendors }: ClaimTabProps
     fetch('/api/garages').then(r => r.json()).then(data => {
       if (Array.isArray(data)) setGarages(data.map((g: any) => ({ id: g.id, name: g.name })))
     }).catch(() => {})
-  }, [])
+  }, [editMode])
 
   // Sync form data when claim changes
   useEffect(() => {
@@ -178,6 +192,7 @@ export default function ClaimInfoTab({ claim, editMode, vendors }: ClaimTabProps
             onChange={(id, name) => {
               setGarageName(name)
               ;(claim as any).garageId = id
+              ;(claim as any).garageName = name
             }}
           />
 

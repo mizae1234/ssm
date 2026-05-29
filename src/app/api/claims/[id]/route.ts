@@ -62,7 +62,34 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   const body = await request.json()
-  const { parts, labors, ...claimData } = body
+  let { parts, labors, garageId, garageName, ...claimData } = body
+  
+  let finalGarageId = garageId
+  if (garageName && garageName.trim()) {
+    const existingGarage = await prisma.vendor.findFirst({
+      where: {
+        name: garageName.trim(),
+        vendorType: 'GARAGE'
+      }
+    })
+    
+    if (existingGarage) {
+      finalGarageId = existingGarage.id
+    } else {
+      const newGarage = await prisma.vendor.create({
+        data: {
+          name: garageName.trim(),
+          vendorType: 'GARAGE',
+          isActive: true
+        }
+      })
+      finalGarageId = newGarage.id
+    }
+  }
+
+  if (finalGarageId) {
+    claimData.garageId = finalGarageId
+  }
   
   // Validate parts have names and labors have descriptions
   if (parts && Array.isArray(parts)) {

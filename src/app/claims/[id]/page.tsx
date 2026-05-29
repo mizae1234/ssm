@@ -479,6 +479,7 @@ export default function ClaimDetailPage() {
                       insuredName: claim.insuredName,
                       insuranceId: claim.insuranceId,
                       garageId: claim.garageId,
+                      garageName: (claim as any).garageName || claim.garage?.name || '',
                     })
                   })
                   if (!res.ok) {
