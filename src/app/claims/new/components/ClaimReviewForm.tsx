@@ -466,7 +466,10 @@ export default function ClaimReviewForm({
           <CardContent className="p-0">
             <div className="divide-y divide-gray-100">
               {parts.map((p: any, i: number) => {
-                const matchedMaster = partsMaster.find(pm => pm.partNo === p.partNo.value)
+                const cleanPartNo = (p.partNo?.value || '').trim()
+                const cleanPartName = (p.partName?.value || '').trim()
+                const matchedMaster = (cleanPartNo ? partsMaster.find(pm => pm.partNo === cleanPartNo) : null)
+                  || (cleanPartName ? partsMaster.find(pm => pm.partName === cleanPartName) : null)
                 const isMatch = !!matchedMaster
                 const usageCount = matchedMaster?.usageCount || 0
                 const standardPrice = matchedMaster?.standardPrice || p.priceFull.value
@@ -485,7 +488,7 @@ export default function ClaimReviewForm({
                       </div>
                       <div className="flex-1 space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-sm font-semibold text-[#0f172a]">{p.partNo.value}</span>
+                          <span className="font-mono text-sm font-semibold text-[#0f172a]">{p.partNo.value || '(ไม่มีรหัส)'}</span>
                           <span className="text-sm text-[#0f172a]">{p.partName.value}</span>
                           {isNew && <span className="text-xs text-amber-600 font-medium ml-2">← Part ใหม่!</span>}
                         </div>
@@ -507,6 +510,15 @@ export default function ClaimReviewForm({
                           <div className="text-xs text-[#475569] space-y-2 mt-2 bg-white p-3 rounded border border-amber-200 shadow-sm">
                             <div>ยังไม่มีใน Master</div>
                             <div className="grid grid-cols-2 gap-3 max-w-md">
+                              <div className="space-y-1">
+                                <label className="text-[#94a3b8]">รหัสอะไหล่</label>
+                                <Input 
+                                  className="h-7 text-xs font-mono" 
+                                  value={p.partNo.value} 
+                                  onChange={e => updatePartReview(i, 'partNo', e.target.value)}
+                                  placeholder="กรอกรหัสอะไหล่..."
+                                />
+                              </div>
                               <div className="space-y-1">
                                 <label className="text-[#94a3b8]">ชื่อ</label>
                                 <Input 
