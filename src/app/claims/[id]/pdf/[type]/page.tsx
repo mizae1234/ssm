@@ -4,6 +4,7 @@ import { useMemo, useEffect, useState, useRef } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import { formatCurrency } from '@/lib/utils'
 import { formatDate } from '@/lib/date'
+import { Button } from '@/components/ui/button'
 
 const DEFAULT_COMPANY = {
   name: '',
@@ -106,6 +107,10 @@ export default function PDFMockPage() {
   const [loading, setLoading] = useState(true)
   const [company, setCompany] = useState<any>(DEFAULT_COMPANY)
 
+  const [editableItems, setEditableItems] = useState<any[]>([])
+  const [editableNote, setEditableNote] = useState('')
+  const [isEditMode, setIsEditMode] = useState(false)
+
   useEffect(() => {
     Promise.all([
       fetch(`/api/claims/${claimId}`).then(res => res.json()),
@@ -139,6 +144,95 @@ export default function PDFMockPage() {
       }, 500)
     }
   }, [claim, loading])
+
+  useEffect(() => {
+    if (!claim) return
+
+    if (type === 'delivery-note' && po) {
+      let tempItems = (po.items || []).map((item: any) => {
+        const originalFullPrice = item.discountPct < 100 
+          ? Math.round((item.unitPrice / (1 - item.discountPct / 100)) * 100) / 100 
+          : item.unitPrice
+        return {
+          id: item.id,
+          partNo: item.partNo,
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: originalFullPrice,
+          discountPct: item.discountPct || 0,
+          totalPrice: originalFullPrice * item.quantity * (1 - (item.discountPct || 0) / 100),
+        }
+      })
+      let note = 'กรุณาตรวจนับอะไหล่ให้ครบถ้วนก่อนลงนามรับของ'
+
+      if (grId) {
+        const targetGR = (po.goodsReceipts || []).find((gr: any) => gr.id === grId)
+        if (targetGR) {
+          if (targetGR.note) {
+            note = targetGR.note
+          }
+          tempItems = (targetGR.items || []).map((gi: any) => {
+            const poItem = gi.poItem || po.items?.find((pi: any) => pi.id === gi.poItemId)
+            const originalFullPrice = poItem 
+              ? (poItem.discountPct < 100 ? Math.round((poItem.unitPrice / (1 - poItem.discountPct / 100)) * 100) / 100 : poItem.unitPrice)
+              : 0
+            const discountPct = gi.discountPct !== undefined && gi.discountPct !== null ? gi.discountPct : (poItem?.discountPct || 0)
+            const totalPrice = originalFullPrice * gi.quantity * (1 - discountPct / 100)
+            return {
+              id: gi.id,
+              partNo: poItem?.partNo || '',
+              description: poItem?.description || 'รายการอะไหล่',
+              quantity: gi.quantity,
+              unitPrice: originalFullPrice,
+              discountPct,
+              totalPrice,
+            }
+          })
+        }
+      }
+
+      // Check if we should override unit prices with selling price (priceApprove) from claim parts!
+      tempItems = tempItems.map((item: any) => {
+        const matchingPart = (claim.parts || []).find((cp: any) => cp.partNo === item.partNo)
+        if (matchingPart) {
+          // If we found a matching claim part, use its priceApprove (selling price) as the unitPrice!
+          const sellingPrice = matchingPart.priceApprove
+          return {
+            ...item,
+            unitPrice: sellingPrice,
+            totalPrice: sellingPrice * item.quantity * (1 - (item.discountPct || 0) / 100)
+          }
+        }
+        return item
+      })
+
+      setEditableItems(tempItems)
+      setEditableNote(note)
+    } else if (type === 'delivery-note-ar' && quotation) {
+      const tempItems = [
+        ...(quotation.laborItems || []).map((l: any) => ({
+          id: l.id,
+          partNo: '-',
+          description: l.description,
+          quantity: 1,
+          unitPrice: l.unitPrice,
+          discountPct: l.discountPct || 0,
+          totalPrice: l.totalPrice,
+        })),
+        ...(quotation.partItems || []).map((p: any) => ({
+          id: p.id,
+          partNo: p.partNo || '-',
+          description: p.partName,
+          quantity: p.quantity,
+          unitPrice: p.unitPrice,
+          discountPct: p.discountPct || 0,
+          totalPrice: p.totalPrice,
+        }))
+      ]
+      setEditableItems(tempItems)
+      setEditableNote(quotation.note || '')
+    }
+  }, [claim, po, quotation, type, grId])
 
   if (loading) return <div className="p-8 text-center animate-pulse">กำลังโหลดเอกสาร...</div>
   if (!claim) return <div className="p-8 text-center">ไม่พบข้อมูล Claim</div>
@@ -212,7 +306,7 @@ export default function PDFMockPage() {
             {(quotation.laborItems || []).map((l: any, i: number) => (
               <tr key={l.id} className="border-b border-gray-200">
                 <td className="py-2 px-2 text-gray-600">{i + 1}</td>
-                <td className="py-2 px-2">{l.description}</td>
+                <td className="py-2.5 px-2">{l.description}</td>
                 <td className="py-2 px-2 text-center">ค่าแรง</td>
                 <td className="py-2 px-2 text-right">1</td>
                 <td className="py-2 px-2 text-right">{formatCurrency(l.unitPrice)}</td>
@@ -223,7 +317,7 @@ export default function PDFMockPage() {
             {(quotation.partItems || []).map((p: any, i: number) => (
               <tr key={p.id} className="border-b border-gray-200">
                 <td className="py-2 px-2 text-gray-600">{i + 1}</td>
-                <td className="py-2 px-2">{p.partName} <span className="text-gray-400 text-xs">({p.partNo})</span></td>
+                <td className="py-2.5 px-2">{p.partName} <span className="text-gray-400 text-xs">({p.partNo})</span></td>
                 <td className="py-2 px-2 text-center">อะไหล่</td>
                 <td className="py-2 px-2 text-right">{p.quantity}</td>
                 <td className="py-2 px-2 text-right">{formatCurrency(p.unitPrice)}</td>
@@ -282,7 +376,7 @@ export default function PDFMockPage() {
               if (inv.laborTotal > 0) {
                 rows.push(
                   <tr key="labor" className="border-b border-gray-200">
-                    <td className="py-4 px-2 text-gray-600">{rows.length + 1}</td>
+                    <td className="py-4 px-2 text-gray-650">{rows.length + 1}</td>
                     <td className="py-4 px-2">
                       <strong>ค่าแรงซ่อมรถยนต์</strong>
                       <p className="text-gray-500 text-xs mt-1">ตามใบเสนอราคาที่ได้รับอนุมัติ ทะเบียน {claim.carPlate}</p>
@@ -294,7 +388,7 @@ export default function PDFMockPage() {
               if (inv.partsTotal > 0) {
                 rows.push(
                   <tr key="parts" className="border-b border-gray-200">
-                    <td className="py-4 px-2 text-gray-600">{rows.length + 1}</td>
+                    <td className="py-4 px-2 text-gray-650">{rows.length + 1}</td>
                     <td className="py-4 px-2">
                       <strong>ค่าอะไหล่รถยนต์</strong>
                       <p className="text-gray-500 text-xs mt-1">ตามใบเสนอราคาที่ได้รับอนุมัติ ทะเบียน {claim.carPlate}</p>
@@ -341,8 +435,6 @@ export default function PDFMockPage() {
 
   if (type === 'purchase-order') {
     if (!po) return <div className="p-8 text-center">ไม่พบใบสั่งซื้อ</div>
-
-    const poTotal = (po.items || []).reduce((s: number, item: any) => s + (item.totalPrice || 0), 0)
 
     return (
       <div className="bg-white min-h-screen text-black p-8 max-w-4xl mx-auto print:p-12">
@@ -456,22 +548,7 @@ export default function PDFMockPage() {
   if (type === 'delivery-note') {
     if (!po) return <div className="p-8 text-center">ไม่พบใบสั่งซื้อ</div>
 
-    let itemsToRender = (po.items || []).map((item: any) => {
-      const originalFullPrice = item.discountPct < 100 
-        ? Math.round((item.unitPrice / (1 - item.discountPct / 100)) * 100) / 100 
-        : item.unitPrice
-      return {
-        id: item.id,
-        partNo: item.partNo,
-        description: item.description,
-        quantity: item.quantity,
-        unitPrice: originalFullPrice,
-        discountPct: item.discountPct || 0,
-        totalPrice: originalFullPrice * item.quantity * (1 - (item.discountPct || 0) / 100),
-      }
-    })
     let documentDate = po.createdAt
-    let noteText = 'กรุณาตรวจนับอะไหล่ให้ครบถ้วนก่อนลงนามรับของ'
     let titleText = 'ใบส่งของ/ใบส่งมอบสินค้า'
 
     if (grId) {
@@ -479,26 +556,6 @@ export default function PDFMockPage() {
       if (targetGR) {
         documentDate = targetGR.receivedAt
         titleText = 'ใบส่งของ/ใบส่งมอบสินค้า'
-        if (targetGR.note) {
-          noteText = `หมายเหตุ: ${targetGR.note}`
-        }
-        itemsToRender = (targetGR.items || []).map((gi: any) => {
-          const poItem = gi.poItem || po.items?.find((pi: any) => pi.id === gi.poItemId)
-          const originalFullPrice = poItem 
-            ? (poItem.discountPct < 100 ? Math.round((poItem.unitPrice / (1 - poItem.discountPct / 100)) * 100) / 100 : poItem.unitPrice)
-            : 0
-          const discountPct = gi.discountPct !== undefined && gi.discountPct !== null ? gi.discountPct : (poItem?.discountPct || 0)
-          const totalPrice = originalFullPrice * gi.quantity * (1 - discountPct / 100)
-          return {
-            id: gi.id,
-            partNo: poItem?.partNo || '',
-            description: poItem?.description || 'รายการอะไหล่',
-            quantity: gi.quantity,
-            unitPrice: originalFullPrice,
-            discountPct,
-            totalPrice,
-          }
-        })
       }
     }
 
@@ -516,12 +573,12 @@ export default function PDFMockPage() {
     const customerTaxId = claim.insurance?.taxId || ''
     const customerBranch = claim.insurance?.branchCode ? (claim.insurance.branchCode === '00000' ? 'สำนักงานใหญ่' : `สาขา ${claim.insurance.branchCode}`) : 'สำนักงานใหญ่'
 
-    const subtotal = itemsToRender.reduce((sum: number, item: any) => sum + (item.totalPrice || 0), 0)
-    const vatAmount = subtotal * 0.07
-    const grandTotal = subtotal + vatAmount
+    const subtotal = editableItems.reduce((sum: number, item: any) => sum + (item.totalPrice || 0), 0)
+    const vatAmount = Math.round(subtotal * 0.07 * 100) / 100
+    const grandTotal = Math.round((subtotal + vatAmount) * 100) / 100
 
     return (
-      <div className="bg-white min-h-screen text-black p-8 max-w-4xl mx-auto print:p-12 font-sans relative overflow-hidden print:overflow-visible">
+      <div className="bg-white min-h-screen text-black p-8 max-w-4xl mx-auto print:p-6 font-sans relative overflow-hidden print:overflow-visible">
         
         {/* CSS for watermark and font */}
         <style jsx global>{`
@@ -529,17 +586,45 @@ export default function PDFMockPage() {
           .font-sans {
             font-family: 'Sarabun', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
           }
+          @media print {
+            .print-no-break {
+              break-inside: avoid !important;
+              page-break-inside: avoid !important;
+            }
+          }
         `}</style>
 
+        {/* Edit Toolbar for screen only */}
+        <div className="print:hidden bg-slate-100 p-4 mb-4 rounded-xl flex items-center justify-between border border-slate-200">
+          <div className="flex items-center gap-6">
+            <span className="text-sm font-bold text-slate-800 flex items-center gap-2">
+              📄 โหมดพิมพ์เอกสาร
+            </span>
+            <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={isEditMode}
+                onChange={e => setIsEditMode(e.target.checked)}
+                className="w-4 h-4 rounded text-teal-600 focus:ring-teal-500 border-slate-300 cursor-pointer"
+              />
+              <span className="font-semibold text-slate-700">เปิดโหมดแก้ไขราคาก่อนพิมพ์ (ราคาขาย)</span>
+            </label>
+          </div>
+          <div className="flex gap-2">
+            <button className="bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition" onClick={() => window.print()}>
+              🖨️ สั่งพิมพ์เอกสาร
+            </button>
+          </div>
+        </div>
 
         {/* Header section */}
-        <div className="flex justify-between items-start mb-6 z-10 relative">
+        <div className="flex justify-between items-start mb-6 print:mb-3 z-10 relative">
           <div className="flex gap-4">
             <div className="w-20 h-20 bg-gray-100 flex items-center justify-center font-bold text-gray-400 rounded overflow-hidden border">
               {company.logoUrl ? (
                 <img src={company.logoUrl} alt="Logo" className="w-full h-full object-contain" />
               ) : (
-                <svg className="w-16 h-16" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <svg className="w-16 h-16" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2050/svg">
                   <path d="M20 55C20 55 24 45 40 40C56 35 78 40 85 45C92 50 90 55 90 55H20Z" fill="#0d9488" />
                   <circle cx="35" cy="55" r="8" fill="#f97316" stroke="white" strokeWidth="2" />
                   <circle cx="75" cy="55" r="8" fill="#f97316" stroke="white" strokeWidth="2" />
@@ -561,15 +646,15 @@ export default function PDFMockPage() {
             <div className="mt-3 bg-teal-50/50 border border-teal-150 rounded-xl p-3 text-left text-xs space-y-1.5 min-w-[240px]">
               <div className="flex justify-between">
                 <span className="text-gray-500">เลขที่เอกสาร:</span>
-                <span className="font-semibold text-gray-950">{docNo}</span>
+                <span className="font-semibold text-gray-955">{docNo}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">วันที่ออก:</span>
-                <span className="font-semibold text-gray-950">{formatDate(documentDate)}</span>
+                <span className="font-semibold text-gray-955">{formatDate(documentDate)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">วันที่ตอบรับ:</span>
-                <span className="font-semibold text-gray-950">-</span>
+                <span className="font-semibold text-gray-955">-</span>
               </div>
               <div className="flex justify-between border-t border-teal-100/50 pt-1.5 mt-1.5">
                 <span className="text-gray-500">เลขเคลม:</span>
@@ -580,7 +665,7 @@ export default function PDFMockPage() {
         </div>
 
         {/* Customer Info Grid */}
-        <div className="grid grid-cols-2 gap-8 mb-6 text-xs z-10 relative">
+        <div className="grid grid-cols-2 gap-8 print:gap-4 mb-6 print:mb-3 text-xs z-10 relative">
           <div className="border rounded-xl p-4 bg-slate-50/30">
             <h3 className="font-bold text-gray-800 mb-2 border-b pb-1 text-teal-700">ลูกค้า / บริษัทประกัน</h3>
             <p className="font-semibold">{customerName}</p>
@@ -607,38 +692,102 @@ export default function PDFMockPage() {
 
         {/* Items Table */}
         <div className="z-10 relative">
-          <table className="w-full text-xs mb-6 border-collapse">
+          <table className="w-full text-xs mb-6 print:mb-3 border-collapse">
             <thead>
               <tr className="bg-teal-50/70 border-b border-teal-200 text-left text-teal-800 font-bold">
-                <th className="py-2.5 px-2 text-center w-10">ลำดับ</th>
-                <th className="py-2.5 px-2">รายการ</th>
-                <th className="py-2.5 px-2 text-right w-16">จำนวน</th>
-                <th className="py-2.5 px-2 text-right w-24">ราคา</th>
-                <th className="py-2.5 px-2 text-right w-20">ส่วนลด</th>
-                <th className="py-2.5 px-2 text-center w-12">VAT</th>
-                <th className="py-2.5 px-2 text-right w-28">มูลค่าก่อนภาษี</th>
+                <th className="py-2.5 print:py-1.5 px-2 text-center w-10">ลำดับ</th>
+                <th className="py-2.5 print:py-1.5 px-2">รายการ</th>
+                <th className="py-2.5 print:py-1.5 px-2 text-right w-16">จำนวน</th>
+                <th className="py-2.5 print:py-1.5 px-2 text-right w-24">ราคาขาย/หน่วย</th>
+                <th className="py-2.5 print:py-1.5 px-2 text-right w-20">ส่วนลด</th>
+                <th className="py-2.5 print:py-1.5 px-2 text-center w-12">VAT</th>
+                <th className="py-2.5 print:py-1.5 px-2 text-right w-28">มูลค่าก่อนภาษี</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-150">
-              {itemsToRender.map((item: any, i: number) => {
+              {editableItems.map((item: any, i: number) => {
                 const subtotal = item.totalPrice
                 const priceBeforeDiscount = item.unitPrice
                 return (
                   <tr key={item.id} className="hover:bg-slate-50/50 transition">
-                    <td className="py-2.5 px-2 text-center text-gray-550">{i + 1}</td>
-                    <td className="py-2.5 px-2 text-gray-900 font-medium">
-                      {item.description}
-                      {item.partNo && item.partNo !== '-' && !/^c[a-z0-9]{24}$/i.test(item.partNo) && (
-                        <span className="text-gray-400 font-mono text-[10px] block mt-0.5">({item.partNo})</span>
+                    <td className="py-2.5 print:py-1 px-2 text-center text-gray-550">{i + 1}</td>
+                    <td className="py-2.5 print:py-1 px-2 text-gray-900 font-medium">
+                      {isEditMode ? (
+                        <input
+                          type="text"
+                          value={item.description}
+                          onChange={e => {
+                            const newItems = [...editableItems]
+                            newItems[i].description = e.target.value
+                            setEditableItems(newItems)
+                          }}
+                          className="w-full bg-slate-50 border border-slate-200 focus:ring-1 focus:ring-teal-500 rounded px-1.5 py-0.5 text-xs text-gray-900"
+                        />
+                      ) : (
+                        <>
+                          {item.description}
+                          {item.partNo && item.partNo !== '-' && !/^c[a-z0-9]{24}$/i.test(item.partNo) && (
+                            <span className="text-gray-400 font-mono text-[10px] block mt-0.5">({item.partNo})</span>
+                          )}
+                        </>
                       )}
                     </td>
-                    <td className="py-2.5 px-2 text-right text-gray-700 font-mono">{Number(item.quantity).toFixed(2)}</td>
-                    <td className="py-2.5 px-2 text-right text-gray-700 font-mono">{formatCurrency(priceBeforeDiscount)}</td>
-                    <td className="py-2.5 px-2 text-right text-gray-700 font-mono">
-                      {item.discountPct > 0 ? `${Number(item.discountPct).toFixed(2)}%` : '-'}
+                    <td className="py-2.5 print:py-1 px-2 text-right text-gray-700 font-mono">
+                      {isEditMode ? (
+                        <input
+                          type="number"
+                          value={item.quantity}
+                          onChange={e => {
+                            const newItems = [...editableItems]
+                            const q = Number(e.target.value) || 0
+                            newItems[i].quantity = q
+                            newItems[i].totalPrice = q * newItems[i].unitPrice * (1 - (newItems[i].discountPct || 0) / 100)
+                            setEditableItems(newItems)
+                          }}
+                          className="w-16 text-center bg-slate-50 border border-slate-200 focus:ring-1 focus:ring-teal-500 rounded px-1 py-0.5 text-xs font-mono"
+                        />
+                      ) : (
+                        Number(item.quantity).toFixed(2)
+                      )}
                     </td>
-                    <td className="py-2.5 px-2 text-center text-gray-700">7%</td>
-                    <td className="py-2.5 px-2 text-right text-gray-900 font-mono font-medium">{formatCurrency(subtotal)}</td>
+                    <td className="py-2.5 print:py-1 px-2 text-right text-gray-700 font-mono">
+                      {isEditMode ? (
+                        <input
+                          type="number"
+                          value={item.unitPrice}
+                          onChange={e => {
+                            const newItems = [...editableItems]
+                            const p = Number(e.target.value) || 0
+                            newItems[i].unitPrice = p
+                            newItems[i].totalPrice = newItems[i].quantity * p * (1 - (newItems[i].discountPct || 0) / 100)
+                            setEditableItems(newItems)
+                          }}
+                          className="w-24 text-right bg-slate-50 border border-slate-200 focus:ring-1 focus:ring-teal-500 rounded px-1 py-0.5 text-xs font-mono"
+                        />
+                      ) : (
+                        formatCurrency(priceBeforeDiscount)
+                      )}
+                    </td>
+                    <td className="py-2.5 print:py-1 px-2 text-right text-gray-700 font-mono">
+                      {isEditMode ? (
+                        <input
+                          type="number"
+                          value={item.discountPct}
+                          onChange={e => {
+                            const newItems = [...editableItems]
+                            const d = Number(e.target.value) || 0
+                            newItems[i].discountPct = d
+                            newItems[i].totalPrice = newItems[i].quantity * newItems[i].unitPrice * (1 - d / 100)
+                            setEditableItems(newItems)
+                          }}
+                          className="w-16 text-center bg-slate-50 border border-slate-200 focus:ring-1 focus:ring-teal-500 rounded px-1 py-0.5 text-xs font-mono"
+                        />
+                      ) : (
+                        item.discountPct > 0 ? `${Number(item.discountPct).toFixed(2)}%` : '-'
+                      )}
+                    </td>
+                    <td className="py-2.5 print:py-1 px-2 text-center text-gray-700">7%</td>
+                    <td className="py-2.5 print:py-1 px-2 text-right text-gray-900 font-mono font-medium">{formatCurrency(subtotal)}</td>
                   </tr>
                 )
               })}
@@ -647,19 +796,31 @@ export default function PDFMockPage() {
         </div>
 
         {/* Totals & Summary Block */}
-        <div className="grid grid-cols-[1fr_320px] gap-8 mb-8 text-xs z-10 relative">
+        <div className="grid grid-cols-[1fr_320px] gap-8 mb-8 print:mb-4 text-xs z-10 relative print-no-break">
           
           {/* Left Side: Baht Text & Notes */}
           <div className="space-y-4">
             <div className="flex items-center gap-2 border-t pt-3">
-              <span className="font-bold text-gray-700">จำนวนเงินทั้งสิ้น (ตัวอักษร):</span>
+              <span className="font-bold text-gray-750">จำนวนเงินทั้งสิ้น (ตัวอักษร):</span>
               <span className="font-semibold text-teal-800 italic">({bahtText(grandTotal)})</span>
             </div>
-            {noteText && (
+            {isEditMode ? (
               <div className="bg-slate-50 border border-slate-100 rounded-lg p-3">
                 <span className="font-bold text-gray-750 block mb-1">หมายเหตุ:</span>
-                <p className="text-gray-600 whitespace-pre-wrap">{noteText}</p>
+                <textarea
+                  value={editableNote}
+                  onChange={e => setEditableNote(e.target.value)}
+                  className="w-full bg-white border border-slate-200 focus:ring-1 focus:ring-teal-500 rounded p-2 text-xs text-gray-700 font-medium leading-relaxed"
+                  rows={2}
+                />
               </div>
+            ) : (
+              editableNote && (
+                <div className="bg-slate-50 border border-slate-100 rounded-lg p-3">
+                  <span className="font-bold text-gray-750 block mb-1">หมายเหตุ:</span>
+                  <p className="text-gray-600 whitespace-pre-wrap">{editableNote}</p>
+                </div>
+              )
             )}
           </div>
 
@@ -693,19 +854,19 @@ export default function PDFMockPage() {
         </div>
 
         {/* Warning Remark */}
-        <div className="border border-rose-100 rounded-xl p-3 bg-rose-50/30 text-xs text-rose-600 font-semibold mb-12 z-10 relative">
+        <div className="border border-rose-100 rounded-xl p-3 bg-rose-50/30 text-xs text-rose-600 font-semibold mb-8 print:mb-4 z-10 relative">
           * กรุณาตรวจสอบสินค้าที่ได้รับหากพ้นกำหนด 7 วันนับจากวันที่ส่งสินค้า ทางร้านจะไม่รับเปลี่ยนหรือคืน
         </div>
 
         {/* Signatures Footer */}
-        <div className="grid grid-cols-2 gap-16 text-center text-xs z-10 relative mt-auto">
+        <div className="grid grid-cols-2 gap-16 text-center text-xs z-10 relative print-no-break mt-4">
           <div>
-            <div className="border-b border-gray-400 w-48 mx-auto mb-2 mt-8"></div>
+            <div className="border-b border-gray-400 w-48 mx-auto mb-2 mt-4 print:mt-2"></div>
             <p className="font-bold text-gray-800">ผู้รับสินค้า</p>
             <p className="text-gray-500 text-[10px] mt-1">วันที่ ____/____/____</p>
           </div>
           <div>
-            <div className="border-b border-gray-400 w-48 mx-auto mb-2 mt-8"></div>
+            <div className="border-b border-gray-400 w-48 mx-auto mb-2 mt-4 print:mt-2"></div>
             <p className="font-bold text-gray-800">ผู้ส่ง</p>
             <p className="text-gray-500 text-[10px] mt-1">วันที่ ____/____/____</p>
           </div>
@@ -717,28 +878,6 @@ export default function PDFMockPage() {
 
   if (type === 'delivery-note-ar') {
     if (!quotation) return <div className="p-8 text-center">ไม่พบใบเสนอราคา</div>
-
-    // Combine labor and parts
-    const itemsToRender = [
-      ...(quotation.laborItems || []).map((l: any) => ({
-        id: l.id,
-        partNo: '-',
-        description: l.description,
-        quantity: 1,
-        unitPrice: l.unitPrice,
-        discountPct: l.discountPct || 0,
-        totalPrice: l.totalPrice,
-      })),
-      ...(quotation.partItems || []).map((p: any) => ({
-        id: p.id,
-        partNo: p.partNo || '-',
-        description: p.partName,
-        quantity: p.quantity,
-        unitPrice: p.unitPrice,
-        discountPct: p.discountPct || 0,
-        totalPrice: p.totalPrice,
-      }))
-    ]
 
     const docNo = quotation.quotationNo.replace(/^QO-?/i, 'DO-')
     const documentDate = quotation.quotationDate
@@ -756,8 +895,12 @@ export default function PDFMockPage() {
     const customerTaxId = claim.insurance?.taxId || ''
     const customerBranch = claim.insurance?.branchCode ? (claim.insurance.branchCode === '00000' ? 'สำนักงานใหญ่' : `สาขา ${claim.insurance.branchCode}`) : 'สำนักงานใหญ่'
 
+    const subtotal = editableItems.reduce((sum: number, item: any) => sum + (item.totalPrice || 0), 0)
+    const vatAmount = Math.round(subtotal * 0.07 * 100) / 100
+    const grandTotal = Math.round((subtotal + vatAmount) * 100) / 100
+
     return (
-      <div className="bg-white min-h-screen text-black p-8 max-w-4xl mx-auto print:p-12 font-sans relative overflow-hidden print:overflow-visible">
+      <div className="bg-white min-h-screen text-black p-8 max-w-4xl mx-auto print:p-6 font-sans relative overflow-hidden print:overflow-visible">
         
         {/* CSS for watermark and font */}
         <style jsx global>{`
@@ -765,11 +908,39 @@ export default function PDFMockPage() {
           .font-sans {
             font-family: 'Sarabun', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
           }
+          @media print {
+            .print-no-break {
+              break-inside: avoid !important;
+              page-break-inside: avoid !important;
+            }
+          }
         `}</style>
 
+        {/* Edit Toolbar for screen only */}
+        <div className="print:hidden bg-slate-100 p-4 mb-4 rounded-xl flex items-center justify-between border border-slate-200">
+          <div className="flex items-center gap-6">
+            <span className="text-sm font-bold text-slate-800 flex items-center gap-2">
+              📄 โหมดพิมพ์เอกสาร
+            </span>
+            <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={isEditMode}
+                onChange={e => setIsEditMode(e.target.checked)}
+                className="w-4 h-4 rounded text-teal-600 focus:ring-teal-500 border-slate-300 cursor-pointer"
+              />
+              <span className="font-semibold text-slate-700">เปิดโหมดแก้ไขราคาก่อนพิมพ์ (ราคาขาย)</span>
+            </label>
+          </div>
+          <div className="flex gap-2">
+            <button className="bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition" onClick={() => window.print()}>
+              🖨️ สั่งพิมพ์เอกสาร
+            </button>
+          </div>
+        </div>
 
         {/* Header section */}
-        <div className="flex justify-between items-start mb-6 z-10 relative">
+        <div className="flex justify-between items-start mb-6 print:mb-3 z-10 relative">
           <div className="flex gap-4">
             <div className="w-20 h-20 bg-gray-100 flex items-center justify-center font-bold text-gray-400 rounded overflow-hidden border">
               {company.logoUrl ? (
@@ -797,19 +968,19 @@ export default function PDFMockPage() {
             <div className="mt-3 bg-teal-50/50 border border-teal-150 rounded-xl p-3 text-left text-xs space-y-1.5 min-w-[240px]">
               <div className="flex justify-between">
                 <span className="text-gray-500">เลขที่เอกสาร:</span>
-                <span className="font-semibold text-gray-950">{docNo}</span>
+                <span className="font-semibold text-gray-955">{docNo}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">วันที่ออก:</span>
-                <span className="font-semibold text-gray-950">{formatDate(documentDate)}</span>
+                <span className="font-semibold text-gray-955">{formatDate(documentDate)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">วันที่ตอบรับ:</span>
-                <span className="font-semibold text-gray-950">-</span>
+                <span className="font-semibold text-gray-955">-</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">ใช้ได้ถึง:</span>
-                <span className="font-semibold text-gray-950">{formatDate(validUntil)}</span>
+                <span className="font-semibold text-gray-955">{formatDate(validUntil)}</span>
               </div>
               <div className="flex justify-between border-t border-teal-100/50 pt-1.5 mt-1.5">
                 <span className="text-gray-500">เลขเคลม:</span>
@@ -820,7 +991,7 @@ export default function PDFMockPage() {
         </div>
 
         {/* Customer Info Grid */}
-        <div className="grid grid-cols-2 gap-8 mb-6 text-xs z-10 relative">
+        <div className="grid grid-cols-2 gap-8 print:gap-4 mb-6 print:mb-3 text-xs z-10 relative">
           <div className="border rounded-xl p-4 bg-slate-50/30">
             <h3 className="font-bold text-gray-800 mb-2 border-b pb-1 text-teal-700">ลูกค้า / บริษัทประกัน</h3>
             <p className="font-semibold">{customerName}</p>
@@ -841,38 +1012,102 @@ export default function PDFMockPage() {
 
         {/* Items Table */}
         <div className="z-10 relative">
-          <table className="w-full text-xs mb-6 border-collapse">
+          <table className="w-full text-xs mb-6 print:mb-3 border-collapse">
             <thead>
               <tr className="bg-teal-50/70 border-b border-teal-200 text-left text-teal-800 font-bold">
-                <th className="py-2.5 px-2 text-center w-10">ลำดับ</th>
-                <th className="py-2.5 px-2">รายการ</th>
-                <th className="py-2.5 px-2 text-right w-16">จำนวน</th>
-                <th className="py-2.5 px-2 text-right w-24">ราคา</th>
-                <th className="py-2.5 px-2 text-right w-20">ส่วนลด</th>
-                <th className="py-2.5 px-2 text-center w-12">VAT</th>
-                <th className="py-2.5 px-2 text-right w-28">มูลค่าก่อนภาษี</th>
+                <th className="py-2.5 print:py-1.5 px-2 text-center w-10">ลำดับ</th>
+                <th className="py-2.5 print:py-1.5 px-2">รายการ</th>
+                <th className="py-2.5 print:py-1.5 px-2 text-right w-16">จำนวน</th>
+                <th className="py-2.5 print:py-1.5 px-2 text-right w-24">ราคาขาย/หน่วย</th>
+                <th className="py-2.5 print:py-1.5 px-2 text-right w-20">ส่วนลด</th>
+                <th className="py-2.5 print:py-1.5 px-2 text-center w-12">VAT</th>
+                <th className="py-2.5 print:py-1.5 px-2 text-right w-28">มูลค่าก่อนภาษี</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-150">
-              {itemsToRender.map((item: any, i: number) => {
+              {editableItems.map((item: any, i: number) => {
                 const subtotal = item.totalPrice
                 const priceBeforeDiscount = item.unitPrice
                 return (
                   <tr key={item.id} className="hover:bg-slate-50/50 transition">
-                    <td className="py-2.5 px-2 text-center text-gray-550">{i + 1}</td>
-                    <td className="py-2.5 px-2 text-gray-900 font-medium">
-                      {item.description}
-                      {item.partNo && item.partNo !== '-' && !/^c[a-z0-9]{24}$/i.test(item.partNo) && (
-                        <span className="text-gray-400 font-mono text-[10px] block mt-0.5">({item.partNo})</span>
+                    <td className="py-2.5 print:py-1 px-2 text-center text-gray-550">{i + 1}</td>
+                    <td className="py-2.5 print:py-1 px-2 text-gray-900 font-medium">
+                      {isEditMode ? (
+                        <input
+                          type="text"
+                          value={item.description}
+                          onChange={e => {
+                            const newItems = [...editableItems]
+                            newItems[i].description = e.target.value
+                            setEditableItems(newItems)
+                          }}
+                          className="w-full bg-slate-50 border border-slate-200 focus:ring-1 focus:ring-teal-500 rounded px-1.5 py-0.5 text-xs text-gray-900"
+                        />
+                      ) : (
+                        <>
+                          {item.description}
+                          {item.partNo && item.partNo !== '-' && !/^c[a-z0-9]{24}$/i.test(item.partNo) && (
+                            <span className="text-gray-400 font-mono text-[10px] block mt-0.5">({item.partNo})</span>
+                          )}
+                        </>
                       )}
                     </td>
-                    <td className="py-2.5 px-2 text-right text-gray-700 font-mono">{Number(item.quantity).toFixed(2)}</td>
-                    <td className="py-2.5 px-2 text-right text-gray-700 font-mono">{formatCurrency(priceBeforeDiscount)}</td>
-                    <td className="py-2.5 px-2 text-right text-gray-700 font-mono">
-                      {item.discountPct > 0 ? `${Number(item.discountPct).toFixed(2)}%` : '-'}
+                    <td className="py-2.5 print:py-1 px-2 text-right text-gray-700 font-mono">
+                      {isEditMode ? (
+                        <input
+                          type="number"
+                          value={item.quantity}
+                          onChange={e => {
+                            const newItems = [...editableItems]
+                            const q = Number(e.target.value) || 0
+                            newItems[i].quantity = q
+                            newItems[i].totalPrice = q * newItems[i].unitPrice * (1 - (newItems[i].discountPct || 0) / 100)
+                            setEditableItems(newItems)
+                          }}
+                          className="w-16 text-center bg-slate-50 border border-slate-200 focus:ring-1 focus:ring-teal-500 rounded px-1 py-0.5 text-xs font-mono"
+                        />
+                      ) : (
+                        Number(item.quantity).toFixed(2)
+                      )}
                     </td>
-                    <td className="py-2.5 px-2 text-center text-gray-700">7%</td>
-                    <td className="py-2.5 px-2 text-right text-gray-900 font-mono font-medium">{formatCurrency(subtotal)}</td>
+                    <td className="py-2.5 print:py-1 px-2 text-right text-gray-700 font-mono">
+                      {isEditMode ? (
+                        <input
+                          type="number"
+                          value={item.unitPrice}
+                          onChange={e => {
+                            const newItems = [...editableItems]
+                            const p = Number(e.target.value) || 0
+                            newItems[i].unitPrice = p
+                            newItems[i].totalPrice = newItems[i].quantity * p * (1 - (newItems[i].discountPct || 0) / 100)
+                            setEditableItems(newItems)
+                          }}
+                          className="w-24 text-right bg-slate-50 border border-slate-200 focus:ring-1 focus:ring-teal-500 rounded px-1 py-0.5 text-xs font-mono"
+                        />
+                      ) : (
+                        formatCurrency(priceBeforeDiscount)
+                      )}
+                    </td>
+                    <td className="py-2.5 print:py-1 px-2 text-right text-gray-700 font-mono">
+                      {isEditMode ? (
+                        <input
+                          type="number"
+                          value={item.discountPct}
+                          onChange={e => {
+                            const newItems = [...editableItems]
+                            const d = Number(e.target.value) || 0
+                            newItems[i].discountPct = d
+                            newItems[i].totalPrice = newItems[i].quantity * newItems[i].unitPrice * (1 - d / 100)
+                            setEditableItems(newItems)
+                          }}
+                          className="w-16 text-center bg-slate-50 border border-slate-200 focus:ring-1 focus:ring-teal-500 rounded px-1 py-0.5 text-xs font-mono"
+                        />
+                      ) : (
+                        item.discountPct > 0 ? `${Number(item.discountPct).toFixed(2)}%` : '-'
+                      )}
+                    </td>
+                    <td className="py-2.5 print:py-1 px-2 text-center text-gray-700">7%</td>
+                    <td className="py-2.5 print:py-1 px-2 text-right text-gray-900 font-mono font-medium">{formatCurrency(subtotal)}</td>
                   </tr>
                 )
               })}
@@ -881,19 +1116,31 @@ export default function PDFMockPage() {
         </div>
 
         {/* Totals & Summary Block */}
-        <div className="grid grid-cols-[1fr_320px] gap-8 mb-8 text-xs z-10 relative">
+        <div className="grid grid-cols-[1fr_320px] gap-8 mb-8 print:mb-4 text-xs z-10 relative print-no-break">
           
           {/* Left Side: Baht Text & Notes */}
           <div className="space-y-4">
             <div className="flex items-center gap-2 border-t pt-3">
-              <span className="font-bold text-gray-700">จำนวนเงินทั้งสิ้น (ตัวอักษร):</span>
-              <span className="font-semibold text-teal-800 italic">({bahtText(quotation.grandTotal)})</span>
+              <span className="font-bold text-gray-750">จำนวนเงินทั้งสิ้น (ตัวอักษร):</span>
+              <span className="font-semibold text-teal-800 italic">({bahtText(grandTotal)})</span>
             </div>
-            {quotation.note && (
+            {isEditMode ? (
               <div className="bg-slate-50 border border-slate-100 rounded-lg p-3">
                 <span className="font-bold text-gray-750 block mb-1">หมายเหตุ:</span>
-                <p className="text-gray-600 whitespace-pre-wrap">{quotation.note}</p>
+                <textarea
+                  value={editableNote}
+                  onChange={e => setEditableNote(e.target.value)}
+                  className="w-full bg-white border border-slate-200 focus:ring-1 focus:ring-teal-500 rounded p-2 text-xs text-gray-700 font-medium leading-relaxed"
+                  rows={2}
+                />
               </div>
+            ) : (
+              editableNote && (
+                <div className="bg-slate-50 border border-slate-100 rounded-lg p-3">
+                  <span className="font-bold text-gray-750 block mb-1">หมายเหตุ:</span>
+                  <p className="text-gray-600 whitespace-pre-wrap">{editableNote}</p>
+                </div>
+              )
             )}
           </div>
 
@@ -905,15 +1152,15 @@ export default function PDFMockPage() {
             </div>
             <div className="flex justify-between text-gray-600">
               <span>มูลค่าที่คำนวณภาษี 7%:</span>
-              <span className="font-mono text-gray-900">{formatCurrency(quotation.subtotal)}</span>
+              <span className="font-mono text-gray-900">{formatCurrency(subtotal)}</span>
             </div>
             <div className="flex justify-between text-gray-600">
               <span>ภาษีมูลค่าเพิ่ม 7%:</span>
-              <span className="font-mono text-gray-900">{formatCurrency(quotation.vatAmount)}</span>
+              <span className="font-mono text-gray-900">{formatCurrency(vatAmount)}</span>
             </div>
             <div className="flex justify-between text-teal-900 font-bold border-t border-teal-100 pt-2">
               <span>จำนวนเงินทั้งสิ้น:</span>
-              <span className="font-mono text-base">{formatCurrency(quotation.grandTotal)}</span>
+              <span className="font-mono text-base">{formatCurrency(grandTotal)}</span>
             </div>
             <div className="flex justify-between text-gray-500 text-[10px] border-t border-dashed pt-1.5">
               <span>จำนวนเงินถูกหัก ณ ที่จ่าย:</span>
@@ -921,25 +1168,25 @@ export default function PDFMockPage() {
             </div>
             <div className="flex justify-between text-teal-900 font-bold border-t border-teal-200 pt-2 text-sm">
               <span>จำนวนเงินที่ชำระ:</span>
-              <span className="font-mono text-base">{formatCurrency(quotation.grandTotal)}</span>
+              <span className="font-mono text-base">{formatCurrency(grandTotal)}</span>
             </div>
           </div>
         </div>
 
         {/* Warning Remark */}
-        <div className="border border-rose-100 rounded-xl p-3 bg-rose-50/30 text-xs text-rose-600 font-semibold mb-12 z-10 relative">
+        <div className="border border-rose-100 rounded-xl p-3 bg-rose-50/30 text-xs text-rose-600 font-semibold mb-8 print:mb-4 z-10 relative">
           * กรุณาตรวจสอบสินค้าที่ได้รับหากพ้นกำหนด 7 วันนับจากวันที่ส่งสินค้า ทางร้านจะไม่รับเปลี่ยนหรือคืน
         </div>
 
         {/* Signatures Footer */}
-        <div className="grid grid-cols-2 gap-16 text-center text-xs z-10 relative mt-auto">
+        <div className="grid grid-cols-2 gap-16 text-center text-xs z-10 relative print-no-break mt-4">
           <div>
-            <div className="border-b border-gray-400 w-48 mx-auto mb-2 mt-8"></div>
+            <div className="border-b border-gray-400 w-48 mx-auto mb-2 mt-4 print:mt-2"></div>
             <p className="font-bold text-gray-800">ผู้รับสินค้า</p>
             <p className="text-gray-500 text-[10px] mt-1">วันที่ ____/____/____</p>
           </div>
           <div>
-            <div className="border-b border-gray-400 w-48 mx-auto mb-2 mt-8"></div>
+            <div className="border-b border-gray-400 w-48 mx-auto mb-2 mt-4 print:mt-2"></div>
             <p className="font-bold text-gray-800">ผู้ส่ง</p>
             <p className="text-gray-500 text-[10px] mt-1">วันที่ ____/____/____</p>
           </div>
