@@ -42,6 +42,7 @@ export default function POModal({
   const [globalDiscountPct, setGlobalDiscountPct] = useState<string>('')
   const [poIncludeVat, setPoIncludeVat] = useState(true)
   const [poVatPct, setPoVatPct] = useState(7)
+  const [customVatAmount, setCustomVatAmount] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   
   const allPartsSelected = poModalParts.length > 0 && poModalParts.every(p => p.selected)
@@ -118,6 +119,9 @@ export default function POModal({
         setPoManualItems(manuals)
         setPoIncludeVat(po.includeVat ?? true)
         setPoVatPct(po.vatPct ?? 7)
+        const subtotal = po.items.reduce((s: number, pi: any) => s + (pi.totalPrice || 0), 0)
+        const initialVat = Math.round((po.totalAmount - subtotal) * 100) / 100
+        setCustomVatAmount(String(initialVat))
 
         // Reconstruct global discount if all PO items share the same discountPct
         const allPartDiscounts = parts.map((p: any) => {
@@ -158,6 +162,7 @@ export default function POModal({
       setPoIncludeVat(true)
       setPoVatPct(7)
       setGlobalDiscountPct('')
+      setCustomVatAmount(null)
     }
   }, [isOpen, editPOId, claim, parts, labors, vendors])
 
@@ -187,7 +192,8 @@ export default function POModal({
   }, 0)
 
   const poTot = poPartsTot + poLaborsTot + poManualTot
-  const vatAmt = poIncludeVat ? Math.round(poTot * (poVatPct / 100)) : 0
+  const defaultVat = poIncludeVat ? (Math.round(poTot * (poVatPct / 100) * 100) / 100) : 0
+  const vatAmt = customVatAmount !== null ? (Number(customVatAmount) || 0) : defaultVat
 
   const handleSave = async () => {
     const selectedParts = poModalParts.filter(p => p.selected)
@@ -249,6 +255,7 @@ export default function POModal({
       deliveryAddress: poDeliveryAddress,
       includeVat: poIncludeVat,
       vatPct: poIncludeVat ? poVatPct : 0,
+      vatAmount: vatAmt,
       items: [...partItems, ...laborItems, ...manualItems]
     }
 
@@ -534,12 +541,22 @@ export default function POModal({
                   )}
                 </div>
                 {poIncludeVat && (
-                  <div className="flex justify-between w-full text-sm text-gray-500">
-                    <span>VAT {poVatPct}%:</span><span>฿{formatCurrency(vatAmt)}</span>
+                  <div className="flex items-center justify-between w-full text-sm text-gray-500">
+                    <span>VAT {poVatPct}%:</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-gray-400">฿</span>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        className="h-7 w-28 text-sm text-right"
+                        value={customVatAmount !== null ? customVatAmount : (Math.round(poTot * (poVatPct / 100) * 100) / 100).toFixed(2)}
+                        onChange={e => setCustomVatAmount(e.target.value)}
+                      />
+                    </div>
                   </div>
                 )}
                 <div className="flex justify-between w-full text-base font-bold text-blue-700 pt-2 border-t mt-1">
-                  <span>ยอดรวมทั้งสิ้น:</span><span>฿{formatCurrency(poTot + vatAmt)}</span>
+                  <span>ยอดรวมทั้งสิ้น:</span><span>฿{formatCurrency(poTot + (customVatAmount !== null ? Number(customVatAmount) : vatAmt))}</span>
                 </div>
               </div>
             </div>

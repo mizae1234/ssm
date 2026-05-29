@@ -42,8 +42,14 @@ export async function POST(
 
     // Calculate total with configurable VAT
     const subtotal = (body.items || []).reduce((sum: number, item: any) => sum + (item.totalPrice || 0), 0)
-    const vatPct = body.includeVat !== false ? (body.vatPct ?? 7) : 0
-    const totalAmount = subtotal + Math.round(subtotal * (vatPct / 100))
+    let totalAmount = subtotal
+    if (body.vatAmount !== undefined) {
+      totalAmount = subtotal + Number(body.vatAmount || 0)
+    } else {
+      const vatPct = body.includeVat !== false ? (body.vatPct ?? 7) : 0
+      totalAmount = subtotal + (subtotal * (vatPct / 100))
+    }
+    totalAmount = Math.round(totalAmount * 100) / 100
     
     const newPO = await prisma.purchaseOrder.create({
       data: {

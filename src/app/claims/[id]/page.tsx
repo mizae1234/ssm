@@ -637,7 +637,32 @@ export default function ClaimDetailPage() {
                       <TableHead className="text-right">ราคาเต็ม</TableHead>
                       <TableHead className="text-center">จำนวน</TableHead>
                       <TableHead>ประเภท</TableHead>
-                      <TableHead className="text-right">ส่วนลด%</TableHead>
+                      <TableHead className="text-right">
+                        {editMode ? (
+                          <div className="flex items-center gap-1.5 justify-end">
+                            <span className="text-xs whitespace-nowrap">ส่วนลด%</span>
+                            <Input
+                              type="number"
+                              placeholder="Apply..."
+                              className="h-6 w-16 text-xs text-right p-1 bg-white font-normal"
+                              onChange={e => {
+                                const val = Number(e.target.value) || 0
+                                const n = parts.map(p => {
+                                  const priceFull = p.priceFullAmt || 0
+                                  return {
+                                    ...p,
+                                    discountPct: val,
+                                    priceApprove: priceFull * (1 - val / 100)
+                                  }
+                                })
+                                setParts(n)
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          'ส่วนลด%'
+                        )}
+                      </TableHead>
                       <TableHead className="text-right">ราคาอนุมัติ</TableHead>
                       <TableHead>ผู้จำหน่าย</TableHead>
                       <TableHead className="text-center">คืนซาก</TableHead>
@@ -719,7 +744,32 @@ export default function ClaimDetailPage() {
                     <TableRow>
                       <TableHead>รายการ</TableHead>
                       <TableHead>ระดับ</TableHead>
-                      <TableHead className="text-right">ส่วนลด%</TableHead>
+                      <TableHead className="text-right">
+                        {editMode ? (
+                          <div className="flex items-center gap-1.5 justify-end">
+                            <span className="text-xs whitespace-nowrap">ส่วนลด%</span>
+                            <Input
+                              type="number"
+                              placeholder="Apply..."
+                              className="h-6 w-16 text-xs text-right p-1 bg-white font-normal"
+                              onChange={e => {
+                                const val = Number(e.target.value) || 0
+                                const n = labors.map(l => {
+                                  const offer = l.priceOffer || 0
+                                  return {
+                                    ...l,
+                                    discountPct: val,
+                                    priceApprove: offer * (1 - val / 100)
+                                  }
+                                })
+                                setLabors(n)
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          'ส่วนลด%'
+                        )}
+                      </TableHead>
                       <TableHead className="text-right">ราคาเสนอ</TableHead>
                       <TableHead className="text-right">ราคาอนุมัติ</TableHead>
                       {editMode && <TableHead></TableHead>}
