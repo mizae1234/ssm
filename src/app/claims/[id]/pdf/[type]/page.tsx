@@ -173,7 +173,7 @@ export default function PDFMockPage() {
           }
           tempItems = (targetGR.items || []).map((gi: any) => {
             const poItem = gi.poItem || po.items?.find((pi: any) => pi.id === gi.poItemId)
-            const hasCustomPrice = gi.unitPrice !== undefined && gi.unitPrice !== null && gi.unitPrice > 0
+            const hasCustomPrice = gi.unitPrice !== undefined && gi.unitPrice !== null
             const originalFullPrice = hasCustomPrice
               ? gi.unitPrice
               : (poItem 
