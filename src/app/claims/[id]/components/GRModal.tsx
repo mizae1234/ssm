@@ -56,7 +56,7 @@ export default function GRModal({
       initD[item.id] = item.discountPct || 0
       
       const matchingPart = (claim?.parts || []).find((cp: any) => cp.partNo === item.partNo)
-      const defaultUnitPrice = matchingPart?.priceApprove ?? (item.discountPct < 100 
+      const defaultUnitPrice = matchingPart?.priceFullAmt ?? (item.discountPct < 100 
         ? Math.round((item.unitPrice / (1 - item.discountPct / 100)) * 100) / 100 
         : item.unitPrice)
       initP[item.id] = defaultUnitPrice
