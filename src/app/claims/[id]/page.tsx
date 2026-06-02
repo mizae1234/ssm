@@ -445,6 +445,10 @@ export default function ClaimDetailPage() {
                 <X className="w-4 h-4 mr-1.5" />ยกเลิก
               </Button>
               <Button size="sm" onClick={async () => { 
+                if (!claim.ePartNo?.trim()) {
+                  showToast('❌ กรุณาระบุหมายเลข E-Part')
+                  return
+                }
                 if (parts && Array.isArray(parts)) {
                   const emptyPartIndex = parts.findIndex(p => !p.partName?.trim())
                   if (emptyPartIndex !== -1) {

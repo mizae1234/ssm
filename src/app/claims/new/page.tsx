@@ -185,6 +185,10 @@ export default function NewClaimPage() {
   }, [showToast])
 
   const handleSave = async () => {
+    if (!data?.claim?.ePartNo?.value?.trim()) {
+      showToast('❌ กรุณาระบุหมายเลข E-Part')
+      return
+    }
     if (data?.parts && Array.isArray(data.parts)) {
       const emptyPartIndex = data.parts.findIndex((p: any) => !p.partName?.value?.trim())
       if (emptyPartIndex !== -1) {

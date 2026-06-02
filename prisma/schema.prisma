@@ -10,7 +10,7 @@ datasource db {
 
 model Claim {
   id               String            @id @default(cuid())
-  claimNo          String            @unique
+  claimNo          String
   ePartNo          String?
   receiveNo        String
   transactionNo    String

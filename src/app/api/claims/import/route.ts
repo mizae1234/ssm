@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Check if already exists in DB
-        const existing = await prisma.claim.findUnique({
+        const existing = await prisma.claim.findFirst({
           where: { claimNo: String(claimNo) }
         })
         if (existing) {

@@ -64,6 +64,41 @@ export async function PUT(
   const body = await request.json()
   let { parts, labors, garageId, garageName, ...claimData } = body
   
+  if (claimData.ePartNo !== undefined) {
+    if (!claimData.ePartNo?.trim()) {
+      return NextResponse.json({ error: 'กรุณาระบุหมายเลข E-Part' }, { status: 400 })
+    }
+  }
+
+  const claimNo = claimData.claimNo
+  const ePartNo = claimData.ePartNo
+  if (claimNo !== undefined || ePartNo !== undefined) {
+    const currentClaim = await prisma.claim.findUnique({ where: { id: params.id } })
+    if (currentClaim) {
+      const finalClaimNo = claimNo !== undefined ? claimNo : currentClaim.claimNo
+      const finalEPartNo = ePartNo !== undefined ? ePartNo : (currentClaim.ePartNo || '')
+      
+      const duplicate = await prisma.claim.findFirst({
+        where: {
+          id: { not: params.id },
+          OR: [
+            { claimNo: finalClaimNo },
+            { ePartNo: finalEPartNo }
+          ]
+        }
+      })
+      
+      if (duplicate) {
+        if (duplicate.claimNo === finalClaimNo) {
+          return NextResponse.json({ error: `เลขที่เคลม ${finalClaimNo} มีอยู่ในระบบแล้ว กรุณาตรวจสอบ` }, { status: 409 })
+        }
+        if (duplicate.ePartNo === finalEPartNo && finalEPartNo) {
+          return NextResponse.json({ error: `หมายเลข E-Part ${finalEPartNo} มีอยู่ในระบบแล้ว กรุณาตรวจสอบ` }, { status: 409 })
+        }
+      }
+    }
+  }
+  
   let finalGarageId = garageId
   if (garageName && garageName.trim()) {
     const existingGarage = await prisma.vendor.findFirst({

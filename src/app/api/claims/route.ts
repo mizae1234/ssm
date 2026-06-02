@@ -110,10 +110,27 @@ export async function POST(request: NextRequest) {
     claimNo = `${prefix}${String(count + 1).padStart(6, '0')}`
   }
 
-  // Check for duplicate claim number
-  const existing = await prisma.claim.findUnique({ where: { claimNo } })
+  const ePartNo = body.claim?.ePartNo?.value?.trim()
+  if (!ePartNo) {
+    return NextResponse.json({ error: 'กรุณาระบุหมายเลข E-Part' }, { status: 400 })
+  }
+
+  // Check for duplicate claim number or e-part number
+  const existing = await prisma.claim.findFirst({
+    where: {
+      OR: [
+        { claimNo },
+        { ePartNo }
+      ]
+    }
+  })
   if (existing) {
-    return NextResponse.json({ error: `เลขที่เคลม ${claimNo} มีอยู่ในระบบแล้ว กรุณาตรวจสอบ` }, { status: 409 })
+    if (existing.claimNo === claimNo) {
+      return NextResponse.json({ error: `เลขที่เคลม ${claimNo} มีอยู่ในระบบแล้ว กรุณาตรวจสอบ` }, { status: 409 })
+    }
+    if (existing.ePartNo === ePartNo) {
+      return NextResponse.json({ error: `หมายเลข E-Part ${ePartNo} มีอยู่ในระบบแล้ว กรุณาตรวจสอบ` }, { status: 409 })
+    }
   }
 
   // Ensure insurance and garage exist
