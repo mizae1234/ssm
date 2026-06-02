@@ -165,9 +165,14 @@ export default function ClaimsPage() {
                 return (
                   <TableRow key={claim.id}>
                     <TableCell>
-                      <Link href={`/claims/${claim.id}`} className="text-[#0d9488] hover:underline font-semibold">
+                      <Link href={`/claims/${claim.id}`} className="text-[#0d9488] hover:underline font-semibold block">
                         {claim.claimNo}
                       </Link>
+                      {claim.ePartNo && (
+                        <div className="text-xs text-gray-400 font-mono mt-0.5" title="หมายเลข E-Part">
+                          EP: {claim.ePartNo}
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="font-medium">{claim.carPlate}</div>

@@ -11,6 +11,7 @@ datasource db {
 model Claim {
   id               String            @id @default(cuid())
   claimNo          String            @unique
+  ePartNo          String?
   receiveNo        String
   transactionNo    String
   insuranceId      String

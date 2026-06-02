@@ -90,6 +90,7 @@ The document is EITHER:
 
 For Type A (eGarage), look at the top header area or sidebars, which contains:
   - "เลขที่-Claim" or "Claim:" or "เลขที่ E-Claim" = claimNo
+  - "เลขที่ E-Part" or "E-Part:" or "เลขที่ e-part" or "เลข E-Part" = ePartNo (If there are multiple e-part numbers/jobs mentioned, join them with commas, e.g. "P052605335000, P052605335001")
   - "เลขรับแจ้ง" or "เลขที่รับแจ้ง" = receiveNo
   - "เลขที่เคลม" = transactionNo
   - "ชื่อบริษัท" or "บริษัทประกัน" or "บริษัท" = insuranceName
@@ -148,6 +149,7 @@ Output this exact JSON structure:
 {
   "claim": {
     "claimNo": { "value": "", "confidence": 0 },
+    "ePartNo": { "value": "", "confidence": 0 },
     "receiveNo": { "value": "", "confidence": 0 },
     "transactionNo": { "value": "", "confidence": 0 },
     "insuranceName": { "value": "", "confidence": 0 },

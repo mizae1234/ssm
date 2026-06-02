@@ -55,7 +55,14 @@ export default function GRModal({
       initQ[item.id] = Math.max(0, item.quantity - prevRec)
       initD[item.id] = item.discountPct || 0
       
-      const matchingPart = (claim?.parts || []).find((cp: any) => cp.partNo === item.partNo)
+      const matchingPart = (claim?.parts || []).find((cp: any) => {
+        const cpPartNo = (cp.partNo || '').trim()
+        const itemPartNo = (item.partNo || '').trim()
+        if (cpPartNo && itemPartNo && cpPartNo !== '-' && itemPartNo !== '-') {
+          return cpPartNo === itemPartNo
+        }
+        return (cp.partName || '').trim().toLowerCase() === (item.description || '').trim().toLowerCase()
+      })
       const defaultUnitPrice = matchingPart?.priceFullAmt ?? (item.discountPct < 100 
         ? Math.round((item.unitPrice / (1 - item.discountPct / 100)) * 100) / 100 
         : item.unitPrice)

@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
       { claimNo: { contains: s, mode: 'insensitive' } },
       { carPlate: { contains: s, mode: 'insensitive' } },
       { insuredName: { contains: s, mode: 'insensitive' } },
+      { ePartNo: { contains: s, mode: 'insensitive' } },
     ]
   }
 
@@ -68,6 +69,7 @@ export async function GET(request: NextRequest) {
   const listData = claims.map(c => ({
     id: c.id,
     claimNo: c.claimNo,
+    ePartNo: c.ePartNo,
     receiveNo: c.receiveNo,
     carPlate: c.carPlate,
     carBrand: c.carBrand,
@@ -259,6 +261,7 @@ export async function POST(request: NextRequest) {
       data: {
         claimNo,
         status: 'RECEIVED',
+        ePartNo: body.claim?.ePartNo?.value || '',
         receiveNo: body.claim?.receiveNo?.value || '',
         transactionNo: body.claim?.transactionNo?.value || '',
         insuranceId,

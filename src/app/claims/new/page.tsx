@@ -31,6 +31,7 @@ const ClaimReviewForm = dynamic(() => import('./components/ClaimReviewForm'), {
 const emptyDataTemplate = {
   claim: {
     claimNo: { value: '', confidence: 0 },
+    ePartNo: { value: '', confidence: 0 },
     receiveNo: { value: '', confidence: 0 },
     transactionNo: { value: '', confidence: 0 },
     insuranceName: { value: '', confidence: 0 },

@@ -200,7 +200,14 @@ export default function PDFMockPage() {
         if (item.isCustomPrice) {
           return item
         }
-        const matchingPart = (claim.parts || []).find((cp: any) => cp.partNo === item.partNo)
+        const matchingPart = (claim.parts || []).find((cp: any) => {
+          const cpPartNo = (cp.partNo || '').trim()
+          const itemPartNo = (item.partNo || '').trim()
+          if (cpPartNo && itemPartNo && cpPartNo !== '-' && itemPartNo !== '-') {
+            return cpPartNo === itemPartNo
+          }
+          return (cp.partName || '').trim().toLowerCase() === (item.description || '').trim().toLowerCase()
+        })
         if (matchingPart) {
           // If we found a matching claim part, use its priceApprove (selling price) as the unitPrice!
           const sellingPrice = matchingPart.priceApprove

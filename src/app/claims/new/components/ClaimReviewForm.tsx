@@ -112,6 +112,7 @@ function AIField({
 
 const labelMap: Record<string, { label: string; list?: string; type?: string }> = {
   claimNo: { label: 'เลขที่เคลม' },
+  ePartNo: { label: 'เลขที่ E-Part' },
   receiveNo: { label: 'เลขที่รับ' },
   transactionNo: { label: 'เลขที่ธุรกรรม' },
   insuranceName: { label: 'บริษัทประกันภัย', list: 'insurance-list' },

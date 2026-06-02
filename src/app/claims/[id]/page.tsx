@@ -468,6 +468,7 @@ export default function ClaimDetailPage() {
                       parts,
                       labors,
                       claimNo: claim.claimNo,
+                      ePartNo: claim.ePartNo,
                       receiveNo: claim.receiveNo,
                       transactionNo: claim.transactionNo,
                       carPlate: claim.carPlate,

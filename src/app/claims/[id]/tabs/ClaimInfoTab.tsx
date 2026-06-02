@@ -83,6 +83,7 @@ function AutocompleteSelect({ label, value, options, onChange, editMode }: {
 export default function ClaimInfoTab({ claim, editMode, vendors }: ClaimTabProps) {
   const [formData, setFormData] = useState({
     claimNo: claim.claimNo || '',
+    ePartNo: claim.ePartNo || '',
     receiveNo: claim.receiveNo || '',
     transactionNo: claim.transactionNo || '',
     carPlate: claim.carPlate || '',
@@ -115,6 +116,7 @@ export default function ClaimInfoTab({ claim, editMode, vendors }: ClaimTabProps
   useEffect(() => {
     setFormData({
       claimNo: claim.claimNo || '',
+      ePartNo: claim.ePartNo || '',
       receiveNo: claim.receiveNo || '',
       transactionNo: claim.transactionNo || '',
       carPlate: claim.carPlate || '',
@@ -136,6 +138,7 @@ export default function ClaimInfoTab({ claim, editMode, vendors }: ClaimTabProps
 
   const textFields = [
     { key: 'claimNo', label: 'Claim No.' },
+    { key: 'ePartNo', label: 'เลขที่ E-Part' },
     { key: 'receiveNo', label: 'Receive No.' },
     { key: 'transactionNo', label: 'Transaction No.' },
   ]
