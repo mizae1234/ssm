@@ -81,20 +81,13 @@ export async function PUT(
       const duplicate = await prisma.claim.findFirst({
         where: {
           id: { not: params.id },
-          OR: [
-            { claimNo: finalClaimNo },
-            { ePartNo: finalEPartNo }
-          ]
+          claimNo: finalClaimNo,
+          ePartNo: finalEPartNo
         }
       })
       
       if (duplicate) {
-        if (duplicate.claimNo === finalClaimNo) {
-          return NextResponse.json({ error: `เลขที่เคลม ${finalClaimNo} มีอยู่ในระบบแล้ว กรุณาตรวจสอบ` }, { status: 409 })
-        }
-        if (duplicate.ePartNo === finalEPartNo && finalEPartNo) {
-          return NextResponse.json({ error: `หมายเลข E-Part ${finalEPartNo} มีอยู่ในระบบแล้ว กรุณาตรวจสอบ` }, { status: 409 })
-        }
+        return NextResponse.json({ error: `เลขที่เคลม ${finalClaimNo} และหมายเลข E-Part ${finalEPartNo} มีอยู่ในระบบแล้ว กรุณาตรวจสอบ` }, { status: 409 })
       }
     }
   }
