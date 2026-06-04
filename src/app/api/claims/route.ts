@@ -284,15 +284,16 @@ export async function POST(request: NextRequest) {
         province: body.car?.province?.value || '',
         insuredName: body.car?.insuredName?.value || '',
         parts: {
-          create: partsToCreate
+          create: partsToCreate.map((p, idx) => ({ ...p, sortOrder: idx }))
         },
         labors: {
-          create: (body.labors || []).map((l: any) => ({
+          create: (body.labors || []).map((l: any, idx: number) => ({
             description: l.description?.value || '',
             damageLevel: l.damageLevel?.value || '',
             discountPct: Number(l.discountPct?.value || 0),
             priceOffer: Number(l.priceOffer?.value || 0),
             priceApprove: Number(l.priceApprove?.value || 0),
+            sortOrder: idx
           }))
         }
       },

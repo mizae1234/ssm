@@ -74,6 +74,7 @@ model ClaimPart {
   requireReturn        Boolean               @default(false)
   round                Int                   @default(1)
   status               String                @default("approved")
+  sortOrder            Int                   @default(0)
   paymentStatus        PartPaymentStatus     @default(PENDING)
   partMasterId         String?
   partMaster           PartMaster?           @relation(fields: [partMasterId], references: [id])
@@ -138,6 +139,7 @@ model ClaimLabor {
   priceApprove       Float
   round              Int                 @default(1)
   status             String              @default("approved")
+  sortOrder          Int                 @default(0)
   paymentStatus      LaborPaymentStatus  @default(PENDING)
   garageInvoiceItems   GarageInvoiceItem[]
   supplierInvoiceItems SupplierInvoiceItem[]

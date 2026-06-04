@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { FileText, ArrowLeft, History, Wrench, ShieldAlert, Car, PackageOpen, Tag, CheckCircle2, ChevronRight, Download, Plus, AlertTriangle, TrendingUp, CreditCard, Save, Upload, X, Edit2, Package, Truck, Trash2, CircleDot, Ban, XCircle, Clock, ShoppingCart, Eye, AlertCircle, Info, Printer } from 'lucide-react'
+import { FileText, ArrowLeft, History, Wrench, ShieldAlert, Car, PackageOpen, Tag, CheckCircle2, ChevronRight, Download, Plus, AlertTriangle, TrendingUp, CreditCard, Save, Upload, X, Edit2, Package, Truck, Trash2, CircleDot, Ban, XCircle, Clock, ShoppingCart, Eye, AlertCircle, Info, Printer, GripVertical, ChevronUp, ChevronDown } from 'lucide-react'
 import { uploadToR2 } from '@/lib/upload'
 import { getStatusColor, getStatusLabel, formatCurrency, getPOStatusLabel, cn } from '@/lib/utils'
 import { ClaimStatus, PaymentRequest, Quotation, InsuranceInvoice, PurchaseOrder } from '@/lib/types'
@@ -138,6 +138,45 @@ export default function ClaimDetailPage() {
   const [grHistoryPO, setGrHistoryPO] = useState<any>(null)
   const [showGRHistoryModal, setShowGRHistoryModal] = useState(false)
 
+  // Drag and drop states for reordering
+  const [draggedIdx, setDraggedIdx] = useState<number | null>(null)
+  const [draggedType, setDraggedType] = useState<'part' | 'labor' | null>(null)
+
+  const movePartUp = (idx: number) => {
+    if (idx === 0) return
+    const newParts = [...parts]
+    const temp = newParts[idx]
+    newParts[idx] = newParts[idx - 1]
+    newParts[idx - 1] = temp
+    setParts(newParts)
+  }
+
+  const movePartDown = (idx: number) => {
+    if (idx === parts.length - 1) return
+    const newParts = [...parts]
+    const temp = newParts[idx]
+    newParts[idx] = newParts[idx + 1]
+    newParts[idx + 1] = temp
+    setParts(newParts)
+  }
+
+  const moveLaborUp = (idx: number) => {
+    if (idx === 0) return
+    const newLabors = [...labors]
+    const temp = newLabors[idx]
+    newLabors[idx] = newLabors[idx - 1]
+    newLabors[idx - 1] = temp
+    setLabors(newLabors)
+  }
+
+  const moveLaborDown = (idx: number) => {
+    if (idx === labors.length - 1) return
+    const newLabors = [...labors]
+    const temp = newLabors[idx]
+    newLabors[idx] = newLabors[idx + 1]
+    newLabors[idx + 1] = temp
+    setLabors(newLabors)
+  }
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500) }
 
@@ -637,6 +676,7 @@ export default function ClaimDetailPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-[100px] text-center">ลำดับ</TableHead>
                       <TableHead>รหัส</TableHead>
                       <TableHead>ชื่ออะไหล่</TableHead>
                       <TableHead className="text-right">ราคาเต็ม</TableHead>
@@ -676,7 +716,74 @@ export default function ClaimDetailPage() {
                   </TableHeader>
                   <TableBody>
                     {parts.map((part, idx) => (
-                      <TableRow key={part.id}>
+                      <TableRow 
+                        key={part.id}
+                        draggable={editMode}
+                        onDragStart={(e) => {
+                          const target = e.target as HTMLElement;
+                          if (target.tagName === 'INPUT' || target.tagName === 'SELECT' || target.closest('input') || target.closest('select')) {
+                            e.preventDefault();
+                            return;
+                          }
+                          if (!editMode) return;
+                          setDraggedIdx(idx);
+                          setDraggedType('part');
+                        }}
+                        onDragEnd={() => {
+                          setDraggedIdx(null);
+                          setDraggedType(null);
+                        }}
+                        onDragOver={(e) => {
+                          if (!editMode || draggedType !== 'part') return;
+                          e.preventDefault();
+                        }}
+                        onDrop={(e) => {
+                          if (!editMode || draggedIdx === null || draggedType !== 'part') return;
+                          e.preventDefault();
+                          const dragIdx = draggedIdx;
+                          const dropIdx = idx;
+                          if (dragIdx === dropIdx) return;
+                          const newParts = [...parts];
+                          const [draggedItem] = newParts.splice(dragIdx, 1);
+                          newParts.splice(dropIdx, 0, draggedItem);
+                          setParts(newParts);
+                        }}
+                        className={cn(
+                          draggedIdx === idx && draggedType === 'part' && "opacity-40 bg-teal-55/50 border-2 border-dashed border-teal-300"
+                        )}
+                      >
+                        <TableCell className="text-center font-medium w-[100px] select-none">
+                          <div className="flex items-center justify-center gap-1.5">
+                            {editMode ? (
+                              <div className="flex items-center gap-1.5">
+                                <div className="cursor-grab text-gray-400 hover:text-gray-600 active:cursor-grabbing">
+                                  <GripVertical className="w-3.5 h-3.5" />
+                                </div>
+                                <span className="text-xs font-semibold text-[#0f172a] min-w-[14px]">{idx + 1}</span>
+                                <div className="flex flex-col -space-y-1">
+                                  <button 
+                                    type="button"
+                                    onClick={() => movePartUp(idx)} 
+                                    disabled={idx === 0}
+                                    className="text-gray-400 hover:text-teal-600 disabled:opacity-30 disabled:hover:text-gray-400"
+                                  >
+                                    <ChevronUp className="w-3 h-3" />
+                                  </button>
+                                  <button 
+                                    type="button"
+                                    onClick={() => movePartDown(idx)} 
+                                    disabled={idx === parts.length - 1}
+                                    className="text-gray-400 hover:text-teal-600 disabled:opacity-30 disabled:hover:text-gray-400"
+                                  >
+                                    <ChevronDown className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-gray-500">{idx + 1}</span>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>{editMode ? <Input list="part-no-list" className="h-8 min-w-[120px] font-mono text-xs" value={part.partNo} onChange={e => { const n = [...parts]; n[idx] = { ...n[idx], partNo: e.target.value }; setParts(n) }} /> : <span className="font-mono text-xs">{part.partNo}</span>}</TableCell>
                         <TableCell>
                           {editMode ? (
@@ -747,6 +854,7 @@ export default function ClaimDetailPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-[100px] text-center">ลำดับ</TableHead>
                       <TableHead>รายการ</TableHead>
                       <TableHead>ระดับ</TableHead>
                       <TableHead className="text-right">
@@ -782,7 +890,74 @@ export default function ClaimDetailPage() {
                   </TableHeader>
                   <TableBody>
                     {labors.map((labor, idx) => (
-                      <TableRow key={labor.id}>
+                      <TableRow 
+                        key={labor.id}
+                        draggable={editMode}
+                        onDragStart={(e) => {
+                          const target = e.target as HTMLElement;
+                          if (target.tagName === 'INPUT' || target.tagName === 'SELECT' || target.closest('input') || target.closest('select')) {
+                            e.preventDefault();
+                            return;
+                          }
+                          if (!editMode) return;
+                          setDraggedIdx(idx);
+                          setDraggedType('labor');
+                        }}
+                        onDragEnd={() => {
+                          setDraggedIdx(null);
+                          setDraggedType(null);
+                        }}
+                        onDragOver={(e) => {
+                          if (!editMode || draggedType !== 'labor') return;
+                          e.preventDefault();
+                        }}
+                        onDrop={(e) => {
+                          if (!editMode || draggedIdx === null || draggedType !== 'labor') return;
+                          e.preventDefault();
+                          const dragIdx = draggedIdx;
+                          const dropIdx = idx;
+                          if (dragIdx === dropIdx) return;
+                          const newLabors = [...labors];
+                          const [draggedItem] = newLabors.splice(dragIdx, 1);
+                          newLabors.splice(dropIdx, 0, draggedItem);
+                          setLabors(newLabors);
+                        }}
+                        className={cn(
+                          draggedIdx === idx && draggedType === 'labor' && "opacity-40 bg-teal-55/50 border-2 border-dashed border-teal-300"
+                        )}
+                      >
+                        <TableCell className="text-center font-medium w-[100px] select-none">
+                          <div className="flex items-center justify-center gap-1.5">
+                            {editMode ? (
+                              <div className="flex items-center gap-1.5">
+                                <div className="cursor-grab text-gray-400 hover:text-gray-600 active:cursor-grabbing">
+                                  <GripVertical className="w-3.5 h-3.5" />
+                                </div>
+                                <span className="text-xs font-semibold text-[#0f172a] min-w-[14px]">{idx + 1}</span>
+                                <div className="flex flex-col -space-y-1">
+                                  <button 
+                                    type="button"
+                                    onClick={() => moveLaborUp(idx)} 
+                                    disabled={idx === 0}
+                                    className="text-gray-400 hover:text-teal-600 disabled:opacity-30 disabled:hover:text-gray-400"
+                                  >
+                                    <ChevronUp className="w-3 h-3" />
+                                  </button>
+                                  <button 
+                                    type="button"
+                                    onClick={() => moveLaborDown(idx)} 
+                                    disabled={idx === labors.length - 1}
+                                    className="text-gray-400 hover:text-teal-600 disabled:opacity-30 disabled:hover:text-gray-400"
+                                  >
+                                    <ChevronDown className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-gray-500">{idx + 1}</span>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>{editMode ? <Input list="labors-list" className={cn("h-8 min-w-[200px]", !labor.description?.trim() && "border-red-500 focus-visible:ring-red-500")} value={labor.description} onChange={e => { const n = [...labors]; n[idx] = { ...n[idx], description: e.target.value }; setLabors(n) }} /> : <span className="font-medium">{labor.description}</span>}</TableCell>
                         <TableCell>{editMode ? <Input list="damage-level-list" className="h-8 min-w-[100px]" value={labor.damageLevel} onChange={e => { const n = [...labors]; n[idx] = { ...n[idx], damageLevel: e.target.value }; setLabors(n) }} /> : <Badge variant="outline" className="text-[10px]">{labor.damageLevel}</Badge>}</TableCell>
                         <TableCell className="text-right">{editMode ? <Input type="number" className="h-8 min-w-[70px] text-right" value={labor.discountPct || ''} onChange={e => { const n = [...labors]; const discount = +e.target.value; const offer = labor.priceOffer || 0; n[idx] = { ...n[idx], discountPct: discount, priceApprove: offer * (1 - discount / 100) }; setLabors(n) }} /> : `${labor.discountPct}%`}</TableCell>

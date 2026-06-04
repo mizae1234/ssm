@@ -10,8 +10,8 @@ export async function GET(
     include: {
       insurance: { select: { id: true, name: true, branch: true, taxId: true, branchCode: true, peakCustomerId: true, address: true } },
       garage: { select: { id: true, name: true, phone: true, address: true } },
-      parts: { include: { partMaster: { select: { id: true, partNo: true, partName: true, standardPrice: true } } } },
-      labors: true,
+      parts: { orderBy: { sortOrder: 'asc' }, include: { partMaster: { select: { id: true, partNo: true, partName: true, standardPrice: true } } } },
+      labors: { orderBy: { sortOrder: 'asc' } },
       purchaseOrders: { 
         include: { 
           vendor: { select: { id: true, name: true } }, 
@@ -156,7 +156,8 @@ export async function PUT(
       await prisma.claimPart.deleteMany({ where: { id: { in: idsToDelete } } })
     }
 
-    for (const p of parts) {
+    for (let index = 0; index < parts.length; index++) {
+      const p = parts[index]
       let partMasterId = null
       const partNo = p.partNo?.trim()
       const partName = p.partName?.trim()
@@ -204,6 +205,7 @@ export async function PUT(
         priceApprove: Number(p.priceApprove || 0),
         supplier: p.supplier || '',
         requireReturn: Boolean(p.requireReturn),
+        sortOrder: index,
         partMasterId
       }
 
@@ -225,13 +227,15 @@ export async function PUT(
       await prisma.claimLabor.deleteMany({ where: { id: { in: idsToDelete } } })
     }
 
-    for (const l of labors) {
+    for (let index = 0; index < labors.length; index++) {
+      const l = labors[index]
       const laborData = {
         description: l.description || '',
         damageLevel: l.damageLevel || 'ปานกลาง',
         discountPct: Number(l.discountPct || 0),
         priceOffer: Number(l.priceOffer || 0),
-        priceApprove: Number(l.priceApprove || 0)
+        priceApprove: Number(l.priceApprove || 0),
+        sortOrder: index
       }
 
       if (!l.id || l.id.startsWith('new-')) {
@@ -247,8 +251,8 @@ export async function PUT(
     include: {
       insurance: { select: { id: true, name: true, branch: true, taxId: true, branchCode: true, peakCustomerId: true, address: true } },
       garage: { select: { id: true, name: true, phone: true, address: true } },
-      parts: { include: { partMaster: { select: { id: true, partNo: true, partName: true, standardPrice: true } } } },
-      labors: true,
+      parts: { orderBy: { sortOrder: 'asc' }, include: { partMaster: { select: { id: true, partNo: true, partName: true, standardPrice: true } } } },
+      labors: { orderBy: { sortOrder: 'asc' } },
       purchaseOrders: { 
         include: { 
           vendor: { select: { id: true, name: true } }, 
