@@ -126,7 +126,8 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
               }
             },
             expenses: true,
-            documents: true
+            documents: true,
+            insuranceInvoice: true
           }
         },
         supplierInvoice: {

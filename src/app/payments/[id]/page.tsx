@@ -221,7 +221,7 @@ export default function PaymentRequestDetailPage() {
   const claim = payment.claim
   const supplierInvoice = payment.supplierInvoice
   const garageInvoice = payment.garageInvoice
-  const insuranceInvoice = payment.insuranceInvoice
+  const insuranceInvoice = claim?.insuranceInvoice || payment.insuranceInvoice
 
   // Extract payee details
   const payeeName = payment.vendorName || payment.garageName || payment.insuranceName || 'ไม่ระบุผู้รับเงิน'
@@ -489,52 +489,20 @@ export default function PaymentRequestDetailPage() {
                       {isExpanded ? <Minimize2 className="w-4 h-4 text-slate-600" /> : <Maximize2 className="w-4 h-4 text-slate-600" />}
                     </Button>
                   </div>
-                  <TabsList className="bg-slate-100 p-0.5">
-                    {payment.requestType === 'AR' ? (
-                      <>
-                        <TabsTrigger value="invoice" className="text-xs py-1 px-2.5">ใบวางบิล</TabsTrigger>
-                        <TabsTrigger value="delivery-tax" className="text-xs py-1 px-2.5">ใบส่งของ/ใบกำกับภาษี</TabsTrigger>
-                        <TabsTrigger value="receipt" className="text-xs py-1 px-2.5">ใบเสร็จรับเงิน</TabsTrigger>
-                      </>
-                    ) : (
-                      <>
-                        <TabsTrigger value="invoice" className="text-xs py-1 px-2.5">ใบวางบิล/Invoice</TabsTrigger>
-                        <TabsTrigger value="po" className="text-xs py-1 px-2.5">ใบสั่งซื้อ (PO)</TabsTrigger>
-                        <TabsTrigger value="gr" className="text-xs py-1 px-2.5">ใบส่ง/รับสินค้า (GR)</TabsTrigger>
-                      </>
-                    )}
-                    <TabsTrigger value="others" className="text-xs py-1 px-2.5 font-medium">เอกสารอื่น ๆ</TabsTrigger>
+                  <TabsList className="bg-slate-100 p-0.5 flex-wrap h-auto justify-start gap-y-1">
+                    <TabsTrigger value="invoice" className="text-xs py-1 px-2.5">บิลคู่ค้า</TabsTrigger>
+                    <TabsTrigger value="po" className="text-xs py-1 px-2.5">ใบสั่งซื้อ (PO)</TabsTrigger>
+                    <TabsTrigger value="gr" className="text-xs py-1 px-2.5">ใบรับของ (GR)</TabsTrigger>
+                    <TabsTrigger value="insurance-invoice" className="text-xs py-1 px-2.5">วางบิลประกัน</TabsTrigger>
+                    <TabsTrigger value="delivery-tax" className="text-xs py-1 px-2.5">ใบกำกับประกัน</TabsTrigger>
+                    <TabsTrigger value="receipt" className="text-xs py-1 px-2.5">ใบเสร็จประกัน</TabsTrigger>
+                    <TabsTrigger value="others" className="text-xs py-1 px-2.5 font-medium">ไฟล์แนบอื่น ๆ</TabsTrigger>
                   </TabsList>
                 </div>
 
                 {/* Tab Content: Invoice */}
                 <TabsContent value="invoice" className="flex-1 mt-3 flex flex-col">
-                  {payment.requestType === 'AR' ? (
-                    // AR Dynamic template
-                    <div className="flex-1 flex flex-col space-y-3">
-                      <div className="flex justify-between items-center bg-slate-50 p-2 rounded">
-                        <span className="text-xs font-semibold text-slate-600 flex items-center gap-1.5">
-                          <Info className="w-3.5 h-3.5 text-blue-500" />
-                          ใบแจ้งหนี้/ใบวางบิลประกันภัย (AR Invoice) ในระบบ
-                        </span>
-                        <Button variant="outline" size="sm" className="h-7 text-xs font-semibold" onClick={() => window.open(`/claims/${payment.claimId}/pdf/insurance-invoice`, '_blank')}>
-                          <Printer className="w-3.5 h-3.5 mr-1" /> พิมพ์ขนาดจริง
-                        </Button>
-                      </div>
-                      <div className="w-full border rounded-lg bg-slate-100 overflow-auto min-h-[650px] relative">
-                        <iframe 
-                          src={`/claims/${payment.claimId}/pdf/insurance-invoice?embed=true`}
-                          className="border-none bg-slate-100"
-                          style={{
-                            transform: `scale(${zoomLevel})`,
-                            transformOrigin: 'top left',
-                            width: `${100 / zoomLevel}%`,
-                            height: `${650 / zoomLevel}px`
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ) : uploadInvoiceUrl ? (
+                  {uploadInvoiceUrl ? (
                     // AP Scanned upload preview
                     <div className="flex-1 flex flex-col space-y-3">
                       <div className="flex justify-between items-center bg-slate-50 p-2 rounded">
@@ -709,9 +677,44 @@ export default function PaymentRequestDetailPage() {
                   )}
                 </TabsContent>
 
+                {/* Tab Content: AR Insurance Invoice */}
+                <TabsContent value="insurance-invoice" className="flex-1 mt-3 flex flex-col">
+                  {insuranceInvoice ? (
+                    <div className="flex-1 flex flex-col space-y-3">
+                      <div className="flex justify-between items-center bg-slate-50 p-2 rounded">
+                        <span className="text-xs font-semibold text-slate-600 flex items-center gap-1.5">
+                          <Info className="w-3.5 h-3.5 text-blue-500" />
+                          ใบวางบิลประกันภัย (AR Invoice) ในระบบ
+                        </span>
+                        <Button variant="outline" size="sm" className="h-7 text-xs font-semibold" onClick={() => window.open(`/claims/${payment.claimId}/pdf/insurance-invoice`, '_blank')}>
+                          <Printer className="w-3.5 h-3.5 mr-1" /> พิมพ์ขนาดจริง
+                        </Button>
+                      </div>
+                      <div className="w-full border rounded-lg bg-slate-100 overflow-auto min-h-[650px] relative">
+                        <iframe 
+                          src={`/claims/${payment.claimId}/pdf/insurance-invoice?embed=true`}
+                          className="border-none bg-slate-100"
+                          style={{
+                            transform: `scale(${zoomLevel})`,
+                            transformOrigin: 'top left',
+                            width: `${100 / zoomLevel}%`,
+                            height: `${650 / zoomLevel}px`
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex-1 border-2 border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center p-12 text-center space-y-2">
+                      <FileText className="w-10 h-10 text-slate-300" />
+                      <p className="text-xs font-bold text-slate-600">ไม่พบใบวางบิลประกัน</p>
+                      <p className="text-[10px] text-slate-400 max-w-xs">ยังไม่มีการสร้างใบวางบิลประกันภัยสำหรับใบเคลมนี้</p>
+                    </div>
+                  )}
+                </TabsContent>
+
                 {/* Tab Content: AR Delivery / Tax Invoice */}
-                {payment.requestType === 'AR' && (
-                  <TabsContent value="delivery-tax" className="flex-1 mt-3 flex flex-col">
+                <TabsContent value="delivery-tax" className="flex-1 mt-3 flex flex-col">
+                  {insuranceInvoice ? (
                     <div className="flex-1 flex flex-col space-y-3">
                       <div className="flex justify-between items-center bg-slate-50 p-2 rounded">
                         <span className="text-xs font-semibold text-slate-600 flex items-center gap-1.5">
@@ -735,12 +738,18 @@ export default function PaymentRequestDetailPage() {
                         />
                       </div>
                     </div>
-                  </TabsContent>
-                )}
+                  ) : (
+                    <div className="flex-1 border-2 border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center p-12 text-center space-y-2">
+                      <Printer className="w-10 h-10 text-slate-300" />
+                      <p className="text-xs font-bold text-slate-600">ไม่พบใบส่งของ/ใบกำกับภาษีประกัน</p>
+                      <p className="text-[10px] text-slate-400 max-w-xs">ยังไม่มีการสร้างใบส่งของ/ใบกำกับภาษีประกันภัยสำหรับใบเคลมนี้</p>
+                    </div>
+                  )}
+                </TabsContent>
 
                 {/* Tab Content: AR Receipt */}
-                {payment.requestType === 'AR' && (
-                  <TabsContent value="receipt" className="flex-1 mt-3 flex flex-col">
+                <TabsContent value="receipt" className="flex-1 mt-3 flex flex-col">
+                  {insuranceInvoice ? (
                     <div className="flex-1 flex flex-col space-y-3">
                       <div className="flex justify-between items-center bg-slate-50 p-2 rounded">
                         <span className="text-xs font-semibold text-slate-600 flex items-center gap-1.5">
@@ -764,8 +773,14 @@ export default function PaymentRequestDetailPage() {
                         />
                       </div>
                     </div>
-                  </TabsContent>
-                )}
+                  ) : (
+                    <div className="flex-1 border-2 border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center p-12 text-center space-y-2">
+                      <CheckCircle2 className="w-10 h-10 text-slate-300" />
+                      <p className="text-xs font-bold text-slate-600">ไม่พบใบเสร็จรับเงินประกัน</p>
+                      <p className="text-[10px] text-slate-400 max-w-xs">ยังไม่มีการสร้างใบเสร็จรับเงินประกันภัยสำหรับใบเคลมนี้</p>
+                    </div>
+                  )}
+                </TabsContent>
 
                 {/* Tab Content: Other Attachments */}
                 <TabsContent value="others" className="flex-1 mt-3 flex flex-col">
