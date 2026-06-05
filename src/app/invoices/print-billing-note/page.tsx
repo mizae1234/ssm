@@ -12,6 +12,10 @@ export const dynamic = 'force-dynamic'
 const DEFAULT_COMPANY = {
   name: 'บริษัท ดับเบิ้ลเอสเอ็ม จำกัด',
   address: 'เลขที่ 622 ซอย ลาดพร้าว 47 (สะพาน2) แขวงสะพานสอง เขตวังทองหลาง กรุงเทพมหานคร 10310',
+  subDistrict: '',
+  district: '',
+  province: '',
+  postalCode: '',
   taxId: '0105568142253',
   branchCode: '00000',
   branchName: 'สำนักงานใหญ่',
@@ -123,6 +127,48 @@ function bahtText(num: number): string {
   return bahtTextStr
 }
 
+const formatCompanyAddress = (comp: any) => {
+  if (!comp) return ''
+  const address = comp.address || ''
+  let subDistrict = comp.subDistrict || ''
+  let district = comp.district || ''
+  let province = comp.province || ''
+  const postalCode = comp.postalCode || ''
+
+  if (subDistrict || district || province || postalCode) {
+    const isBkk = province.includes('กรุงเทพ') || province.toLowerCase().includes('bangkok')
+    
+    if (subDistrict) {
+      if (!/^(ตำบล|ต\.|แขวง)/.test(subDistrict)) {
+        subDistrict = (isBkk ? 'แขวง' : 'ตำบล') + subDistrict
+      }
+    }
+    
+    if (district) {
+      if (!/^(อำเภอ|อ\.|เขต)/.test(district)) {
+        district = (isBkk ? 'เขต' : 'อำเภอ') + district
+      }
+    }
+    
+    if (province) {
+      if (!isBkk && !/^(จังหวัด|จ\.)/.test(province)) {
+        province = 'จังหวัด' + province
+      }
+    }
+    
+    const parts = [
+      address,
+      subDistrict,
+      district,
+      province,
+      postalCode
+    ]
+    return parts.filter(Boolean).join(' ')
+  }
+  
+  return address
+}
+
 function BillingNoteContent() {
   const searchParams = useSearchParams()
   const idsStr = searchParams.get('ids')
@@ -181,6 +227,10 @@ function BillingNoteContent() {
     ]).then(([invoiceData, compData, nextBnData]) => {
       // Setup Company Profile
       const mergedCompany = { ...DEFAULT_COMPANY, ...compData }
+      const formattedAddr = formatCompanyAddress(mergedCompany)
+      if (formattedAddr && formattedAddr.trim() !== '-') {
+        mergedCompany.address = formattedAddr
+      }
       setCompany(mergedCompany)
       
       // Default Seller/Contact Info

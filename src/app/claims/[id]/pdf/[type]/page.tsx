@@ -13,6 +13,10 @@ const DEFAULT_COMPANY = {
   branchCode: '00000',
   branchName: 'สำนักงานใหญ่',
   address: '',
+  subDistrict: '',
+  district: '',
+  province: '',
+  postalCode: '',
   phone: '',
   email: '',
   logoUrl: '',
@@ -90,6 +94,56 @@ function bahtText(num: number): string {
   }
   
   return bahtTextStr
+}
+
+const formatCompanyAddress = (comp: any) => {
+  if (!comp) return ''
+  const address = comp.address || ''
+  let subDistrict = comp.subDistrict || ''
+  let district = comp.district || ''
+  let province = comp.province || ''
+  const postalCode = comp.postalCode || ''
+
+  if (subDistrict || district || province || postalCode) {
+    const isBkk = province.includes('กรุงเทพ') || province.toLowerCase().includes('bangkok')
+    
+    if (subDistrict) {
+      if (!/^(ตำบล|ต\.|แขวง)/.test(subDistrict)) {
+        subDistrict = (isBkk ? 'แขวง' : 'ตำบล') + subDistrict
+      }
+    }
+    
+    if (district) {
+      if (!/^(อำเภอ|อ\.|เขต)/.test(district)) {
+        district = (isBkk ? 'เขต' : 'อำเภอ') + district
+      }
+    }
+    
+    if (province) {
+      if (!isBkk && !/^(จังหวัด|จ\.)/.test(province)) {
+        province = 'จังหวัด' + province
+      }
+    }
+    
+    const parts = [
+      address,
+      subDistrict,
+      district,
+      province,
+      postalCode
+    ]
+    return parts.filter(Boolean).join(' ')
+  }
+  
+  return address
+}
+
+const getCompanyAddress = (comp: any) => {
+  const formatted = formatCompanyAddress(comp)
+  if (!formatted || formatted.trim() === '-') {
+    return 'เลขที่ 622 ซอย ลาดพร้าว 47 (สะพาน 2) ถนน ลาดพร้าว แขวงสะพานสอง เขตวังทองหลาง กรุงเทพมหานคร 10310'
+  }
+  return formatted
 }
 
 export default function PDFMockPage() {
@@ -319,7 +373,7 @@ export default function PDFMockPage() {
         </div>
         <div>
           <h1 className="text-xl font-bold text-gray-900">{company.name}</h1>
-          <p className="text-xs text-gray-600 mt-1">{company.address}</p>
+          <p className="text-xs text-gray-600 mt-1">{getCompanyAddress(company)}</p>
           <p className="text-xs text-gray-600">โทร. {company.phone} | เลขประจำตัวผู้เสียภาษี: {company.taxId} ({company.branchName})</p>
         </div>
       </div>
@@ -554,7 +608,7 @@ export default function PDFMockPage() {
 
     // Fallback company details
     const sellerName = company.name || 'บริษัท ดับเบิ้ล เอส.เอ็ม. จำกัด'
-    const sellerAddress = company.address || 'เลขที่ 622 ซอย ลาดพร้าว 47 (สะพาน 2) ถนน ลาดพร้าว แขวงสะพานสอง เขตวังทองหลาง กรุงเทพมหานคร 10310'
+    const sellerAddress = getCompanyAddress(company)
     const sellerTaxId = company.taxId || '0105553036240'
     const sellerPhone = company.phone || '093-140-0898'
     const sellerEmail = company.email || 'salesdoublesm@gmail.com'
@@ -876,7 +930,7 @@ export default function PDFMockPage() {
 
     // Fallback company details
     const sellerName = company.name || 'บริษัท ดับเบิ้ล เอส.เอ็ม. จำกัด'
-    const sellerAddress = company.address || 'เลขที่ 622 ซอย ลาดพร้าว 47 (สะพาน 2) ถนน ลาดพร้าว แขวงสะพานสอง เขตวังทองหลาง กรุงเทพมหานคร 10310'
+    const sellerAddress = getCompanyAddress(company)
     const sellerTaxId = company.taxId || '0105553036240'
     const sellerPhone = company.phone || '093-140-0898'
     const sellerEmail = company.email || 'salesdoublesm@gmail.com'
@@ -1196,7 +1250,7 @@ export default function PDFMockPage() {
 
     // Fallback company details
     const sellerName = company.name || 'บริษัท ดับเบิ้ล เอส.เอ็ม. จำกัด'
-    const sellerAddress = company.address || 'เลขที่ 622 ซอย ลาดพร้าว 47 (สะพาน 2) ถนน ลาดพร้าว แขวงสะพานสอง เขตวังทองหลาง กรุงเทพมหานคร 10310'
+    const sellerAddress = getCompanyAddress(company)
     const sellerTaxId = company.taxId || '0105553036240'
     const sellerPhone = company.phone || '093-140-0898'
     const sellerEmail = company.email || 'salesdoublesm@gmail.com'
