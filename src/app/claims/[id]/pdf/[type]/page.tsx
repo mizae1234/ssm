@@ -904,15 +904,20 @@ export default function PDFMockPage() {
         </div>
 
         {/* Signatures Footer */}
-        <div className="grid grid-cols-2 gap-16 text-center text-xs z-10 relative print-no-break mt-4">
+        <div className="grid grid-cols-3 gap-4 text-center text-xs z-10 relative print-no-break mt-4">
           <div>
-            <div className="border-b border-gray-400 w-48 mx-auto mb-2 mt-4 print:mt-2"></div>
+            <div className="border-b border-gray-400 w-36 mx-auto mb-2 mt-4 print:mt-2"></div>
             <p className="font-bold text-gray-800">ผู้รับสินค้า</p>
             <p className="text-gray-500 text-[10px] mt-1">วันที่ ____/____/____</p>
           </div>
           <div>
-            <div className="border-b border-gray-400 w-48 mx-auto mb-2 mt-4 print:mt-2"></div>
-            <p className="font-bold text-gray-800">ผู้ส่ง</p>
+            <div className="border-b border-gray-400 w-36 mx-auto mb-2 mt-4 print:mt-2"></div>
+            <p className="font-bold text-gray-800">ผู้รับเงิน</p>
+            <p className="text-gray-500 text-[10px] mt-1">วันที่ ____/____/____</p>
+          </div>
+          <div>
+            <div className="border-b border-gray-400 w-36 mx-auto mb-2 mt-4 print:mt-2"></div>
+            <p className="font-bold text-gray-800">ผู้ออกเอกสาร</p>
             <p className="text-gray-500 text-[10px] mt-1">วันที่ ____/____/____</p>
           </div>
         </div>
@@ -1224,15 +1229,20 @@ export default function PDFMockPage() {
         </div>
 
         {/* Signatures Footer */}
-        <div className="grid grid-cols-2 gap-16 text-center text-xs z-10 relative print-no-break mt-4">
+        <div className="grid grid-cols-3 gap-4 text-center text-xs z-10 relative print-no-break mt-4">
           <div>
-            <div className="border-b border-gray-400 w-48 mx-auto mb-2 mt-4 print:mt-2"></div>
+            <div className="border-b border-gray-400 w-36 mx-auto mb-2 mt-4 print:mt-2"></div>
             <p className="font-bold text-gray-800">ผู้รับสินค้า</p>
             <p className="text-gray-500 text-[10px] mt-1">วันที่ ____/____/____</p>
           </div>
           <div>
-            <div className="border-b border-gray-400 w-48 mx-auto mb-2 mt-4 print:mt-2"></div>
-            <p className="font-bold text-gray-800">ผู้ส่ง</p>
+            <div className="border-b border-gray-400 w-36 mx-auto mb-2 mt-4 print:mt-2"></div>
+            <p className="font-bold text-gray-800">ผู้รับเงิน</p>
+            <p className="text-gray-500 text-[10px] mt-1">วันที่ ____/____/____</p>
+          </div>
+          <div>
+            <div className="border-b border-gray-400 w-36 mx-auto mb-2 mt-4 print:mt-2"></div>
+            <p className="font-bold text-gray-800">ผู้ออกเอกสาร</p>
             <p className="text-gray-500 text-[10px] mt-1">วันที่ ____/____/____</p>
           </div>
         </div>
@@ -1516,15 +1526,20 @@ export default function PDFMockPage() {
           </div>
 
           {/* Signatures Footer */}
-          <div className="grid grid-cols-2 gap-16 text-center text-xs z-10 relative print-no-break mt-4">
+          <div className="grid grid-cols-3 gap-4 text-center text-xs z-10 relative print-no-break mt-4">
             <div>
-              <div className="border-b border-gray-400 w-48 mx-auto mb-2 mt-4 print:mt-2"></div>
+              <div className="border-b border-gray-400 w-36 mx-auto mb-2 mt-4 print:mt-2"></div>
               <p className="font-bold text-gray-800">ผู้รับสินค้า</p>
               <p className="text-gray-500 text-[10px] mt-1">วันที่ ____/____/____</p>
             </div>
             <div>
-              <div className="border-b border-gray-400 w-48 mx-auto mb-2 mt-4 print:mt-2"></div>
-              <p className="font-bold text-gray-800">ผู้ส่ง</p>
+              <div className="border-b border-gray-400 w-36 mx-auto mb-2 mt-4 print:mt-2"></div>
+              <p className="font-bold text-gray-800">ผู้รับเงิน</p>
+              <p className="text-gray-500 text-[10px] mt-1">วันที่ ____/____/____</p>
+            </div>
+            <div>
+              <div className="border-b border-gray-400 w-36 mx-auto mb-2 mt-4 print:mt-2"></div>
+              <p className="font-bold text-gray-800">ผู้ออกเอกสาร</p>
               <p className="text-gray-500 text-[10px] mt-1">วันที่ ____/____/____</p>
             </div>
           </div>
