@@ -75,6 +75,7 @@ export default function PaymentRequestDetailPage() {
   const [toast, setToast] = useState<string | null>(null)
   const [zoomLevel, setZoomLevel] = useState(0.75)
   const [isExpanded, setIsExpanded] = useState(false)
+  const [selectedArDoc, setSelectedArDoc] = useState<'invoice' | 'delivery-tax' | 'receipt'>('invoice')
 
   const showToast = (msg: string) => {
     setToast(msg)
@@ -502,18 +503,47 @@ export default function PaymentRequestDetailPage() {
                   {payment.requestType === 'AR' ? (
                     // AR Dynamic template
                     <div className="flex-1 flex flex-col space-y-3">
-                      <div className="flex justify-between items-center bg-slate-50 p-2 rounded">
-                        <span className="text-xs font-semibold text-slate-600 flex items-center gap-1.5">
-                          <Info className="w-3.5 h-3.5 text-blue-500" />
-                          ใบแจ้งหนี้/ใบวางบิลประกันภัย (AR Invoice) ในระบบ
-                        </span>
-                        <Button variant="outline" size="sm" className="h-7 text-xs font-semibold" onClick={() => window.open(`/claims/${payment.claimId}/pdf/insurance-invoice`, '_blank')}>
+                      <div className="flex justify-between items-center bg-slate-50 p-2 rounded flex-wrap gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-slate-600">ประเภทเอกสาร:</span>
+                          <div className="flex bg-slate-200 p-0.5 rounded-lg border">
+                            <button
+                              className={`text-[10px] font-bold px-2 py-1 rounded-md transition-colors ${selectedArDoc === 'invoice' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-600 hover:text-slate-800'}`}
+                              onClick={() => setSelectedArDoc('invoice')}
+                            >
+                              ใบวางบิล / ใบแจ้งหนี้
+                            </button>
+                            <button
+                              className={`text-[10px] font-bold px-2 py-1 rounded-md transition-colors ${selectedArDoc === 'delivery-tax' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-600 hover:text-slate-800'}`}
+                              onClick={() => setSelectedArDoc('delivery-tax')}
+                            >
+                              ใบส่งของ / ใบกำกับภาษี
+                            </button>
+                            <button
+                              className={`text-[10px] font-bold px-2 py-1 rounded-md transition-colors ${selectedArDoc === 'receipt' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-600 hover:text-slate-800'}`}
+                              onClick={() => setSelectedArDoc('receipt')}
+                            >
+                              ใบเสร็จรับเงิน
+                            </button>
+                          </div>
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-7 text-xs font-semibold" 
+                          onClick={() => {
+                            const path = selectedArDoc === 'invoice' ? 'insurance-invoice' : selectedArDoc === 'delivery-tax' ? 'insurance-delivery-tax' : 'insurance-receipt';
+                            window.open(`/claims/${payment.claimId}/pdf/${path}`, '_blank');
+                          }}
+                        >
                           <Printer className="w-3.5 h-3.5 mr-1" /> พิมพ์ขนาดจริง
                         </Button>
                       </div>
                       <div className="w-full border rounded-lg bg-slate-100 overflow-auto min-h-[650px] relative">
                         <iframe 
-                          src={`/claims/${payment.claimId}/pdf/insurance-invoice?embed=true`}
+                          src={`/claims/${payment.claimId}/pdf/${
+                            selectedArDoc === 'invoice' ? 'insurance-invoice' : selectedArDoc === 'delivery-tax' ? 'insurance-delivery-tax' : 'insurance-receipt'
+                          }?embed=true`}
                           className="border-none bg-slate-100"
                           style={{
                             transform: `scale(${zoomLevel})`,
