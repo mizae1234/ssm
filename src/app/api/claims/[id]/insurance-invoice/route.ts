@@ -31,7 +31,7 @@ export async function POST(
     const count = await prisma.insuranceInvoice.count({
       where: { invoiceNo: { startsWith: 'IVT-' } }
     })
-    const nextNo = 300 + count
+    const nextNo = 1 + count
     const seqNo = String(nextNo).padStart(5, '0')
     const invoiceNo = body.invoiceNo || `${prefix}${seqNo}`
 

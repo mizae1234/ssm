@@ -63,7 +63,8 @@ export async function GET(
           include: {
             partMaster: true
           }
-        }
+        },
+        expenses: true
       }
     })
     if (!claim) return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -102,35 +103,42 @@ export async function GET(
           หมายเหตุ: remark,
         })
       }
-      if (claim.parts && claim.parts.length > 0) {
-        for (const part of claim.parts) {
-          rows.push({
-            ลำดับที่: rowSeq++,
-            วันที่: formatDate(inv.invoiceDate),
-            เลขที่เอกสาร: '',
-            อ้างอิงถึง: claim.claimNo,
-            ลูกค้า: insurance?.peakCustomerId || '',
-            สินค้า: part.partMaster?.peakCode || part.partNo || 'P00033',
-            บัญชี: conf.ACCOUNT_REVENUE_PARTS,
-            คำอธิบาย: `${part.partName}|${claim.carPlate}|${insurance?.name || ''}`,
-            จำนวน: part.quantity,
-            'ราคา/หน่วย': part.priceApprove,
-            อัตราภาษี: '7%',
-            หมายเหตุ: remark,
-          })
-        }
-      } else if (inv.partsTotal > 0) {
+      if (inv.partsTotal > 0) {
         rows.push({
           ลำดับที่: rowSeq++,
           วันที่: formatDate(inv.invoiceDate),
           เลขที่เอกสาร: '',
           อ้างอิงถึง: claim.claimNo,
           ลูกค้า: insurance?.peakCustomerId || '',
-          สินค้า: 'P00033',
+          สินค้า: 'P01114',
           บัญชี: conf.ACCOUNT_REVENUE_PARTS,
           คำอธิบาย: `ค่าอะไหล่|${claim.carPlate}|${insurance?.name || ''}`,
           จำนวน: 1,
           'ราคา/หน่วย': inv.partsTotal,
+          อัตราภาษี: '7%',
+          หมายเหตุ: remark,
+        })
+      }
+
+      const shippingExpenses = (claim.expenses || []).filter((e: any) => {
+        if (!e.billable) return false
+        const cat = e.category?.toLowerCase() || ''
+        const desc = e.description?.toLowerCase() || ''
+        return cat === 'shipping' || cat === 'handling' || cat === 'towing' || desc.includes('ขนส่ง') || desc.includes('shipping') || desc.includes('ส่งอะไหล่')
+      })
+
+      for (const exp of shippingExpenses) {
+        rows.push({
+          ลำดับที่: rowSeq++,
+          วันที่: formatDate(inv.invoiceDate),
+          เลขที่เอกสาร: '',
+          อ้างอิงถึง: claim.claimNo,
+          ลูกค้า: insurance?.peakCustomerId || '',
+          สินค้า: 'P00819',
+          บัญชี: conf.ACCOUNT_REVENUE_PARTS,
+          คำอธิบาย: `${exp.description}|${claim.carPlate}|${insurance?.name || ''}`,
+          จำนวน: 1,
+          'ราคา/หน่วย': exp.amount,
           อัตราภาษี: '7%',
           หมายเหตุ: remark,
         })

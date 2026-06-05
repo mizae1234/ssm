@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { TrendingUp, CheckCircle2, AlertTriangle, Trash2, Plus, Download } from 'lucide-react'
+import { TrendingUp, CheckCircle2, AlertTriangle, Trash2, Plus, Download, Printer } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import { formatDate } from '@/lib/date'
 import { ClaimTabProps } from './types'
@@ -45,7 +45,9 @@ export default function InsuranceInvoiceTab({
           <div className="flex items-center gap-2">
             {claim.insuranceInvoice && (
               <>
-                <Button variant="outline" size="sm" className="text-xs" onClick={() => window.open(`/claims/${claim.id}/pdf/insurance-invoice`)}><Download className="w-3.5 h-3.5 mr-1" />PDF</Button>
+                <Button variant="outline" size="sm" className="text-xs" onClick={() => window.open(`/claims/${claim.id}/pdf/insurance-invoice`)}><Download className="w-3.5 h-3.5 mr-1" />ใบวางบิล</Button>
+                <Button variant="outline" size="sm" className="text-xs text-teal-700 border-teal-200 hover:bg-teal-50" onClick={() => window.open(`/claims/${claim.id}/pdf/insurance-delivery-tax`)}><Printer className="w-3.5 h-3.5 mr-1" />ใบส่งของ/ใบกำกับภาษี</Button>
+                <Button variant="outline" size="sm" className="text-xs text-teal-700 border-teal-200 hover:bg-teal-50" onClick={() => window.open(`/claims/${claim.id}/pdf/insurance-receipt`)}><Printer className="w-3.5 h-3.5 mr-1" />ใบเสร็จรับเงิน</Button>
                 <Button variant="outline" size="sm" className="text-xs" onClick={() => window.open(`/api/claims/${claim.id}/peak-export?template=ar-invoice`)}><Download className="w-3.5 h-3.5 mr-1" />PEAK</Button>
                 {!claim.insuranceInvoice.arPayment && (
                   <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => setConfirmModal({ title: 'ยืนยันยกเลิกใบวางบิล', message: 'ข้อมูลการวางบิลจะถูกลบ คุณสามารถแก้ไขรายการแล้วสร้างใหม่ได้', onConfirm: handleDeleteInsuranceInvoice })}><Trash2 className="w-3.5 h-3.5 mr-1" />ยกเลิกบิล</Button>

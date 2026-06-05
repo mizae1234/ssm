@@ -57,7 +57,8 @@ export async function POST(req: NextRequest) {
                 include: {
                   partMaster: true
                 }
-              }
+              },
+              expenses: true
             }
           }
         }
@@ -92,32 +93,7 @@ export async function POST(req: NextRequest) {
           })
           hasAdded = true
         }
-        if (inv.claim.parts && inv.claim.parts.length > 0) {
-          for (const part of inv.claim.parts) {
-            rows.push({
-              'ลำดับที่*': seq,
-              'วันที่เอกสาร': formatDate(inv.invoiceDate),
-              'เลขที่เอกสาร': '',
-              'อ้างอิงถึง': inv.claim.claimNo,
-              'ลูกค้า': inv.claim.insurance?.peakCustomerId || inv.claim.insurance?.id || '',
-              'เลขทะเบียน 13 หลัก': '',
-              'เลขสาขา 5 หลัก': '',
-              'เป็นใบกำกับภาษี': '',
-              'ประเภทราคา': 1,
-              'สินค้า/บริการ': part.partMaster?.peakCode || part.partNo || 'P00033',
-              'บัญชี': ACCOUNT_REVENUE_PARTS,
-              'คำอธิบาย': `${part.partName}|${inv.claim.carPlate}|${inv.claim.insurance?.name || ''}`,
-              'จำนวน': part.quantity,
-              'ราคาต่อหน่วย': part.priceApprove,
-              'ส่วนลดต่อหน่วย': 0,
-              'อัตราภาษี': '7%',
-              'ถูกหัก ณ ที่จ่าย(ถ้ามี)': 0,
-              'หมายเหตุ': remark,
-              'กลุ่มจัดประเภท': ''
-            })
-            hasAdded = true
-          }
-        } else if (inv.partsTotal > 0) {
+        if (inv.partsTotal > 0) {
           rows.push({
             'ลำดับที่*': seq,
             'วันที่เอกสาร': formatDate(inv.invoiceDate),
@@ -128,11 +104,43 @@ export async function POST(req: NextRequest) {
             'เลขสาขา 5 หลัก': '',
             'เป็นใบกำกับภาษี': '',
             'ประเภทราคา': 1,
-            'สินค้า/บริการ': 'P00033',
+            'สินค้า/บริการ': 'P01114',
             'บัญชี': ACCOUNT_REVENUE_PARTS,
             'คำอธิบาย': `ค่าอะไหล่|${inv.claim.carPlate}|${inv.claim.insurance?.name || ''}`,
             'จำนวน': 1,
             'ราคาต่อหน่วย': inv.partsTotal,
+            'ส่วนลดต่อหน่วย': 0,
+            'อัตราภาษี': '7%',
+            'ถูกหัก ณ ที่จ่าย(ถ้ามี)': 0,
+            'หมายเหตุ': remark,
+            'กลุ่มจัดประเภท': ''
+          })
+          hasAdded = true
+        }
+
+        const shippingExpenses = (inv.claim.expenses || []).filter((e: any) => {
+          if (!e.billable) return false
+          const cat = e.category?.toLowerCase() || ''
+          const desc = e.description?.toLowerCase() || ''
+          return cat === 'shipping' || cat === 'handling' || cat === 'towing' || desc.includes('ขนส่ง') || desc.includes('shipping') || desc.includes('ส่งอะไหล่')
+        })
+
+        for (const exp of shippingExpenses) {
+          rows.push({
+            'ลำดับที่*': seq,
+            'วันที่เอกสาร': formatDate(inv.invoiceDate),
+            'เลขที่เอกสาร': '',
+            'อ้างอิงถึง': inv.claim.claimNo,
+            'ลูกค้า': inv.claim.insurance?.peakCustomerId || inv.claim.insurance?.id || '',
+            'เลขทะเบียน 13 หลัก': '',
+            'เลขสาขา 5 หลัก': '',
+            'เป็นใบกำกับภาษี': '',
+            'ประเภทราคา': 1,
+            'สินค้า/บริการ': 'P00819',
+            'บัญชี': ACCOUNT_REVENUE_PARTS,
+            'คำอธิบาย': `${exp.description}|${inv.claim.carPlate}|${inv.claim.insurance?.name || ''}`,
+            'จำนวน': 1,
+            'ราคาต่อหน่วย': exp.amount,
             'ส่วนลดต่อหน่วย': 0,
             'อัตราภาษี': '7%',
             'ถูกหัก ณ ที่จ่าย(ถ้ามี)': 0,

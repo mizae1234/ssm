@@ -245,6 +245,62 @@ export default function PDFMockPage() {
       ]
       setEditableItems(tempItems)
       setEditableNote(quotation.note || '')
+    } else if ((type === 'insurance-invoice' || type === 'insurance-delivery-tax' || type === 'insurance-receipt') && claim.insuranceInvoice) {
+      const shippingExpenses = (claim.expenses || []).filter((e: any) => {
+        if (!e.billable) return false
+        const cat = e.category?.toLowerCase() || ''
+        const desc = e.description?.toLowerCase() || ''
+        return (
+          cat === 'shipping' ||
+          cat === 'handling' ||
+          cat === 'towing' ||
+          desc.includes('ขนส่ง') ||
+          desc.includes('shipping') ||
+          desc.includes('ส่งอะไหล่') ||
+          desc.includes('ค่าส่ง') ||
+          desc.includes('ค่าขน')
+        )
+      })
+
+      const tempItems = [
+        ...(claim.labors || []).map((l: any) => {
+          const discount = l.discountPct || 0
+          const basePrice = l.priceOffer || (discount < 100 ? l.priceApprove / (1 - discount / 100) : l.priceApprove)
+          return {
+            id: l.id,
+            partNo: '-',
+            description: l.description,
+            quantity: 1,
+            unitPrice: basePrice,
+            discountPct: discount,
+            totalPrice: l.priceApprove,
+          }
+        }),
+        ...(claim.parts || []).map((p: any) => {
+          const discount = p.discountPct || 0
+          const basePrice = p.priceOffer || (discount < 100 ? p.priceApprove / (1 - discount / 100) : p.priceApprove)
+          return {
+            id: p.id,
+            partNo: p.partNo || '-',
+            description: p.partName,
+            quantity: p.quantity,
+            unitPrice: basePrice,
+            discountPct: discount,
+            totalPrice: p.priceApprove * p.quantity,
+          }
+        }),
+        ...shippingExpenses.map((exp: any) => ({
+          id: exp.id,
+          partNo: '-',
+          description: exp.description || 'ค่าขนส่ง/ส่งอะไหล่',
+          quantity: 1,
+          unitPrice: exp.amount,
+          discountPct: 0,
+          totalPrice: exp.amount
+        }))
+      ]
+      setEditableItems(tempItems)
+      setEditableNote('')
     }
   }, [claim, po, quotation, type, grId])
 
@@ -367,85 +423,6 @@ export default function PDFMockPage() {
     )
   }
 
-  if (type === 'insurance-invoice') {
-    const inv = claim.insuranceInvoice
-    if (!inv) return <div className="p-8 text-center">ยังไม่ได้ออกใบวางบิล</div>
-
-    return (
-      <div className="bg-white min-h-screen text-black p-8 max-w-4xl mx-auto print:p-12">
-        {renderHeader('ใบวางบิล / ใบแจ้งหนี้', inv.invoiceNo, inv.invoiceDate)}
-        {renderCustomerInfo()}
-
-        <table className="w-full text-sm mb-8 border-collapse">
-          <thead>
-            <tr className="border-b-2 border-gray-800 text-left">
-              <th className="py-2 px-2">ลำดับ</th>
-              <th className="py-2 px-2">รายการ</th>
-              <th className="py-2 px-2 text-right">จำนวนเงิน</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(() => {
-              const rows = []
-              if (inv.laborTotal > 0) {
-                rows.push(
-                  <tr key="labor" className="border-b border-gray-200">
-                    <td className="py-4 px-2 text-gray-650">{rows.length + 1}</td>
-                    <td className="py-4 px-2">
-                      <strong>ค่าแรงซ่อมรถยนต์</strong>
-                      <p className="text-gray-500 text-xs mt-1">ตามใบเสนอราคาที่ได้รับอนุมัติ ทะเบียน {claim.carPlate}</p>
-                    </td>
-                    <td className="py-4 px-2 text-right">{formatCurrency(inv.laborTotal)}</td>
-                  </tr>
-                )
-              }
-              if (inv.partsTotal > 0) {
-                rows.push(
-                  <tr key="parts" className="border-b border-gray-200">
-                    <td className="py-4 px-2 text-gray-650">{rows.length + 1}</td>
-                    <td className="py-4 px-2">
-                      <strong>ค่าอะไหล่รถยนต์</strong>
-                      <p className="text-gray-500 text-xs mt-1">ตามใบเสนอราคาที่ได้รับอนุมัติ ทะเบียน {claim.carPlate}</p>
-                    </td>
-                    <td className="py-4 px-2 text-right">{formatCurrency(inv.partsTotal)}</td>
-                  </tr>
-                )
-              }
-              return rows
-            })()}
-          </tbody>
-        </table>
-
-        <div className="flex justify-end">
-          <div className="w-64 space-y-2 text-sm border rounded p-4">
-            <div className="flex justify-between"><span className="text-gray-600">มูลค่าก่อนภาษี</span><span>{formatCurrency(inv.subtotal)}</span></div>
-            <div className="flex justify-between"><span className="text-gray-600">ภาษีมูลค่าเพิ่ม 7%</span><span>{formatCurrency(inv.vatAmount)}</span></div>
-            <div className="flex justify-between font-bold text-base border-t pt-2 mt-2"><span>ยอดรวมทั้งสิ้น</span><span>{formatCurrency(inv.grandTotal)}</span></div>
-          </div>
-        </div>
-
-        <div className="mt-16 text-sm border rounded p-4 bg-gray-50">
-          <h4 className="font-semibold mb-2">รายละเอียดการชำระเงิน</h4>
-          <p>ชื่อบัญชี: {company.bankAccountName}</p>
-          <p>ธนาคาร: {company.bankName}</p>
-          <p>เลขที่บัญชี: <span className="font-mono">{company.bankAccount}</span></p>
-        </div>
-
-        <div className="mt-16 grid grid-cols-2 gap-16 text-center text-sm">
-          <div>
-            <div className="border-b border-gray-400 w-48 mx-auto mb-2"></div>
-            <p>ผู้รับวางบิล</p>
-            <p className="text-gray-500 text-xs mt-1">วันที่ ____/____/____</p>
-          </div>
-          <div>
-            <div className="border-b border-gray-400 w-48 mx-auto mb-2"></div>
-            <p>ผู้วางบิล</p>
-            <p className="text-gray-500 text-xs mt-1">วันที่ ____/____/____</p>
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   if (type === 'purchase-order') {
     if (!po) return <div className="p-8 text-center">ไม่พบใบสั่งซื้อ</div>
@@ -1206,6 +1183,353 @@ export default function PDFMockPage() {
           </div>
         </div>
 
+      </div>
+    )
+  }
+
+  if (type === 'insurance-invoice' || type === 'insurance-delivery-tax' || type === 'insurance-receipt') {
+    const inv = claim.insuranceInvoice
+    if (!inv) return <div className="p-8 text-center">ยังไม่ได้ออกใบวางบิล</div>
+
+    const docNo = inv.invoiceNo
+    const documentDate = inv.invoiceDate
+
+    // Fallback company details
+    const sellerName = company.name || 'บริษัท ดับเบิ้ล เอส.เอ็ม. จำกัด'
+    const sellerAddress = company.address || 'เลขที่ 622 ซอย ลาดพร้าว 47 (สะพาน 2) ถนน ลาดพร้าว แขวงสะพานสอง เขตวังทองหลาง กรุงเทพมหานคร 10310'
+    const sellerTaxId = company.taxId || '0105553036240'
+    const sellerPhone = company.phone || '093-140-0898'
+    const sellerEmail = company.email || 'salesdoublesm@gmail.com'
+
+    const customerName = claim.insurance?.name || claim.insuredName || ''
+    const customerAddress = claim.insurance?.address || ''
+    const customerTaxId = claim.insurance?.taxId || ''
+    const customerBranch = claim.insurance?.branchCode ? (claim.insurance.branchCode === '00000' ? 'สำนักงานใหญ่' : `สาขา ${claim.insurance.branchCode}`) : 'สำนักงานใหญ่'
+
+    const subtotal = editableItems.reduce((sum: number, item: any) => sum + (item.totalPrice || 0), 0)
+    const vatAmount = Math.round(subtotal * 0.07 * 100) / 100
+    const grandTotal = Math.round((subtotal + vatAmount) * 100) / 100
+
+    const isDeliveryTax = type === 'insurance-delivery-tax'
+    const isReceipt = type === 'insurance-receipt'
+    const isInvoice = type === 'insurance-invoice'
+
+    let mainTitle = ''
+    if (isDeliveryTax) mainTitle = 'ใบส่งของ/ใบกำกับภาษี'
+    else if (isReceipt) mainTitle = 'ใบเสร็จรับเงิน'
+    else if (isInvoice) mainTitle = 'ใบวางบิล / ใบแจ้งหนี้'
+
+    const renderSingleSheet = (isCopy: boolean) => {
+      const copyLabel = isCopy ? 'สำเนา' : 'ต้นฉบับ'
+      const sheetLabel = `เอกสารออกเป็นชุด (${copyLabel})`
+
+      return (
+        <div className="bg-white min-h-screen text-black p-8 max-w-4xl mx-auto print:p-6 font-sans relative overflow-hidden print:overflow-visible print-no-break">
+          {/* Header section */}
+          <div className="flex justify-between items-start mb-6 print:mb-3 z-10 relative">
+            <div className="flex gap-4">
+              <div className="w-20 h-20 bg-gray-100 flex items-center justify-center font-bold text-gray-400 rounded overflow-hidden border">
+                {company.logoUrl ? (
+                  <img src={company.logoUrl} alt="Logo" className="w-full h-full object-contain" />
+                ) : (
+                  <svg className="w-16 h-16" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2050/svg">
+                    <path d="M20 55C20 55 24 45 40 40C56 35 78 40 85 45C92 50 90 55 90 55H20Z" fill="#0d9488" />
+                    <circle cx="35" cy="55" r="8" fill="#f97316" stroke="white" strokeWidth="2" />
+                    <circle cx="75" cy="55" r="8" fill="#f97316" stroke="white" strokeWidth="2" />
+                    <text x="50%" y="85" dominantBaseline="middle" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a" fontFamily="sans-serif">SSM</text>
+                  </svg>
+                )}
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">{sellerName}</h1>
+                <p className="text-[10px] text-gray-500 font-semibold tracking-wider mb-1">CO., LTD.</p>
+                <p className="text-xs text-gray-600 mt-1 max-w-md leading-relaxed">{sellerAddress}</p>
+                <p className="text-xs text-gray-600">โทร. {sellerPhone} | อีเมล: {sellerEmail}</p>
+                <p className="text-xs text-gray-600">เลขประจำตัวผู้เสียภาษี: {sellerTaxId} (สำนักงานใหญ่)</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-xs text-gray-500 mb-1">{sheetLabel}</div>
+              <h2 className="text-2xl font-bold text-teal-700 tracking-wide">{mainTitle}</h2>
+              <div className="mt-3 bg-teal-50/50 border border-teal-150 rounded-xl p-3 text-left text-xs space-y-1.5 min-w-[240px]">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">เลขที่เอกสาร:</span>
+                  <span className="font-semibold text-gray-955">{docNo}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">วันที่ออก:</span>
+                  <span className="font-semibold text-gray-955">{formatDate(documentDate)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">วันที่ตอบรับ:</span>
+                  <span className="font-semibold text-gray-955">-</span>
+                </div>
+                <div className="flex justify-between border-t border-teal-100/50 pt-1.5 mt-1.5">
+                  <span className="text-gray-500">เลขเคลม:</span>
+                  <span className="font-semibold text-teal-800">{claim.claimNo}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Customer Info Grid */}
+          <div className="grid grid-cols-2 gap-8 print:gap-4 mb-6 print:mb-3 text-xs z-10 relative">
+            <div className="border rounded-xl p-4 bg-slate-50/30">
+              <h3 className="font-bold text-gray-800 mb-2 border-b pb-1 text-teal-700">ลูกค้า / บริษัทประกัน</h3>
+              <p className="font-semibold">{customerName}</p>
+              {customerAddress && <p className="text-gray-600 mt-1 leading-relaxed">{customerAddress}</p>}
+              {customerTaxId && <p className="text-gray-600 mt-1">เลขประจำตัวผู้เสียภาษี: {customerTaxId} ({customerBranch})</p>}
+            </div>
+            <div className="border rounded-xl p-4 bg-slate-50/30">
+              <h3 className="font-bold text-gray-800 mb-2 border-b pb-1 text-teal-700">สถานที่จัดส่ง (ที่อยู่ส่งของ)</h3>
+              <p className="font-semibold">{claim.garage?.name || 'ไม่ระบุอู่'}</p>
+              {claim.garage?.address && <p className="text-gray-600 mt-1 leading-relaxed">{claim.garage.address}</p>}
+              {claim.garage?.phone && <p className="text-gray-600 mt-1">โทร: {claim.garage.phone}</p>}
+              <div className="border-t border-dashed border-gray-200 mt-2 pt-2 space-y-0.5">
+                <p className="text-gray-600">ยี่ห้อ/รุ่น รถ: {claim.carBrand} {claim.carModel}</p>
+                <p className="text-gray-600">ทะเบียนรถ: {claim.carPlate}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Items Table */}
+          <div className="z-10 relative">
+            <table className="w-full text-xs mb-6 print:mb-3 border-collapse">
+              <thead>
+                <tr className="bg-teal-50/70 border-b border-teal-200 text-left text-teal-800 font-bold">
+                  <th className="py-2.5 print:py-1.5 px-2 text-center w-10">ลำดับ</th>
+                  <th className="py-2.5 print:py-1.5 px-2">รายการ</th>
+                  <th className="py-2.5 print:py-1.5 px-2 text-right w-16">จำนวน</th>
+                  <th className="py-2.5 print:py-1.5 px-2 text-right w-24">ราคาขาย/หน่วย</th>
+                  <th className="py-2.5 print:py-1.5 px-2 text-right w-20">ส่วนลด</th>
+                  <th className="py-2.5 print:py-1.5 px-2 text-center w-12">VAT</th>
+                  <th className="py-2.5 print:py-1.5 px-2 text-right w-28">มูลค่าก่อนภาษี</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-150">
+                {editableItems.map((item: any, i: number) => {
+                  const subtotal = item.totalPrice
+                  const priceBeforeDiscount = item.unitPrice
+                  return (
+                    <tr key={item.id} className="hover:bg-slate-50/50 transition">
+                      <td className="py-2.5 print:py-1 px-2 text-center text-gray-550">{i + 1}</td>
+                      <td className="py-2.5 print:py-1 px-2 text-gray-900 font-medium">
+                        {isEditMode ? (
+                          <input
+                            type="text"
+                            value={item.description}
+                            onChange={e => {
+                              const newItems = [...editableItems]
+                              newItems[i].description = e.target.value
+                              setEditableItems(newItems)
+                            }}
+                            className="w-full bg-slate-50 border border-slate-200 focus:ring-1 focus:ring-teal-500 rounded px-1.5 py-0.5 text-xs text-gray-900"
+                          />
+                        ) : (
+                          <>
+                            {item.description}
+                            {item.partNo && item.partNo !== '-' && !/^c[a-z0-9]{24}$/i.test(item.partNo) && (
+                              <span className="text-gray-400 font-mono text-[10px] block mt-0.5">({item.partNo})</span>
+                            )}
+                          </>
+                        )}
+                      </td>
+                      <td className="py-2.5 print:py-1 px-2 text-right text-gray-700 font-mono">
+                        {isEditMode ? (
+                          <input
+                            type="number"
+                            value={item.quantity}
+                            onChange={e => {
+                              const newItems = [...editableItems]
+                              const q = Number(e.target.value) || 0
+                              newItems[i].quantity = q
+                              newItems[i].totalPrice = q * newItems[i].unitPrice * (1 - (newItems[i].discountPct || 0) / 100)
+                              setEditableItems(newItems)
+                            }}
+                            className="w-16 text-center bg-slate-50 border border-slate-200 focus:ring-1 focus:ring-teal-500 rounded px-1 py-0.5 text-xs font-mono"
+                          />
+                        ) : (
+                          Number(item.quantity).toFixed(2)
+                        )}
+                      </td>
+                      <td className="py-2.5 print:py-1 px-2 text-right text-gray-700 font-mono">
+                        {isEditMode ? (
+                          <input
+                            type="number"
+                            value={item.unitPrice}
+                            onChange={e => {
+                              const newItems = [...editableItems]
+                              const p = Number(e.target.value) || 0
+                              newItems[i].unitPrice = p
+                              newItems[i].totalPrice = newItems[i].quantity * p * (1 - (newItems[i].discountPct || 0) / 100)
+                              setEditableItems(newItems)
+                            }}
+                            className="w-24 text-right bg-slate-50 border border-slate-200 focus:ring-1 focus:ring-teal-500 rounded px-1 py-0.5 text-xs font-mono"
+                          />
+                        ) : (
+                          formatCurrency(priceBeforeDiscount)
+                        )}
+                      </td>
+                      <td className="py-2.5 print:py-1 px-2 text-right text-gray-700 font-mono">
+                        {isEditMode ? (
+                          <input
+                            type="number"
+                            value={item.discountPct}
+                            onChange={e => {
+                              const newItems = [...editableItems]
+                              const d = Number(e.target.value) || 0
+                              newItems[i].discountPct = d
+                              newItems[i].totalPrice = newItems[i].quantity * newItems[i].unitPrice * (1 - d / 100)
+                              setEditableItems(newItems)
+                            }}
+                            className="w-16 text-center bg-slate-50 border border-slate-200 focus:ring-1 focus:ring-teal-500 rounded px-1 py-0.5 text-xs font-mono"
+                          />
+                        ) : (
+                          item.discountPct > 0 ? `${Number(item.discountPct).toFixed(2)}%` : '-'
+                        )}
+                      </td>
+                      <td className="py-2.5 print:py-1 px-2 text-center text-gray-700">7%</td>
+                      <td className="py-2.5 print:py-1 px-2 text-right text-gray-900 font-mono font-medium">{formatCurrency(subtotal)}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Totals & Summary Block */}
+          <div className="grid grid-cols-[1fr_320px] gap-8 mb-8 print:mb-4 text-xs z-10 relative print-no-break">
+            {/* Left Side: Baht Text & Notes */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 border-t pt-3">
+                <span className="font-bold text-gray-750">จำนวนเงินทั้งสิ้น (ตัวอักษร):</span>
+                <span className="font-semibold text-teal-800 italic">({bahtText(grandTotal)})</span>
+              </div>
+              {isEditMode ? (
+                <div className="bg-slate-50 border border-slate-100 rounded-lg p-3">
+                  <span className="font-bold text-gray-750 block mb-1">หมายเหตุ:</span>
+                  <textarea
+                    value={editableNote}
+                    onChange={e => setEditableNote(e.target.value)}
+                    className="w-full bg-white border border-slate-200 focus:ring-1 focus:ring-teal-500 rounded p-2 text-xs text-gray-700 font-medium leading-relaxed"
+                    rows={2}
+                  />
+                </div>
+              ) : (
+                editableNote && (
+                  <div className="bg-slate-50 border border-slate-100 rounded-lg p-3">
+                    <span className="font-bold text-gray-750 block mb-1">หมายเหตุ:</span>
+                    <p className="text-gray-600 whitespace-pre-wrap">{editableNote}</p>
+                  </div>
+                )
+              )}
+            </div>
+
+            {/* Right Side: Totals */}
+            <div className="bg-teal-50/40 border border-teal-100/70 rounded-xl p-4 space-y-2 font-medium">
+              <div className="flex justify-between text-gray-600">
+                <span>มูลค่าไม่มีหรือยกเว้นภาษี:</span>
+                <span className="font-mono text-gray-900">0.00</span>
+              </div>
+              <div className="flex justify-between text-gray-600">
+                <span>มูลค่าที่คำนวณภาษี 7%:</span>
+                <span className="font-mono text-gray-900">{formatCurrency(subtotal)}</span>
+              </div>
+              <div className="flex justify-between text-gray-600">
+                <span>ภาษีมูลค่าเพิ่ม 7%:</span>
+                <span className="font-mono text-gray-900">{formatCurrency(vatAmount)}</span>
+              </div>
+              <div className="flex justify-between text-teal-900 font-bold border-t border-teal-100 pt-2">
+                <span>จำนวนเงินทั้งสิ้น:</span>
+                <span className="font-mono text-base">{formatCurrency(grandTotal)}</span>
+              </div>
+              <div className="flex justify-between text-gray-500 text-[10px] border-t border-dashed pt-1.5">
+                <span>จำนวนเงินถูกหัก ณ ที่จ่าย:</span>
+                <span className="font-mono">0.00</span>
+              </div>
+              <div className="flex justify-between text-teal-900 font-bold border-t border-teal-200 pt-2 text-sm">
+                <span>จำนวนเงินที่ชำระ:</span>
+                <span className="font-mono text-base">{formatCurrency(grandTotal)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Warning Remark */}
+          <div className="border border-rose-100 rounded-xl p-3 bg-rose-50/30 text-xs text-rose-600 font-semibold mb-8 print:mb-4 z-10 relative">
+            {isDeliveryTax || isInvoice
+              ? '* กรุณาตรวจสอบสินค้าที่ได้รับหากพ้นกำหนด 7 วันนับจากวันที่ส่งสินค้า ทางร้านจะไม่รับเปลี่ยนหรือคืน'
+              : '* การชำระจะเสร็จสมบูรณ์ต่อเมื่อบริษัทฯได้รับชำระเงินเรียบร้อยแล้ว'}
+          </div>
+
+          {/* Signatures Footer */}
+          <div className="grid grid-cols-2 gap-16 text-center text-xs z-10 relative print-no-break mt-4">
+            <div>
+              <div className="border-b border-gray-400 w-48 mx-auto mb-2 mt-4 print:mt-2"></div>
+              <p className="font-bold text-gray-800">ผู้รับสินค้า</p>
+              <p className="text-gray-500 text-[10px] mt-1">วันที่ ____/____/____</p>
+            </div>
+            <div>
+              <div className="border-b border-gray-400 w-48 mx-auto mb-2 mt-4 print:mt-2"></div>
+              <p className="font-bold text-gray-800">ผู้ส่ง</p>
+              <p className="text-gray-500 text-[10px] mt-1">วันที่ ____/____/____</p>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <div className="bg-white min-h-screen text-black">
+        {/* CSS for watermark and font */}
+        <style jsx global>{`
+          @import url('https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap');
+          .font-sans {
+            font-family: 'Sarabun', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+          }
+          @media print {
+            .print-no-break {
+              break-inside: avoid !important;
+              page-break-inside: avoid !important;
+            }
+            .page-break {
+              clear: both;
+              page-break-after: always;
+              break-after: always;
+            }
+          }
+        `}</style>
+
+        {/* Edit Toolbar for screen only */}
+        <div className="print:hidden bg-slate-100 p-4 mb-4 rounded-xl flex items-center justify-between border border-slate-200 max-w-4xl mx-auto mt-4">
+          <div className="flex items-center gap-6">
+            <span className="text-sm font-bold text-slate-800 flex items-center gap-2">
+              📄 โหมดพิมพ์เอกสาร ({mainTitle})
+            </span>
+            <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={isEditMode}
+                onChange={e => setIsEditMode(e.target.checked)}
+                className="w-4 h-4 rounded text-teal-600 focus:ring-teal-500 border-slate-300 cursor-pointer"
+              />
+              <span className="font-semibold text-slate-700">เปิดโหมดแก้ไขราคาก่อนพิมพ์ (ราคาขาย)</span>
+            </label>
+          </div>
+          <div className="flex gap-2">
+            <button className="bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition" onClick={() => window.print()}>
+              🖨️ สั่งพิมพ์เอกสาร
+            </button>
+          </div>
+        </div>
+
+        {/* Page 1: Original */}
+        {renderSingleSheet(false)}
+
+        {/* Page Break for print */}
+        <div className="page-break" />
+
+        {/* Page 2: Copy */}
+        {renderSingleSheet(true)}
       </div>
     )
   }
