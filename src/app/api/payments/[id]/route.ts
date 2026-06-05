@@ -9,6 +9,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       data: {
         status: body.status,
         rejectReason: body.rejectReason,
+        note: body.note,
         approvedBy: body.approvedBy,
         approvedAt: body.approvedAt ? new Date(body.approvedAt) : undefined
       }
@@ -84,6 +85,79 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     return NextResponse.json(fullRequest)
   } catch (error: any) {
     console.error('Payment Update Error:', error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+}
+
+export async function GET(req: Request, { params }: { params: { id: string } }) {
+  try {
+    const payment = await prisma.paymentRequest.findUnique({
+      where: { id: params.id },
+      include: {
+        claim: {
+          include: {
+            insurance: true,
+            garage: true,
+            purchaseOrders: {
+              where: { status: { not: 'CANCELLED' } },
+              include: {
+                items: true,
+                goodsReceipts: {
+                  include: {
+                    items: {
+                      include: {
+                        poItem: true
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            supplierInvoices: {
+              include: {
+                vendor: true,
+                items: true
+              }
+            },
+            garageInvoices: {
+              include: {
+                garage: true,
+                items: true
+              }
+            },
+            expenses: true,
+            documents: true
+          }
+        },
+        supplierInvoice: {
+          include: {
+            vendor: true,
+            items: true
+          }
+        },
+        garageInvoice: {
+          include: {
+            garage: true,
+            items: true
+          }
+        },
+        insuranceInvoice: {
+          include: {
+            arPayment: true
+          }
+        },
+        apPayment: true,
+        arPayment: true
+      }
+    })
+    
+    if (!payment) {
+      return NextResponse.json({ error: 'Payment request not found' }, { status: 404 })
+    }
+    
+    return NextResponse.json(payment)
+  } catch (error: any) {
+    console.error('Fetch Payment Details Error:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }

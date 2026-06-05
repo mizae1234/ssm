@@ -11,6 +11,7 @@ import { CheckCircle2, XCircle, Clock, AlertTriangle, FileText, Save } from 'luc
 import { formatCurrency } from '@/lib/utils'
 import { formatDate } from '@/lib/date'
 import { PaymentRequest } from '@/lib/types'
+import Link from 'next/link'
 
 const statusColor = (s: string) => {
   if (s === 'APPROVED') return 'bg-green-100 text-green-700'
@@ -165,7 +166,10 @@ export default function PaymentsPage() {
         </div>
       </TableCell>
       <TableCell>
-        <div className="flex gap-1">
+        <div className="flex gap-1.5 items-center">
+          <Link href={`/payments/${pr.id}`}>
+            <Button size="sm" variant="outline" className="h-7 text-[10px] text-blue-600 border-blue-200 hover:bg-blue-50">ตรวจสอบ</Button>
+          </Link>
           {pr.status === 'PENDING_APPROVAL' && (
             <>
               <Button size="sm" className="h-7 text-[10px] bg-green-600 hover:bg-green-700" onClick={() => { setApproveNote(''); setActiveModal({ type: 'approve', pr }) }}>Approve</Button>

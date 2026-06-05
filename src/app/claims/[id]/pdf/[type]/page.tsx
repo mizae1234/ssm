@@ -160,7 +160,13 @@ export default function PDFMockPage() {
   const [po, setPo] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [company, setCompany] = useState<any>(DEFAULT_COMPANY)
+  const [isEmbedded, setIsEmbedded] = useState(false)
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsEmbedded(window.self !== window.top)
+    }
+  }, [])
   const [editableItems, setEditableItems] = useState<any[]>([])
   const [editableNote, setEditableNote] = useState('')
   const [isEditMode, setIsEditMode] = useState(false)
@@ -191,13 +197,13 @@ export default function PDFMockPage() {
 
   useEffect(() => {
     // Auto print when loaded — only once
-    if (claim && !loading && !hasPrinted.current) {
+    if (claim && !loading && !hasPrinted.current && !isEmbedded) {
       hasPrinted.current = true
       setTimeout(() => {
         window.print()
       }, 500)
     }
-  }, [claim, loading])
+  }, [claim, loading, isEmbedded])
 
   useEffect(() => {
     if (!claim) return
@@ -1288,7 +1294,7 @@ export default function PDFMockPage() {
       const sheetLabel = `เอกสารออกเป็นชุด (${copyLabel})`
 
       return (
-        <div className="bg-white min-h-screen text-black p-8 max-w-4xl mx-auto print:p-6 font-sans relative overflow-hidden print:overflow-visible print-no-break">
+        <div className={`bg-white text-black p-8 max-w-4xl mx-auto print:p-6 font-sans relative ${isEmbedded ? 'min-h-[1123px] overflow-visible shadow-md my-4 border rounded-lg' : 'min-h-screen overflow-hidden'} print:overflow-visible print:min-h-0 print:shadow-none print:my-0 print:border-none print:rounded-none print-no-break`}>
           {/* Header section */}
           <div className="flex justify-between items-start mb-6 print:mb-3 z-10 relative">
             <div className="flex gap-4">
@@ -1548,7 +1554,7 @@ export default function PDFMockPage() {
     }
 
     return (
-      <div className="bg-white min-h-screen text-black">
+      <div className={`min-h-screen text-black ${isEmbedded ? 'bg-slate-100/60 py-2' : 'bg-white'}`}>
         {/* CSS for watermark and font */}
         <style jsx global>{`
           @import url('https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap');
@@ -1569,27 +1575,29 @@ export default function PDFMockPage() {
         `}</style>
 
         {/* Edit Toolbar for screen only */}
-        <div className="print:hidden bg-slate-100 p-4 mb-4 rounded-xl flex items-center justify-between border border-slate-200 max-w-4xl mx-auto mt-4">
-          <div className="flex items-center gap-6">
-            <span className="text-sm font-bold text-slate-800 flex items-center gap-2">
-              📄 โหมดพิมพ์เอกสาร ({mainTitle})
-            </span>
-            <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={isEditMode}
-                onChange={e => setIsEditMode(e.target.checked)}
-                className="w-4 h-4 rounded text-teal-600 focus:ring-teal-500 border-slate-300 cursor-pointer"
-              />
-              <span className="font-semibold text-slate-700">เปิดโหมดแก้ไขราคาก่อนพิมพ์ (ราคาขาย)</span>
-            </label>
+        {!isEmbedded && (
+          <div className="print:hidden bg-slate-100 p-4 mb-4 rounded-xl flex items-center justify-between border border-slate-200 max-w-4xl mx-auto mt-4">
+            <div className="flex items-center gap-6">
+              <span className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                📄 โหมดพิมพ์เอกสาร ({mainTitle})
+              </span>
+              <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={isEditMode}
+                  onChange={e => setIsEditMode(e.target.checked)}
+                  className="w-4 h-4 rounded text-teal-600 focus:ring-teal-500 border-slate-300 cursor-pointer"
+                />
+                <span className="font-semibold text-slate-700">เปิดโหมดแก้ไขราคาก่อนพิมพ์ (ราคาขาย)</span>
+              </label>
+            </div>
+            <div className="flex gap-2">
+              <button className="bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition" onClick={() => window.print()}>
+                🖨️ สั่งพิมพ์เอกสาร
+              </button>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <button className="bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition" onClick={() => window.print()}>
-              🖨️ สั่งพิมพ์เอกสาร
-            </button>
-          </div>
-        </div>
+        )}
 
         {/* Page 1: Original */}
         {renderSingleSheet(false)}
