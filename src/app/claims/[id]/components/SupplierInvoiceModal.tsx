@@ -40,6 +40,7 @@ export default function SupplierInvoiceModal({
   const [customInvoiceNo, setCustomInvoiceNo] = useState('')
   const [invoiceIncludeVat, setInvoiceIncludeVat] = useState(true)
   const [invoiceVatPct, setInvoiceVatPct] = useState(7)
+  const [invoiceCustomVat, setInvoiceCustomVat] = useState<string>('')
   const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
@@ -171,6 +172,7 @@ export default function SupplierInvoiceModal({
     setCustomInvoiceNo('')
     setInvoiceIncludeVat(true)
     setInvoiceVatPct(7)
+    setInvoiceCustomVat('')
     setGlobalDiscountPct('')
   }, [isOpen, parts, labors, claim])
 
@@ -180,7 +182,8 @@ export default function SupplierInvoiceModal({
 
   const sub = parts.filter(p => uploadMapSelections[p.id]).reduce((s, p) => s + getPartPrice(p), 0) + 
               labors.filter(l => uploadMapSelections[l.id]).reduce((s, l) => s + getLaborPrice(l), 0)
-  const vat = invoiceIncludeVat ? Math.round(sub * (invoiceVatPct / 100)) : 0
+  const calculatedVat = invoiceIncludeVat ? Math.round(sub * (invoiceVatPct / 100) * 100) / 100 : 0
+  const vat = invoiceIncludeVat ? (invoiceCustomVat !== '' ? Number(invoiceCustomVat) : calculatedVat) : 0
   const validPOs = claim.purchaseOrders?.filter((po: any) => po.status !== 'CANCELLED') || []
   const vendorData = validPOs[0]?.vendorId ? vendors.find((v: any) => v.id === validPOs[0].vendorId) : vendors[0]
   const billingPct = vendorData?.billingPct ?? 100
@@ -553,7 +556,18 @@ export default function SupplierInvoiceModal({
                   </label>
                   {invoiceIncludeVat && (
                     <div className="flex items-center gap-1">
-                      <Input type="number" className="h-8 w-16 text-sm text-right" value={invoiceVatPct} onChange={e => setInvoiceVatPct(Number(e.target.value) || 0)} min={0} max={100} disabled={isSaving} />
+                      <Input 
+                        type="number" 
+                        className="h-8 w-16 text-sm text-right" 
+                        value={invoiceVatPct} 
+                        onChange={e => {
+                          setInvoiceVatPct(Number(e.target.value) || 0)
+                          setInvoiceCustomVat('')
+                        }} 
+                        min={0} 
+                        max={100} 
+                        disabled={isSaving} 
+                      />
                       <span className="text-sm text-gray-500">%</span>
                     </div>
                   )}
@@ -564,9 +578,20 @@ export default function SupplierInvoiceModal({
                   <span>฿{formatCurrency(sub)}</span>
                 </div>
                 {invoiceIncludeVat && (
-                  <div className="flex justify-between w-full text-sm text-gray-500">
+                  <div className="flex items-center justify-between w-full text-sm text-gray-500">
                     <span>VAT {invoiceVatPct}%:</span>
-                    <span>฿{formatCurrency(vat)}</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-gray-400">฿</span>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        className="h-8 w-28 text-sm text-right font-medium"
+                        value={invoiceCustomVat}
+                        onChange={e => setInvoiceCustomVat(e.target.value)}
+                        placeholder={calculatedVat.toFixed(2)}
+                        disabled={isSaving}
+                      />
+                    </div>
                   </div>
                 )}
                 <div className="flex justify-between w-full text-base font-bold text-blue-700 pt-2 border-t mt-1">
