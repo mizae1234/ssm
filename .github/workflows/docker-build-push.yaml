@@ -34,13 +34,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy to VPS
-        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_PORT }}
-          script: |
+      - name: Deploy
+        run: |
             curl -X POST ${{ secrets.DEPLOY_WEBHOOK }}/deploy-project-ssm \
               -H "X-Secret-Token: ${{ secrets.WEBHOOK_SECRET }}"
