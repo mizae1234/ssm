@@ -306,59 +306,68 @@ export default function PDFMockPage() {
       setEditableItems(tempItems)
       setEditableNote(quotation.note || '')
     } else if ((type === 'insurance-invoice' || type === 'insurance-delivery-tax' || type === 'insurance-receipt') && claim.insuranceInvoice) {
-      const shippingExpenses = (claim.expenses || []).filter((e: any) => {
-        if (!e.billable) return false
-        const cat = e.category?.toLowerCase() || ''
-        const desc = e.description?.toLowerCase() || ''
-        return (
-          cat === 'shipping' ||
-          cat === 'handling' ||
-          cat === 'towing' ||
-          desc.includes('ขนส่ง') ||
-          desc.includes('shipping') ||
-          desc.includes('ส่งอะไหล่') ||
-          desc.includes('ค่าส่ง') ||
-          desc.includes('ค่าขน')
-        )
-      })
+      const claimsToAggregate = (claim.insuranceInvoice.claims && claim.insuranceInvoice.claims.length > 0)
+        ? claim.insuranceInvoice.claims
+        : [claim]
 
-      const tempItems = [
-        ...(claim.labors || []).map((l: any) => {
-          const discount = l.discountPct || 0
-          const basePrice = l.priceOffer || (discount < 100 ? l.priceApprove / (1 - discount / 100) : l.priceApprove)
-          return {
-            id: l.id,
+      const tempItems: any[] = []
+
+      for (const c of claimsToAggregate) {
+        const claimShippingExpenses = (c.expenses || []).filter((e: any) => {
+          if (!e.billable) return false
+          const cat = e.category?.toLowerCase() || ''
+          const desc = e.description?.toLowerCase() || ''
+          return (
+            cat === 'shipping' ||
+            cat === 'handling' ||
+            cat === 'towing' ||
+            desc.includes('ขนส่ง') ||
+            desc.includes('shipping') ||
+            desc.includes('ส่งอะไหล่') ||
+            desc.includes('ค่าส่ง') ||
+            desc.includes('ค่าขน')
+          )
+        })
+
+        tempItems.push(
+          ...(c.labors || []).map((l: any) => {
+            const discount = l.discountPct || 0
+            const basePrice = l.priceOffer || (discount < 100 ? l.priceApprove / (1 - discount / 100) : l.priceApprove)
+            return {
+              id: l.id,
+              partNo: '-',
+              description: l.description + (claimsToAggregate.length > 1 ? ` (เคลม ${c.claimNo})` : ''),
+              quantity: 1,
+              unitPrice: basePrice,
+              discountPct: discount,
+              totalPrice: l.priceApprove,
+            }
+          }),
+          ...(c.parts || []).map((p: any) => {
+            const discount = p.discountPct || 0
+            const basePrice = p.priceOffer || (discount < 100 ? p.priceApprove / (1 - discount / 100) : p.priceApprove)
+            return {
+              id: p.id,
+              partNo: p.partNo || '-',
+              description: p.partName + (claimsToAggregate.length > 1 ? ` (เคลม ${c.claimNo})` : ''),
+              quantity: p.quantity,
+              unitPrice: basePrice,
+              discountPct: discount,
+              totalPrice: p.priceApprove * p.quantity,
+            }
+          }),
+          ...claimShippingExpenses.map((exp: any) => ({
+            id: exp.id,
             partNo: '-',
-            description: l.description,
+            description: (exp.description || 'ค่าขนส่ง/ส่งอะไหล่') + (claimsToAggregate.length > 1 ? ` (เคลม ${c.claimNo})` : ''),
             quantity: 1,
-            unitPrice: basePrice,
-            discountPct: discount,
-            totalPrice: l.priceApprove,
-          }
-        }),
-        ...(claim.parts || []).map((p: any) => {
-          const discount = p.discountPct || 0
-          const basePrice = p.priceOffer || (discount < 100 ? p.priceApprove / (1 - discount / 100) : p.priceApprove)
-          return {
-            id: p.id,
-            partNo: p.partNo || '-',
-            description: p.partName,
-            quantity: p.quantity,
-            unitPrice: basePrice,
-            discountPct: discount,
-            totalPrice: p.priceApprove * p.quantity,
-          }
-        }),
-        ...shippingExpenses.map((exp: any) => ({
-          id: exp.id,
-          partNo: '-',
-          description: exp.description || 'ค่าขนส่ง/ส่งอะไหล่',
-          quantity: 1,
-          unitPrice: exp.amount,
-          discountPct: 0,
-          totalPrice: exp.amount
-        }))
-      ]
+            unitPrice: exp.amount,
+            discountPct: 0,
+            totalPrice: exp.amount
+          }))
+        )
+      }
+
       setEditableItems(tempItems)
       setEditableNote('')
     }
@@ -1336,7 +1345,11 @@ export default function PDFMockPage() {
                 </div>
                 <div className="flex justify-between border-t border-teal-100/50 pt-1.5 mt-1.5">
                   <span className="text-gray-500">เลขเคลม:</span>
-                  <span className="font-semibold text-teal-800">{claim.claimNo}</span>
+                  <span className="font-semibold text-teal-800">
+                    {claim.insuranceInvoice?.claims && claim.insuranceInvoice.claims.length > 1
+                      ? claim.insuranceInvoice.claims.map((c: any) => c.claimNo).join(', ')
+                      : claim.claimNo}
+                  </span>
                 </div>
               </div>
             </div>
@@ -1356,8 +1369,18 @@ export default function PDFMockPage() {
               {claim.garage?.address && <p className="text-gray-600 mt-1 leading-relaxed">{claim.garage.address}</p>}
               {claim.garage?.phone && <p className="text-gray-600 mt-1">โทร: {claim.garage.phone}</p>}
               <div className="border-t border-dashed border-gray-200 mt-2 pt-2 space-y-0.5">
-                <p className="text-gray-600">ยี่ห้อ/รุ่น รถ: {claim.carBrand} {claim.carModel}</p>
-                <p className="text-gray-600">ทะเบียนรถ: {claim.carPlate}</p>
+                <p className="text-gray-600">
+                  ยี่ห้อ/รุ่น รถ: {' '}
+                  {claim.insuranceInvoice?.claims && claim.insuranceInvoice.claims.length > 1
+                    ? claim.insuranceInvoice.claims.map((c: any) => `${c.carBrand} ${c.carModel}`).filter((v: any, idx: number, self: any[]) => self.indexOf(v) === idx).join(', ')
+                    : `${claim.carBrand} ${claim.carModel}`}
+                </p>
+                <p className="text-gray-600">
+                  ทะเบียนรถ: {' '}
+                  {claim.insuranceInvoice?.claims && claim.insuranceInvoice.claims.length > 1
+                    ? claim.insuranceInvoice.claims.map((c: any) => c.carPlate).join(', ')
+                    : claim.carPlate}
+                </p>
               </div>
             </div>
           </div>

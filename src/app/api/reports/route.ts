@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       LEFT JOIN (
         SELECT TO_CHAR(c."createdAt" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Bangkok', 'YYYY-MM') as month_key, SUM(ii."grandTotal")::float as ar_total
         FROM "Claim" c
-        JOIN "InsuranceInvoice" ii ON ii."claimId" = c.id
+        JOIN "InsuranceInvoice" ii ON c."insuranceInvoiceId" = ii.id
         WHERE c."status" != 'CANCELLED' AND c."createdAt" >= ${dateFrom} AND c."createdAt" <= ${dateTo}
           ${sqlInsuranceFilter}
         GROUP BY month_key
@@ -97,13 +97,13 @@ export async function GET(request: NextRequest) {
     const arInvoices = await prisma.insuranceInvoice.findMany({
       where: {
         status: { in: ['PENDING', 'SENT'] },
-        claim: claimFilter
+        claims: { some: claimFilter }
       },
       select: {
         invoiceNo: true,
         invoiceDate: true,
         grandTotal: true,
-        claim: {
+        claims: {
           select: {
             insuranceId: true,
             claimNo: true,
@@ -120,11 +120,12 @@ export async function GET(request: NextRequest) {
     const arAging = arInvoices.map(inv => {
       const invoiceDate = new Date(inv.invoiceDate)
       const agingDays = Math.max(0, Math.floor((now.getTime() - invoiceDate.getTime()) / (1000 * 60 * 60 * 24)))
+      const primaryClaim = inv.claims[0] || { claimNo: '', carPlate: '', insuranceId: '', insurance: { name: '' } }
       return {
-        insurance: inv.claim.insurance.name,
-        insuranceId: inv.claim.insuranceId,
-        claimNo: inv.claim.claimNo,
-        carPlate: inv.claim.carPlate,
+        insurance: primaryClaim.insurance?.name || '',
+        insuranceId: primaryClaim.insuranceId,
+        claimNo: inv.claims.map(c => c.claimNo).join(', '),
+        carPlate: inv.claims.map(c => c.carPlate).join(', '),
         invoiceNo: inv.invoiceNo,
         invoiceDate: inv.invoiceDate,
         amount: inv.grandTotal,

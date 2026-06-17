@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
         id: { in: ids }
       },
       include: {
-        claim: {
+        claims: {
           select: {
             id: true,
             claimNo: true,

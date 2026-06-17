@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
       createdAt: { gte: dateFrom, lte: dateTo }
     },
     include: {
-      claim: {
+      claims: {
         select: {
           id: true,
           claimNo: true,

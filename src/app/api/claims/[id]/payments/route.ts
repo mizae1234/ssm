@@ -16,7 +16,7 @@ export async function GET(
     })
 
     const arPayment = await prisma.aRPayment.findFirst({
-      where: { insuranceInvoice: { claimId: params.id } }
+      where: { insuranceInvoice: { claims: { some: { id: params.id } } } }
     })
 
     return NextResponse.json({ apPayments, arPayment })

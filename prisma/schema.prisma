@@ -33,7 +33,8 @@ model Claim {
   purchaseOrders   PurchaseOrder[]
   supplierInvoices SupplierInvoice[]
   garageInvoices   GarageInvoice[]
-  insuranceInvoice InsuranceInvoice?
+  insuranceInvoiceId String?
+  insuranceInvoice   InsuranceInvoice? @relation(fields: [insuranceInvoiceId], references: [id])
   statusLogs       ClaimStatusLog[]
   extractionLogs   ExtractionLog[]
   paymentRequests  PaymentRequest[]
@@ -278,8 +279,6 @@ model SupplierInvoice {
 
 model InsuranceInvoice {
   id              String           @id @default(cuid())
-  claimId         String           @unique
-  claim           Claim            @relation(fields: [claimId], references: [id])
   invoiceNo       String           @unique
   invoiceDate     DateTime
   laborTotal      Float
@@ -296,6 +295,7 @@ model InsuranceInvoice {
   isSynced        Boolean          @default(false)
   syncedAt        DateTime?
   createdAt       DateTime         @default(now())
+  claims          Claim[]
 
   @@index([status])
   @@index([createdAt])

@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
       const invoices = await prisma.insuranceInvoice.findMany({
         where: { id: { in: ids } },
         include: {
-          claim: {
+          claims: {
             include: {
               insurance: true,
               parts: {
@@ -67,22 +67,28 @@ export async function POST(req: NextRequest) {
       const rows: any[] = []
       let seq = 1
       for (const inv of invoices) {
-        const remark = buildRemark(inv.claim)
+        const primaryClaim = inv.claims[0] || { claimNo: '', carPlate: '', insurance: null, expenses: [] }
+        const claimNos = inv.claims.map(c => c.claimNo).join(', ')
+        const carPlates = inv.claims.map(c => c.carPlate).join(', ')
+        const insCustomerId = primaryClaim.insurance?.peakCustomerId || primaryClaim.insurance?.id || ''
+        const insName = primaryClaim.insurance?.name || ''
+        const remark = inv.claims.map(c => buildRemark(c)).join(' | ')
+
         let hasAdded = false
         if (inv.laborTotal > 0) {
           rows.push({
             'ลำดับที่*': seq,
             'วันที่เอกสาร': formatDate(inv.invoiceDate),
             'เลขที่เอกสาร': '',
-            'อ้างอิงถึง': inv.claim.claimNo,
-            'ลูกค้า': inv.claim.insurance?.peakCustomerId || inv.claim.insurance?.id || '',
+            'อ้างอิงถึง': claimNos.slice(0, 32),
+            'ลูกค้า': insCustomerId,
             'เลขทะเบียน 13 หลัก': '',
             'เลขสาขา 5 หลัก': '',
             'เป็นใบกำกับภาษี': '',
             'ประเภทราคา': 1,
             'สินค้า/บริการ': 'P00035',
             'บัญชี': ACCOUNT_REVENUE_LABOR,
-            'คำอธิบาย': `ค่าแรง|${inv.claim.carPlate}|${inv.claim.insurance?.name || ''}`,
+            'คำอธิบาย': `ค่าแรง|${carPlates}|${insName}`,
             'จำนวน': 1,
             'ราคาต่อหน่วย': inv.laborTotal,
             'ส่วนลดต่อหน่วย': 0,
@@ -98,15 +104,15 @@ export async function POST(req: NextRequest) {
             'ลำดับที่*': seq,
             'วันที่เอกสาร': formatDate(inv.invoiceDate),
             'เลขที่เอกสาร': '',
-            'อ้างอิงถึง': inv.claim.claimNo,
-            'ลูกค้า': inv.claim.insurance?.peakCustomerId || inv.claim.insurance?.id || '',
+            'อ้างอิงถึง': claimNos.slice(0, 32),
+            'ลูกค้า': insCustomerId,
             'เลขทะเบียน 13 หลัก': '',
             'เลขสาขา 5 หลัก': '',
             'เป็นใบกำกับภาษี': '',
             'ประเภทราคา': 1,
             'สินค้า/บริการ': 'P01114',
             'บัญชี': ACCOUNT_REVENUE_PARTS,
-            'คำอธิบาย': `ค่าอะไหล่|${inv.claim.carPlate}|${inv.claim.insurance?.name || ''}`,
+            'คำอธิบาย': `ค่าอะไหล่|${carPlates}|${insName}`,
             'จำนวน': 1,
             'ราคาต่อหน่วย': inv.partsTotal,
             'ส่วนลดต่อหน่วย': 0,
@@ -118,7 +124,7 @@ export async function POST(req: NextRequest) {
           hasAdded = true
         }
 
-        const shippingExpenses = (inv.claim.expenses || []).filter((e: any) => {
+        const shippingExpenses = inv.claims.flatMap(c => c.expenses || []).filter((e: any) => {
           if (!e.billable) return false
           const cat = e.category?.toLowerCase() || ''
           const desc = e.description?.toLowerCase() || ''
@@ -126,19 +132,20 @@ export async function POST(req: NextRequest) {
         })
 
         for (const exp of shippingExpenses) {
+          const expClaim = inv.claims.find(c => c.id === exp.claimId) || primaryClaim
           rows.push({
             'ลำดับที่*': seq,
             'วันที่เอกสาร': formatDate(inv.invoiceDate),
             'เลขที่เอกสาร': '',
-            'อ้างอิงถึง': inv.claim.claimNo,
-            'ลูกค้า': inv.claim.insurance?.peakCustomerId || inv.claim.insurance?.id || '',
+            'อ้างอิงถึง': expClaim.claimNo,
+            'ลูกค้า': insCustomerId,
             'เลขทะเบียน 13 หลัก': '',
             'เลขสาขา 5 หลัก': '',
             'เป็นใบกำกับภาษี': '',
             'ประเภทราคา': 1,
             'สินค้า/บริการ': 'P00819',
             'บัญชี': ACCOUNT_REVENUE_PARTS,
-            'คำอธิบาย': `${exp.description}|${inv.claim.carPlate}|${inv.claim.insurance?.name || ''}`,
+            'คำอธิบาย': `${exp.description}|${expClaim.carPlate}|${insName}`,
             'จำนวน': 1,
             'ราคาต่อหน่วย': exp.amount,
             'ส่วนลดต่อหน่วย': 0,

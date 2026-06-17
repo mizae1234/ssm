@@ -42,33 +42,30 @@ export async function GET(request: NextRequest) {
     }
   })
 
-  // 4. Revenue by insurance — use aggregation
-  const insuranceRevenue = await prisma.insuranceInvoice.groupBy({
-    by: ['claimId'],
-    _sum: { grandTotal: true }
+  // 4. Revenue by insurance
+  const invoices = await prisma.insuranceInvoice.findMany({
+    select: {
+      grandTotal: true,
+      claims: {
+        select: {
+          insuranceId: true,
+          insurance: { select: { id: true, name: true } }
+        }
+      }
+    }
   })
 
-  // Get insurance mapping for claims that have invoices
-  const claimIds = insuranceRevenue.map(r => r.claimId)
-  const claimsWithInsurance = claimIds.length > 0
-    ? await prisma.claim.findMany({
-        where: { id: { in: claimIds } },
-        select: { id: true, insuranceId: true, insurance: { select: { id: true, name: true } } }
-      })
-    : []
-
   const insMap: Record<string, { insuranceName: string, totalRevenue: number, claimCount: number }> = {}
-  const claimInsMap = new Map(claimsWithInsurance.map(c => [c.id, c]))
   
-  insuranceRevenue.forEach(r => {
-    const claim = claimInsMap.get(r.claimId)
-    if (!claim) return
-    const insId = claim.insuranceId
+  invoices.forEach(inv => {
+    const primaryClaim = inv.claims[0]
+    if (!primaryClaim) return
+    const insId = primaryClaim.insuranceId
     if (!insMap[insId]) {
-      insMap[insId] = { insuranceName: claim.insurance.name, totalRevenue: 0, claimCount: 0 }
+      insMap[insId] = { insuranceName: primaryClaim.insurance.name, totalRevenue: 0, claimCount: 0 }
     }
-    insMap[insId].totalRevenue += r._sum.grandTotal || 0
-    insMap[insId].claimCount += 1
+    insMap[insId].totalRevenue += inv.grandTotal || 0
+    insMap[insId].claimCount += inv.claims.length
   })
 
   const byInsurance = Object.entries(insMap)

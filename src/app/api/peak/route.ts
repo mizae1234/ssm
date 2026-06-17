@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
           status: { in: ['PENDING', 'SENT', 'PAID'] }
         },
         include: {
-          claim: {
+          claims: {
             include: { insurance: { select: { id: true, name: true } } }
           }
         },
@@ -57,16 +57,19 @@ export async function GET(request: NextRequest) {
     ])
 
     return NextResponse.json({
-      arInvoices: arInvoices.map(inv => ({
-        id: inv.id,
-        invoiceNo: inv.invoiceNo,
-        claimNo: inv.claim.claimNo,
-        insuranceName: inv.claim.insurance.name,
-        invoiceDate: inv.invoiceDate,
-        grandTotal: inv.grandTotal,
-        isSynced: inv.isSynced,
-        syncedAt: inv.syncedAt
-      })),
+      arInvoices: arInvoices.map(inv => {
+        const primaryClaim = inv.claims[0] || { claimNo: '', insurance: { name: '' } }
+        return {
+          id: inv.id,
+          invoiceNo: inv.invoiceNo,
+          claimNo: inv.claims.map(c => c.claimNo).join(', '),
+          insuranceName: primaryClaim.insurance?.name || '',
+          invoiceDate: inv.invoiceDate,
+          grandTotal: inv.grandTotal,
+          isSynced: inv.isSynced,
+          syncedAt: inv.syncedAt
+        }
+      }),
       apInvoices: [
         ...supplierInvoices.map(inv => ({
           id: inv.id,

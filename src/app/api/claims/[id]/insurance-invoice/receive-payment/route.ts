@@ -6,8 +6,17 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    const claim = await prisma.claim.findUnique({
+      where: { id: params.id },
+      select: { insuranceInvoiceId: true }
+    })
+
+    if (!claim || !claim.insuranceInvoiceId) {
+      return NextResponse.json({ error: 'ไม่พบใบวางบิล' }, { status: 404 })
+    }
+
     const invoice = await prisma.insuranceInvoice.findUnique({
-      where: { claimId: params.id },
+      where: { id: claim.insuranceInvoiceId },
       include: { arPayment: true }
     })
 

@@ -16,11 +16,7 @@ export async function POST(
     const body = await request.json()
     
     // Check if one already exists
-    const existing = await prisma.insuranceInvoice.findUnique({
-      where: { claimId: params.id }
-    })
-    
-    if (existing) {
+    if (claim.insuranceInvoiceId) {
       return NextResponse.json({ error: 'มีใบวางบิลอยู่แล้ว กรุณาลบใบเดิมก่อนสร้างใหม่' }, { status: 400 })
     }
 
@@ -42,7 +38,6 @@ export async function POST(
 
     const newInvoice = await prisma.insuranceInvoice.create({
       data: {
-        claimId: params.id,
         invoiceNo,
         invoiceDate,
         dueDate,
@@ -51,7 +46,10 @@ export async function POST(
         subtotal: body.subtotal,
         vatAmount: body.vatAmount,
         grandTotal: body.grandTotal,
-        status: 'PENDING'
+        status: 'PENDING',
+        claims: {
+          connect: { id: params.id }
+        }
       }
     })
     
@@ -67,16 +65,17 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const existing = await prisma.insuranceInvoice.findUnique({
-      where: { claimId: params.id }
+    const claim = await prisma.claim.findUnique({
+      where: { id: params.id },
+      select: { insuranceInvoiceId: true }
     })
     
-    if (!existing) {
+    if (!claim || !claim.insuranceInvoiceId) {
       return NextResponse.json({ error: 'ไม่พบใบวางบิลที่ต้องการลบ' }, { status: 404 })
     }
     
     await prisma.insuranceInvoice.delete({
-      where: { claimId: params.id }
+      where: { id: claim.insuranceInvoiceId }
     })
     
     return NextResponse.json({ success: true })

@@ -90,7 +90,7 @@ export default function InvoicesPage() {
     if (inv.status === 'CANCELLED') return 'CANCELLED'
     if (inv.status === 'PAID') return 'PAID'
     const computedDueDate = inv.dueDate ? new Date(inv.dueDate) : (() => {
-      const termDays = inv.claim?.insurance?.creditTermArDays ?? 30
+      const termDays = inv.claims?.[0]?.insurance?.creditTermArDays ?? 30
       const d = new Date(inv.invoiceDate)
       d.setDate(d.getDate() + termDays)
       return d
@@ -113,9 +113,9 @@ export default function InvoicesPage() {
       const s = search.toLowerCase()
       list = list.filter(i => 
         (i.invoiceNo?.toLowerCase() || '').includes(s) || 
-        (i.claim?.claimNo?.toLowerCase() || '').includes(s) || 
-        (i.claim?.carPlate?.toLowerCase() || '').includes(s) || 
-        (i.claim?.insurance?.name?.toLowerCase() || '').includes(s)
+        i.claims?.some((c: any) => (c.claimNo?.toLowerCase() || '').includes(s)) || 
+        i.claims?.some((c: any) => (c.carPlate?.toLowerCase() || '').includes(s)) || 
+        i.claims?.some((c: any) => (c.insurance?.name?.toLowerCase() || '').includes(s))
       )
     }
 
@@ -126,15 +126,15 @@ export default function InvoicesPage() {
     }
     if (filterInsurance) {
       const s = filterInsurance.toLowerCase()
-      list = list.filter(i => (i.claim?.insurance?.name?.toLowerCase() || '').includes(s))
+      list = list.filter(i => i.claims?.some((c: any) => (c.insurance?.name?.toLowerCase() || '').includes(s)))
     }
     if (filterClaimNo) {
       const s = filterClaimNo.toLowerCase()
-      list = list.filter(i => (i.claim?.claimNo?.toLowerCase() || '').includes(s))
+      list = list.filter(i => i.claims?.some((c: any) => (c.claimNo?.toLowerCase() || '').includes(s)))
     }
     if (filterCarPlate) {
       const s = filterCarPlate.toLowerCase()
-      list = list.filter(i => (i.claim?.carPlate?.toLowerCase() || '').includes(s))
+      list = list.filter(i => i.claims?.some((c: any) => (c.carPlate?.toLowerCase() || '').includes(s)))
     }
 
     return list
@@ -393,13 +393,26 @@ export default function InvoicesPage() {
                     {(currentPage - 1) * itemsPerPage + index + 1}
                   </TableCell>
                   <TableCell className="font-mono font-medium text-[#0d9488]">{inv.invoiceNo}</TableCell>
-                  <TableCell className="text-sm">{inv.claim.insurance.name}</TableCell>
-                  <TableCell><Link href={`/claims/${inv.claimId}`} className="text-[#0d9488] hover:underline text-sm">{inv.claim.claimNo}</Link></TableCell>
-                  <TableCell className="text-sm">{inv.claim.carPlate}</TableCell>
+                  <TableCell className="text-sm">
+                    {inv.claims?.map((c: any) => c.insurance?.name).filter((v: any, idx: number, self: any[]) => self.indexOf(v) === idx).join(', ')}
+                  </TableCell>
+                  <TableCell>
+                    {inv.claims?.map((c: any, idx: number) => (
+                      <span key={c.id}>
+                        {idx > 0 && ', '}
+                        <Link href={`/claims/${c.id}`} className="text-[#0d9488] hover:underline text-sm">
+                          {c.claimNo}
+                        </Link>
+                      </span>
+                    ))}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {inv.claims?.map((c: any) => c.carPlate).join(', ')}
+                  </TableCell>
                   <TableCell className="text-sm">{formatDate(inv.invoiceDate)}</TableCell>
                    <TableCell className={`text-sm ${inv.displayStatus === 'OVERDUE' ? 'text-red-600 font-semibold' : ''}`}>
                     {formatDate(inv.dueDate || (() => {
-                      const termDays = inv.claim?.insurance?.creditTermArDays ?? 30
+                      const termDays = inv.claims?.[0]?.insurance?.creditTermArDays ?? 30
                       const d = new Date(inv.invoiceDate)
                       d.setDate(d.getDate() + termDays)
                       return d
@@ -409,7 +422,7 @@ export default function InvoicesPage() {
                   <TableCell className="text-center">{statusBadge(inv.displayStatus)}</TableCell>
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-1">
-                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0" title="ดูข้อมูล" onClick={() => window.location.href = `/claims/${inv.claimId}?tab=insurance-inv`}><Eye className="w-3.5 h-3.5" /></Button>
+                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0" title="ดูข้อมูล" onClick={() => window.location.href = `/claims/${inv.claims?.[0]?.id}?tab=insurance-inv`}><Eye className="w-3.5 h-3.5" /></Button>
                       {inv.displayStatus === 'DRAFT' && (
                         <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-blue-600" title="ส่งใบแจ้งหนี้" onClick={() => setActiveModal({ type: 'send', inv })}><Receipt className="w-3.5 h-3.5" /></Button>
                       )}
