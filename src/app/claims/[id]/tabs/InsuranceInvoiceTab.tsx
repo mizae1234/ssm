@@ -134,12 +134,15 @@ export default function InsuranceInvoiceTab({
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <Badge className={`border-none ${claim.insuranceInvoice.status === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'}`}>{claim.insuranceInvoice.status === 'PAID' ? 'รับชำระแล้ว' : 'ส่งวางบิลแล้ว'}</Badge>
+                {claim.insuranceInvoice.claims && claim.insuranceInvoice.claims.length > 1 && (
+                  <Badge className="bg-blue-100 text-blue-700 border-none">ใบวางบิลรวม ({claim.insuranceInvoice.claims.length} เคส)</Badge>
+                )}
               </div>
               {[
                 ['เลขที่ใบวางบิล', claim.insuranceInvoice.invoiceNo],
                 ['วันที่', formatDate(claim.insuranceInvoice.invoiceDate)],
-                ['ค่าแรง', `฿${formatCurrency(claim.insuranceInvoice.laborTotal)}`],
-                ['ค่าอะไหล่', `฿${formatCurrency(claim.insuranceInvoice.partsTotal)}`],
+                ['ค่าแรงรวมทั้งหมด', `฿${formatCurrency(claim.insuranceInvoice.laborTotal)}`],
+                ['ค่าอะไหล่รวมทั้งหมด', `฿${formatCurrency(claim.insuranceInvoice.partsTotal)}`],
                 ['Subtotal', `฿${formatCurrency(claim.insuranceInvoice.subtotal)}`],
                 ['VAT 7%', `฿${formatCurrency(claim.insuranceInvoice.vatAmount)}`],
                 ['Grand Total', `฿${formatCurrency(claim.insuranceInvoice.grandTotal)}`],
@@ -149,6 +152,25 @@ export default function InsuranceInvoiceTab({
                   <span className="text-sm font-semibold text-[#0f172a]">{val}</span>
                 </div>
               ))}
+
+              {claim.insuranceInvoice.claims && claim.insuranceInvoice.claims.length > 1 && (
+                <div className="bg-slate-50 border rounded-lg p-3.5 space-y-2">
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">เคสเคลมที่อยู่ในบิลรวมใบนี้:</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {claim.insuranceInvoice.claims.map((c: any) => (
+                      <a
+                        key={c.id}
+                        href={`/claims/${c.id}`}
+                        className={`text-xs px-2 py-1 rounded border hover:bg-white transition-colors font-medium font-mono ${
+                          c.id === claim.id ? 'bg-[#0d9488]/10 border-[#0d9488]/20 text-[#0d9488] font-bold' : 'bg-gray-100 border-gray-200 text-slate-700'
+                        }`}
+                      >
+                        {c.claimNo} {c.id === claim.id && '(เคสนี้)'}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* AR Payment Status */}
               {claim.insuranceInvoice.arPayment ? (

@@ -29,3 +29,112 @@ export async function GET(request: NextRequest) {
   
   return NextResponse.json(invoices)
 }
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { claimIds, invoiceDate: rawInvoiceDate } = body
+
+    if (!claimIds || !Array.isArray(claimIds) || claimIds.length === 0) {
+      return NextResponse.json({ error: 'ไม่พบรายการเคลมที่ต้องการสร้างใบวางบิล' }, { status: 400 })
+    }
+
+    // Load claims with parts, labors, and insurance info
+    const claims = await prisma.claim.findMany({
+      where: { id: { in: claimIds } },
+      include: {
+        parts: true,
+        labors: true,
+        insurance: true
+      }
+    })
+
+    if (claims.length !== claimIds.length) {
+      return NextResponse.json({ error: 'พบรายการเคลมบางตัวไม่มีอยู่ในระบบ' }, { status: 400 })
+    }
+
+    // Validation: All claims must have the same insurance company
+    const insuranceIds = new Set(claims.map(c => c.insuranceId))
+    if (insuranceIds.size > 1) {
+      return NextResponse.json({ error: 'กรุณาเลือกเคลมที่เป็นของบริษัทประกันเดียวกันเท่านั้น' }, { status: 400 })
+    }
+
+    // Validation: None of the claims must already have an invoice
+    const alreadyInvoiced = claims.filter(c => c.insuranceInvoiceId)
+    if (alreadyInvoiced.length > 0) {
+      const claimNos = alreadyInvoiced.map(c => c.claimNo).join(', ')
+      return NextResponse.json({ error: `เคสเคลมต่อไปนี้ถูกออกใบวางบิลไปแล้ว: ${claimNos}` }, { status: 400 })
+    }
+
+    // Calculations across all selected claims
+    let partsTotal = 0
+    let laborTotal = 0
+
+    for (const claim of claims) {
+      partsTotal += claim.parts.reduce((s, p) => s + p.priceApprove * p.quantity, 0)
+      laborTotal += claim.labors.reduce((s, l) => s + l.priceApprove, 0)
+    }
+
+    const subtotal = partsTotal + laborTotal
+    const vatAmount = Math.round(subtotal * 0.07 * 100) / 100
+    const grandTotal = Math.round((subtotal + vatAmount) * 100) / 100
+
+    // Generate Invoice Number sequential in IVT-YYYYMMXXXXX format
+    const now = new Date()
+    const yyyymm = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0')
+    const prefix = `IVT-${yyyymm}`
+    const count = await prisma.insuranceInvoice.count({
+      where: { invoiceNo: { startsWith: 'IVT-' } }
+    })
+    const nextNo = 1 + count
+    const seqNo = String(nextNo).padStart(5, '0')
+    const invoiceNo = `${prefix}${seqNo}`
+
+    const invoiceDate = new Date(rawInvoiceDate || Date.now())
+    const creditTermDays = claims[0]?.insurance?.creditTermArDays ?? 30
+    const dueDate = new Date(invoiceDate)
+    dueDate.setDate(dueDate.getDate() + creditTermDays)
+
+    // Create the Insurance Invoice record
+    const newInvoice = await prisma.insuranceInvoice.create({
+      data: {
+        invoiceNo,
+        invoiceDate,
+        dueDate,
+        laborTotal,
+        partsTotal,
+        subtotal,
+        vatAmount,
+        grandTotal,
+        status: 'PENDING',
+        claims: {
+          connect: claimIds.map(id => ({ id }))
+        }
+      }
+    })
+
+    // Update the claims status to INVOICE_SENT
+    await prisma.claim.updateMany({
+      where: { id: { in: claimIds } },
+      data: { status: 'INVOICE_SENT' }
+    })
+
+    // Create status logs for all updated claims
+    for (const c of claims) {
+      await prisma.claimStatusLog.create({
+        data: {
+          claimId: c.id,
+          fromStatus: c.status,
+          toStatus: 'INVOICE_SENT',
+          changedBy: 'system',
+          note: `สร้างใบวางบิลรวมเลขที่ ${invoiceNo}`
+        }
+      }).catch(err => console.error('Error creating ClaimStatusLog:', err))
+    }
+
+    return NextResponse.json(newInvoice, { status: 201 })
+  } catch (err: any) {
+    console.error('Create Consolidated Invoice Error:', err)
+    return NextResponse.json({ error: err.message }, { status: 500 })
+  }
+}

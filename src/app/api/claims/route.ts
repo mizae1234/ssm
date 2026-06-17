@@ -59,6 +59,13 @@ export async function GET(request: NextRequest) {
     include: {
       insurance: true,
       garage: true,
+      insuranceInvoice: {
+        select: {
+          id: true,
+          invoiceNo: true,
+          status: true
+        }
+      },
       _count: {
         select: { parts: true, labors: true }
       }
@@ -79,6 +86,8 @@ export async function GET(request: NextRequest) {
     status: c.status,
     insurance: c.insurance,
     garage: c.garage,
+    insuranceInvoiceId: c.insuranceInvoiceId,
+    insuranceInvoice: c.insuranceInvoice,
     createdAt: c.createdAt.toISOString(),
     sentAt: c.sentAt?.toISOString(),
     partsCount: c._count.parts,

@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useEffect, useState, useRef } from 'react'
+import React, { useMemo, useEffect, useState, useRef } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import { formatCurrency } from '@/lib/utils'
 import { formatDate } from '@/lib/date'
@@ -336,11 +336,13 @@ export default function PDFMockPage() {
             return {
               id: l.id,
               partNo: '-',
-              description: l.description + (claimsToAggregate.length > 1 ? ` (เคลม ${c.claimNo})` : ''),
+              description: l.description,
               quantity: 1,
               unitPrice: basePrice,
               discountPct: discount,
               totalPrice: l.priceApprove,
+              claimNo: c.claimNo,
+              carPlate: c.carPlate,
             }
           }),
           ...(c.parts || []).map((p: any) => {
@@ -349,21 +351,25 @@ export default function PDFMockPage() {
             return {
               id: p.id,
               partNo: p.partNo || '-',
-              description: p.partName + (claimsToAggregate.length > 1 ? ` (เคลม ${c.claimNo})` : ''),
+              description: p.partName,
               quantity: p.quantity,
               unitPrice: basePrice,
               discountPct: discount,
               totalPrice: p.priceApprove * p.quantity,
+              claimNo: c.claimNo,
+              carPlate: c.carPlate,
             }
           }),
           ...claimShippingExpenses.map((exp: any) => ({
             id: exp.id,
             partNo: '-',
-            description: (exp.description || 'ค่าขนส่ง/ส่งอะไหล่') + (claimsToAggregate.length > 1 ? ` (เคลม ${c.claimNo})` : ''),
+            description: exp.description || 'ค่าขนส่ง/ส่งอะไหล่',
             quantity: 1,
             unitPrice: exp.amount,
             discountPct: 0,
-            totalPrice: exp.amount
+            totalPrice: exp.amount,
+            claimNo: c.claimNo,
+            carPlate: c.carPlate,
           }))
         )
       }
@@ -1403,87 +1409,97 @@ export default function PDFMockPage() {
                 {editableItems.map((item: any, i: number) => {
                   const subtotal = item.totalPrice
                   const priceBeforeDiscount = item.unitPrice
+                  const showClaimHeader = (i === 0 || editableItems[i - 1]?.claimNo !== item.claimNo) && claim.insuranceInvoice?.claims && claim.insuranceInvoice.claims.length > 1
                   return (
-                    <tr key={item.id} className="hover:bg-slate-50/50 transition">
-                      <td className="py-2.5 print:py-1 px-2 text-center text-gray-550">{i + 1}</td>
-                      <td className="py-2.5 print:py-1 px-2 text-gray-900 font-medium">
-                        {isEditMode ? (
-                          <input
-                            type="text"
-                            value={item.description}
-                            onChange={e => {
-                              const newItems = [...editableItems]
-                              newItems[i].description = e.target.value
-                              setEditableItems(newItems)
-                            }}
-                            className="w-full bg-slate-50 border border-slate-200 focus:ring-1 focus:ring-teal-500 rounded px-1.5 py-0.5 text-xs text-gray-900"
-                          />
-                        ) : (
-                          <>
-                            {item.description}
-                            {item.partNo && item.partNo !== '-' && !/^c[a-z0-9]{24}$/i.test(item.partNo) && (
-                              <span className="text-gray-400 font-mono text-[10px] block mt-0.5">({item.partNo})</span>
-                            )}
-                          </>
-                        )}
-                      </td>
-                      <td className="py-2.5 print:py-1 px-2 text-right text-gray-700 font-mono">
-                        {isEditMode ? (
-                          <input
-                            type="number"
-                            value={item.quantity}
-                            onChange={e => {
-                              const newItems = [...editableItems]
-                              const q = Number(e.target.value) || 0
-                              newItems[i].quantity = q
-                              newItems[i].totalPrice = q * newItems[i].unitPrice * (1 - (newItems[i].discountPct || 0) / 100)
-                              setEditableItems(newItems)
-                            }}
-                            className="w-16 text-center bg-slate-50 border border-slate-200 focus:ring-1 focus:ring-teal-500 rounded px-1 py-0.5 text-xs font-mono"
-                          />
-                        ) : (
-                          Number(item.quantity).toFixed(2)
-                        )}
-                      </td>
-                      <td className="py-2.5 print:py-1 px-2 text-right text-gray-700 font-mono">
-                        {isEditMode ? (
-                          <input
-                            type="number"
-                            value={item.unitPrice}
-                            onChange={e => {
-                              const newItems = [...editableItems]
-                              const p = Number(e.target.value) || 0
-                              newItems[i].unitPrice = p
-                              newItems[i].totalPrice = newItems[i].quantity * p * (1 - (newItems[i].discountPct || 0) / 100)
-                              setEditableItems(newItems)
-                            }}
-                            className="w-24 text-right bg-slate-50 border border-slate-200 focus:ring-1 focus:ring-teal-500 rounded px-1 py-0.5 text-xs font-mono"
-                          />
-                        ) : (
-                          formatCurrency(priceBeforeDiscount)
-                        )}
-                      </td>
-                      <td className="py-2.5 print:py-1 px-2 text-right text-gray-700 font-mono">
-                        {isEditMode ? (
-                          <input
-                            type="number"
-                            value={item.discountPct}
-                            onChange={e => {
-                              const newItems = [...editableItems]
-                              const d = Number(e.target.value) || 0
-                              newItems[i].discountPct = d
-                              newItems[i].totalPrice = newItems[i].quantity * newItems[i].unitPrice * (1 - d / 100)
-                              setEditableItems(newItems)
-                            }}
-                            className="w-16 text-center bg-slate-50 border border-slate-200 focus:ring-1 focus:ring-teal-500 rounded px-1 py-0.5 text-xs font-mono"
-                          />
-                        ) : (
-                          item.discountPct > 0 ? `${Number(item.discountPct).toFixed(2)}%` : '-'
-                        )}
-                      </td>
-                      <td className="py-2.5 print:py-1 px-2 text-center text-gray-700">7%</td>
-                      <td className="py-2.5 print:py-1 px-2 text-right text-gray-900 font-mono font-medium">{formatCurrency(subtotal)}</td>
-                    </tr>
+                    <React.Fragment key={item.id}>
+                      {showClaimHeader && (
+                        <tr className="bg-slate-100 font-semibold border-t border-b border-gray-300 print:bg-slate-100/90 print-no-break">
+                          <td colSpan={7} className="py-2.5 print:py-1.5 px-3 text-slate-800 text-[11px] font-bold bg-[#eff6ff] text-left">
+                            📂 เคลมเลขที่ {item.claimNo} (ทะเบียน {item.carPlate || '-'})
+                          </td>
+                        </tr>
+                      )}
+                      <tr className="hover:bg-slate-50/50 transition">
+                        <td className="py-2.5 print:py-1 px-2 text-center text-gray-550">{i + 1}</td>
+                        <td className="py-2.5 print:py-1 px-2 text-gray-900 font-medium">
+                          {isEditMode ? (
+                            <input
+                              type="text"
+                              value={item.description}
+                              onChange={e => {
+                                const newItems = [...editableItems]
+                                newItems[i].description = e.target.value
+                                setEditableItems(newItems)
+                              }}
+                              className="w-full bg-slate-50 border border-slate-200 focus:ring-1 focus:ring-teal-500 rounded px-1.5 py-0.5 text-xs text-gray-900"
+                            />
+                          ) : (
+                            <>
+                              {item.description}
+                              {item.partNo && item.partNo !== '-' && !/^c[a-z0-9]{24}$/i.test(item.partNo) && (
+                                <span className="text-gray-400 font-mono text-[10px] block mt-0.5">({item.partNo})</span>
+                              )}
+                            </>
+                          )}
+                        </td>
+                        <td className="py-2.5 print:py-1 px-2 text-right text-gray-700 font-mono">
+                          {isEditMode ? (
+                            <input
+                              type="number"
+                              value={item.quantity}
+                              onChange={e => {
+                                const newItems = [...editableItems]
+                                const q = Number(e.target.value) || 0
+                                newItems[i].quantity = q
+                                newItems[i].totalPrice = q * newItems[i].unitPrice * (1 - (newItems[i].discountPct || 0) / 100)
+                                setEditableItems(newItems)
+                              }}
+                              className="w-16 text-center bg-slate-50 border border-slate-200 focus:ring-1 focus:ring-teal-500 rounded px-1 py-0.5 text-xs font-mono"
+                            />
+                          ) : (
+                            Number(item.quantity).toFixed(2)
+                          )}
+                        </td>
+                        <td className="py-2.5 print:py-1 px-2 text-right text-gray-700 font-mono">
+                          {isEditMode ? (
+                            <input
+                              type="number"
+                              value={item.unitPrice}
+                              onChange={e => {
+                                const newItems = [...editableItems]
+                                const p = Number(e.target.value) || 0
+                                newItems[i].unitPrice = p
+                                newItems[i].totalPrice = newItems[i].quantity * p * (1 - (newItems[i].discountPct || 0) / 100)
+                                setEditableItems(newItems)
+                              }}
+                              className="w-24 text-right bg-slate-50 border border-slate-200 focus:ring-1 focus:ring-teal-500 rounded px-1 py-0.5 text-xs font-mono"
+                            />
+                          ) : (
+                            formatCurrency(priceBeforeDiscount)
+                          )}
+                        </td>
+                        <td className="py-2.5 print:py-1 px-2 text-right text-gray-700 font-mono">
+                          {isEditMode ? (
+                            <input
+                              type="number"
+                              value={item.discountPct}
+                              onChange={e => {
+                                const newItems = [...editableItems]
+                                const d = Number(e.target.value) || 0
+                                newItems[i].discountPct = d
+                                newItems[i].totalPrice = newItems[i].quantity * newItems[i].unitPrice * (1 - d / 100)
+                                setEditableItems(newItems)
+                              }}
+                              className="w-16 text-center bg-slate-50 border border-slate-200 focus:ring-1 focus:ring-teal-500 rounded px-1 py-0.5 text-xs font-mono"
+                            />
+                          ) : (
+                            item.discountPct > 0 ? `${Number(item.discountPct).toFixed(2)}%` : '-'
+                          )}
+                        </td>
+                        <td className="py-2.5 print:py-1 px-2 text-center text-gray-700">7%</td>
+                        <td className="py-2.5 print:py-1 px-2 text-right text-gray-900 font-mono font-medium">{formatCurrency(subtotal)}</td>
+                      </tr>
+                    </React.Fragment>
                   )
                 })}
               </tbody>
