@@ -302,11 +302,7 @@ export default function ClaimsPage() {
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="p-0">
-                    <SkeletonTableRows rows={8} cols={8} />
-                  </TableCell>
-                </TableRow>
+                <SkeletonTableRows rows={8} cols={8} />
               ) : claims.map(claim => {
                 const { bg, text } = getStatusColor(claim.status)
                 const hasReturnParts = claim.parts?.some((p: any) => p.requireReturn)
