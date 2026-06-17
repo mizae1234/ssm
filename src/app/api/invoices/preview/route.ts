@@ -15,7 +15,8 @@ export async function POST(request: NextRequest) {
       include: {
         parts: true,
         labors: true,
-        insurance: true
+        insurance: true,
+        expenses: true
       }
     })
 
@@ -33,7 +34,24 @@ export async function POST(request: NextRequest) {
     let laborTotal = 0
 
     const claimsWithItems = claims.map(c => {
-      const claimPartsTotal = c.parts.reduce((s, p) => s + p.priceApprove * p.quantity, 0)
+      // Filter billable shipping expenses
+      const claimShippingExpenses = (c.expenses || []).filter((e: any) => {
+        if (!e.billable) return false
+        const cat = e.category?.toLowerCase() || ''
+        const desc = e.description?.toLowerCase() || ''
+        return (
+          cat === 'shipping' ||
+          cat === 'handling' ||
+          cat === 'towing' ||
+          desc.includes('ขนส่ง') ||
+          desc.includes('shipping') ||
+          desc.includes('ส่งอะไหล่') ||
+          desc.includes('ค่าส่ง') ||
+          desc.includes('ค่าขน')
+        )
+      })
+
+      const claimPartsTotal = c.parts.reduce((s, p) => s + p.priceApprove * p.quantity, 0) + claimShippingExpenses.reduce((s, e) => s + e.amount, 0)
       const claimLaborTotal = c.labors.reduce((s, l) => s + l.priceApprove, 0)
       
       partsTotal += claimPartsTotal
@@ -45,18 +63,36 @@ export async function POST(request: NextRequest) {
         carPlate: c.carPlate,
         carBrand: c.carBrand,
         carModel: c.carModel,
-        parts: c.parts.map(p => ({
-          id: p.id,
-          partName: p.partName,
-          partNo: p.partNo,
-          quantity: p.quantity,
-          priceApprove: p.priceApprove,
-          total: p.priceApprove * p.quantity
-        })),
-        labors: c.labors.map(l => ({
-          id: l.id,
-          description: l.description,
-          priceApprove: l.priceApprove
+        parts: c.parts.map(p => {
+          const discount = p.discountPct || 0
+          const basePrice = p.priceOffer || (discount < 100 ? p.priceApprove / (1 - discount / 100) : p.priceApprove)
+          return {
+            id: p.id,
+            partName: p.partName,
+            partNo: p.partNo || '-',
+            quantity: p.quantity,
+            priceOffer: basePrice,
+            discountPct: discount,
+            priceApprove: p.priceApprove,
+            total: p.priceApprove * p.quantity
+          }
+        }),
+        labors: c.labors.map(l => {
+          const discount = l.discountPct || 0
+          const basePrice = l.priceOffer || (discount < 100 ? l.priceApprove / (1 - discount / 100) : l.priceApprove)
+          return {
+            id: l.id,
+            description: l.description,
+            priceOffer: basePrice,
+            discountPct: discount,
+            priceApprove: l.priceApprove,
+            total: l.priceApprove
+          }
+        }),
+        expenses: claimShippingExpenses.map(e => ({
+          id: e.id,
+          description: e.description || 'ค่าขนส่ง/ส่งอะไหล่',
+          amount: e.amount
         })),
         partsTotal: claimPartsTotal,
         laborTotal: claimLaborTotal,

@@ -39,13 +39,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'ไม่พบรายการเคลมที่ต้องการสร้างใบวางบิล' }, { status: 400 })
     }
 
-    // Load claims with parts, labors, and insurance info
+    // Load claims with parts, labors, insurance info, and expenses
     const claims = await prisma.claim.findMany({
       where: { id: { in: claimIds } },
       include: {
         parts: true,
         labors: true,
-        insurance: true
+        insurance: true,
+        expenses: true
       }
     })
 
@@ -71,8 +72,28 @@ export async function POST(request: NextRequest) {
     let laborTotal = 0
 
     for (const claim of claims) {
-      partsTotal += claim.parts.reduce((s, p) => s + p.priceApprove * p.quantity, 0)
-      laborTotal += claim.labors.reduce((s, l) => s + l.priceApprove, 0)
+      const claimPartsTotal = claim.parts.reduce((s, p) => s + p.priceApprove * p.quantity, 0)
+      const claimLaborTotal = claim.labors.reduce((s, l) => s + l.priceApprove, 0)
+
+      const claimShippingExpenses = (claim.expenses || []).filter((e: any) => {
+        if (!e.billable) return false
+        const cat = e.category?.toLowerCase() || ''
+        const desc = e.description?.toLowerCase() || ''
+        return (
+          cat === 'shipping' ||
+          cat === 'handling' ||
+          cat === 'towing' ||
+          desc.includes('ขนส่ง') ||
+          desc.includes('shipping') ||
+          desc.includes('ส่งอะไหล่') ||
+          desc.includes('ค่าส่ง') ||
+          desc.includes('ค่าขน')
+        )
+      })
+      const claimExpensesTotal = claimShippingExpenses.reduce((s, e) => s + e.amount, 0)
+
+      partsTotal += claimPartsTotal + claimExpensesTotal
+      laborTotal += claimLaborTotal
     }
 
     const subtotal = partsTotal + laborTotal
