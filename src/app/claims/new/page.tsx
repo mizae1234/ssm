@@ -142,7 +142,7 @@ export default function NewClaimPage() {
     })
   }
 
-  const handleExtract = useCallback(async (file: File) => {
+  const handleExtract = useCallback(async (files: File[]) => {
     setStep('processing')
     setProcessingStep(0)
     setIsManualMode(false)
@@ -151,13 +151,19 @@ export default function NewClaimPage() {
     }, 2000)
 
     try {
-      const base64data = await compressImage(file)
-      const mimeType = file.type === 'application/pdf' ? 'application/pdf' : 'image/jpeg'
+      // Compress all files
+      const compressedFiles = await Promise.all(
+        files.map(async (file) => {
+          const base64data = await compressImage(file)
+          const mimeType = file.type === 'application/pdf' ? 'application/pdf' : 'image/jpeg'
+          return { file: base64data, mimeType }
+        })
+      )
 
       const res = await fetch('/api/ai/extract-claim', { 
         method: 'POST', 
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ file: base64data, mimeType }) 
+        body: JSON.stringify({ files: compressedFiles }) 
       })
 
       const result = await res.json()
