@@ -1308,6 +1308,110 @@ export default function PDFMockPage() {
       const copyLabel = isCopy ? 'สำเนา' : 'ต้นฉบับ'
       const sheetLabel = `เอกสารออกเป็นชุด (${copyLabel})`
 
+      // Color themes per document type & original/copy
+      // Receipt: original=blue, copy=pink
+      // DeliveryTax: original=green, copy=orange
+      // Invoice (default): teal
+      let theme = {
+        titleColor: 'text-teal-700',
+        headerBg: 'bg-teal-50/70',
+        headerBorder: 'border-teal-200',
+        headerText: 'text-teal-800',
+        sectionTitle: 'text-teal-700',
+        infoBg: 'bg-teal-50/50',
+        infoBorder: 'border-teal-150',
+        infoAccent: 'text-teal-800',
+        infoDivider: 'border-teal-100/50',
+        totalsBg: 'bg-teal-50/40',
+        totalsBorder: 'border-teal-100/70',
+        totalsText: 'text-teal-900',
+        totalsDivider: 'border-teal-100',
+        totalsDivider2: 'border-teal-200',
+        bahtTextColor: 'text-teal-800',
+      }
+
+      if (isReceipt) {
+        if (!isCopy) {
+          // ต้นฉบับ = สีฟ้า
+          theme = {
+            titleColor: 'text-blue-700',
+            headerBg: 'bg-blue-50/70',
+            headerBorder: 'border-blue-200',
+            headerText: 'text-blue-800',
+            sectionTitle: 'text-blue-700',
+            infoBg: 'bg-blue-50/50',
+            infoBorder: 'border-blue-150',
+            infoAccent: 'text-blue-800',
+            infoDivider: 'border-blue-100/50',
+            totalsBg: 'bg-blue-50/40',
+            totalsBorder: 'border-blue-100/70',
+            totalsText: 'text-blue-900',
+            totalsDivider: 'border-blue-100',
+            totalsDivider2: 'border-blue-200',
+            bahtTextColor: 'text-blue-800',
+          }
+        } else {
+          // สำเนา = สีชมพู
+          theme = {
+            titleColor: 'text-pink-700',
+            headerBg: 'bg-pink-50/70',
+            headerBorder: 'border-pink-200',
+            headerText: 'text-pink-800',
+            sectionTitle: 'text-pink-700',
+            infoBg: 'bg-pink-50/50',
+            infoBorder: 'border-pink-150',
+            infoAccent: 'text-pink-800',
+            infoDivider: 'border-pink-100/50',
+            totalsBg: 'bg-pink-50/40',
+            totalsBorder: 'border-pink-100/70',
+            totalsText: 'text-pink-900',
+            totalsDivider: 'border-pink-100',
+            totalsDivider2: 'border-pink-200',
+            bahtTextColor: 'text-pink-800',
+          }
+        }
+      } else if (isDeliveryTax) {
+        if (!isCopy) {
+          // ต้นฉบับ = สีเขียว
+          theme = {
+            titleColor: 'text-green-700',
+            headerBg: 'bg-green-50/70',
+            headerBorder: 'border-green-200',
+            headerText: 'text-green-800',
+            sectionTitle: 'text-green-700',
+            infoBg: 'bg-green-50/50',
+            infoBorder: 'border-green-150',
+            infoAccent: 'text-green-800',
+            infoDivider: 'border-green-100/50',
+            totalsBg: 'bg-green-50/40',
+            totalsBorder: 'border-green-100/70',
+            totalsText: 'text-green-900',
+            totalsDivider: 'border-green-100',
+            totalsDivider2: 'border-green-200',
+            bahtTextColor: 'text-green-800',
+          }
+        } else {
+          // สำเนา = สีส้ม
+          theme = {
+            titleColor: 'text-orange-700',
+            headerBg: 'bg-orange-50/70',
+            headerBorder: 'border-orange-200',
+            headerText: 'text-orange-800',
+            sectionTitle: 'text-orange-700',
+            infoBg: 'bg-orange-50/50',
+            infoBorder: 'border-orange-150',
+            infoAccent: 'text-orange-800',
+            infoDivider: 'border-orange-100/50',
+            totalsBg: 'bg-orange-50/40',
+            totalsBorder: 'border-orange-100/70',
+            totalsText: 'text-orange-900',
+            totalsDivider: 'border-orange-100',
+            totalsDivider2: 'border-orange-200',
+            bahtTextColor: 'text-orange-800',
+          }
+        }
+      }
+
       return (
         <div className={`bg-white text-black p-8 max-w-4xl mx-auto print:p-6 font-sans relative ${isEmbedded ? 'min-h-[1123px] overflow-visible shadow-md my-4 border rounded-lg' : 'min-h-screen overflow-hidden'} print:overflow-visible print:min-h-0 print:shadow-none print:my-0 print:border-none print:rounded-none print-no-break`}>
           {/* Header section */}
@@ -1335,8 +1439,8 @@ export default function PDFMockPage() {
             </div>
             <div className="text-right">
               <div className="text-xs text-gray-500 mb-1">{sheetLabel}</div>
-              <h2 className="text-2xl font-bold text-teal-700 tracking-wide">{mainTitle}</h2>
-              <div className="mt-3 bg-teal-50/50 border border-teal-150 rounded-xl p-3 text-left text-xs space-y-1.5 min-w-[240px]">
+              <h2 className={`text-2xl font-bold ${theme.titleColor} tracking-wide`}>{mainTitle}</h2>
+              <div className={`mt-3 ${theme.infoBg} border ${theme.infoBorder} rounded-xl p-3 text-left text-xs space-y-1.5 min-w-[240px]`}>
                 <div className="flex justify-between">
                   <span className="text-gray-500">เลขที่เอกสาร:</span>
                   <span className="font-semibold text-gray-955">{docNo}</span>
@@ -1349,9 +1453,9 @@ export default function PDFMockPage() {
                   <span className="text-gray-500">วันที่ตอบรับ:</span>
                   <span className="font-semibold text-gray-955">-</span>
                 </div>
-                <div className="flex justify-between border-t border-teal-100/50 pt-1.5 mt-1.5">
+                <div className={`flex justify-between border-t ${theme.infoDivider} pt-1.5 mt-1.5`}>
                   <span className="text-gray-500">เลขเคลม:</span>
-                  <span className="font-semibold text-teal-800">
+                  <span className={`font-semibold ${theme.infoAccent}`}>
                     {claim.insuranceInvoice?.claims && claim.insuranceInvoice.claims.length > 1
                       ? claim.insuranceInvoice.claims.map((c: any) => c.claimNo).join(', ')
                       : claim.claimNo}
@@ -1364,13 +1468,13 @@ export default function PDFMockPage() {
           {/* Customer Info Grid */}
           <div className="grid grid-cols-2 gap-8 print:gap-4 mb-6 print:mb-3 text-xs z-10 relative">
             <div className="border rounded-xl p-4 bg-slate-50/30">
-              <h3 className="font-bold text-gray-800 mb-2 border-b pb-1 text-teal-700">ลูกค้า / บริษัทประกัน</h3>
+              <h3 className={`font-bold text-gray-800 mb-2 border-b pb-1 ${theme.sectionTitle}`}>ลูกค้า / บริษัทประกัน</h3>
               <p className="font-semibold">{customerName}</p>
               {customerAddress && <p className="text-gray-600 mt-1 leading-relaxed">{customerAddress}</p>}
               {customerTaxId && <p className="text-gray-600 mt-1">เลขประจำตัวผู้เสียภาษี: {customerTaxId} ({customerBranch})</p>}
             </div>
             <div className="border rounded-xl p-4 bg-slate-50/30">
-              <h3 className="font-bold text-gray-800 mb-2 border-b pb-1 text-teal-700">สถานที่จัดส่ง (ที่อยู่ส่งของ)</h3>
+              <h3 className={`font-bold text-gray-800 mb-2 border-b pb-1 ${theme.sectionTitle}`}>สถานที่จัดส่ง (ที่อยู่ส่งของ)</h3>
               <p className="font-semibold">{claim.garage?.name || 'ไม่ระบุอู่'}</p>
               {claim.garage?.address && <p className="text-gray-600 mt-1 leading-relaxed">{claim.garage.address}</p>}
               {claim.garage?.phone && <p className="text-gray-600 mt-1">โทร: {claim.garage.phone}</p>}
@@ -1395,7 +1499,7 @@ export default function PDFMockPage() {
           <div className="z-10 relative">
             <table className="w-full text-xs mb-6 print:mb-3 border-collapse">
               <thead>
-                <tr className="bg-teal-50/70 border-b border-teal-200 text-left text-teal-800 font-bold">
+                <tr className={`${theme.headerBg} border-b ${theme.headerBorder} text-left ${theme.headerText} font-bold`}>
                   <th className="py-2.5 print:py-1.5 px-2 text-center w-10">ลำดับ</th>
                   <th className="py-2.5 print:py-1.5 px-2">รายการ</th>
                   <th className="py-2.5 print:py-1.5 px-2 text-right w-16">จำนวน</th>
@@ -1512,7 +1616,7 @@ export default function PDFMockPage() {
             <div className="space-y-4">
               <div className="flex items-center gap-2 border-t pt-3">
                 <span className="font-bold text-gray-750">จำนวนเงินทั้งสิ้น (ตัวอักษร):</span>
-                <span className="font-semibold text-teal-800 italic">({bahtText(grandTotal)})</span>
+                <span className={`font-semibold ${theme.bahtTextColor} italic`}>({bahtText(grandTotal)})</span>
               </div>
               {isEditMode ? (
                 <div className="bg-slate-50 border border-slate-100 rounded-lg p-3">
@@ -1535,7 +1639,7 @@ export default function PDFMockPage() {
             </div>
 
             {/* Right Side: Totals */}
-            <div className="bg-teal-50/40 border border-teal-100/70 rounded-xl p-4 space-y-2 font-medium">
+            <div className={`${theme.totalsBg} border ${theme.totalsBorder} rounded-xl p-4 space-y-2 font-medium`}>
               <div className="flex justify-between text-gray-600">
                 <span>มูลค่าไม่มีหรือยกเว้นภาษี:</span>
                 <span className="font-mono text-gray-900">0.00</span>
@@ -1548,7 +1652,7 @@ export default function PDFMockPage() {
                 <span>ภาษีมูลค่าเพิ่ม 7%:</span>
                 <span className="font-mono text-gray-900">{formatCurrency(vatAmount)}</span>
               </div>
-              <div className="flex justify-between text-teal-900 font-bold border-t border-teal-100 pt-2">
+              <div className={`flex justify-between ${theme.totalsText} font-bold border-t ${theme.totalsDivider} pt-2`}>
                 <span>จำนวนเงินทั้งสิ้น:</span>
                 <span className="font-mono text-base">{formatCurrency(grandTotal)}</span>
               </div>
@@ -1556,7 +1660,7 @@ export default function PDFMockPage() {
                 <span>จำนวนเงินถูกหัก ณ ที่จ่าย:</span>
                 <span className="font-mono">0.00</span>
               </div>
-              <div className="flex justify-between text-teal-900 font-bold border-t border-teal-200 pt-2 text-sm">
+              <div className={`flex justify-between ${theme.totalsText} font-bold border-t ${theme.totalsDivider2} pt-2 text-sm`}>
                 <span>จำนวนเงินที่ชำระ:</span>
                 <span className="font-mono text-base">{formatCurrency(grandTotal)}</span>
               </div>
