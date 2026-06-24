@@ -36,5 +36,5 @@ jobs:
     steps:
       - name: Deploy
         run: |
-            curl -X POST https://deploy-webhook.expertbodypaint.tech/hooks/deploy-project-ssm \
+            curl -X POST ${{ secrets.DEPLOY_WEBHOOK }}/hooks/deploy-project-ssm \
               -H "X-Secret-Token: ${{ secrets.WEBHOOK_SECRET }}"
