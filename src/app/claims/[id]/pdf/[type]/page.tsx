@@ -343,6 +343,7 @@ export default function PDFMockPage() {
               totalPrice: l.priceApprove,
               claimNo: c.claimNo,
               carPlate: c.carPlate,
+              province: c.province,
             }
           }),
           ...(c.parts || []).map((p: any) => {
@@ -358,6 +359,7 @@ export default function PDFMockPage() {
               totalPrice: p.priceApprove * p.quantity,
               claimNo: c.claimNo,
               carPlate: c.carPlate,
+              province: c.province,
             }
           }),
           ...claimShippingExpenses.map((exp: any) => ({
@@ -370,6 +372,7 @@ export default function PDFMockPage() {
             totalPrice: exp.amount,
             claimNo: c.claimNo,
             carPlate: c.carPlate,
+            province: c.province,
           }))
         )
       }
@@ -415,7 +418,7 @@ export default function PDFMockPage() {
       <div className="border rounded p-4">
         <h3 className="font-semibold mb-2 border-b pb-1">ข้อมูลลูกค้า / ผู้เอาประกัน</h3>
         <p><span className="text-gray-500 w-24 inline-block">ชื่อ-นามสกุล:</span> {claim.insuredName}</p>
-        <p><span className="text-gray-500 w-24 inline-block">ทะเบียนรถ:</span> {claim.carPlate}</p>
+        <p><span className="text-gray-500 w-24 inline-block">ทะเบียนรถ:</span> {claim.carPlate} {claim.province}</p>
         <p><span className="text-gray-500 w-24 inline-block">ยี่ห้อ/รุ่น:</span> {claim.carBrand} {claim.carModel}</p>
         <p><span className="text-gray-500 w-24 inline-block">บริษัทประกัน:</span> {claim.insurance?.name}</p>
       </div>
@@ -529,7 +532,7 @@ export default function PDFMockPage() {
           <div className="border rounded p-4">
             <h3 className="font-semibold mb-2 border-b pb-1">อ้างอิง</h3>
             <p><span className="text-gray-500 w-24 inline-block">Claim No:</span> {claim.claimNo}</p>
-            <p><span className="text-gray-500 w-24 inline-block">ทะเบียนรถ:</span> {claim.carPlate}</p>
+            <p><span className="text-gray-500 w-24 inline-block">ทะเบียนรถ:</span> {claim.carPlate} {claim.province}</p>
             <p><span className="text-gray-500 w-24 inline-block">ยี่ห้อ/รุ่น:</span> {claim.carBrand} {claim.carModel}</p>
           </div>
         </div>
@@ -751,7 +754,7 @@ export default function PDFMockPage() {
             )}
             <div className="border-t border-dashed border-gray-200 mt-2 pt-2 space-y-0.5">
               <p className="text-gray-600">ยี่ห้อ/รุ่น รถ: {claim.carBrand} {claim.carModel}</p>
-              <p className="text-gray-600">ทะเบียนรถ: {claim.carPlate}</p>
+              <p className="text-gray-600">ทะเบียนรถ: {claim.carPlate} {claim.province}</p>
             </div>
           </div>
         </div>
@@ -1076,7 +1079,7 @@ export default function PDFMockPage() {
             {claim.garage?.phone && <p className="text-gray-600 mt-1">โทร: {claim.garage.phone}</p>}
             <div className="border-t border-dashed border-gray-200 mt-2 pt-2 space-y-0.5">
               <p className="text-gray-600">ยี่ห้อ/รุ่น รถ: {claim.carBrand} {claim.carModel}</p>
-              <p className="text-gray-600">ทะเบียนรถ: {claim.carPlate}</p>
+              <p className="text-gray-600">ทะเบียนรถ: {claim.carPlate} {claim.province}</p>
             </div>
           </div>
         </div>
@@ -1304,8 +1307,8 @@ export default function PDFMockPage() {
     else if (isReceipt) mainTitle = 'ใบเสร็จรับเงิน'
     else if (isInvoice) mainTitle = 'ใบวางบิล / ใบแจ้งหนี้'
 
-    const renderSingleSheet = (isCopy: boolean) => {
-      const copyLabel = isCopy ? 'สำเนา' : 'ต้นฉบับ'
+    const renderSingleSheet = (isCopy: boolean, copyNumber?: number) => {
+      const copyLabel = isCopy ? (copyNumber !== undefined ? `สำเนาชุดที่ ${copyNumber}` : 'สำเนา') : 'ต้นฉบับ'
       const sheetLabel = `เอกสารออกเป็นชุด (${copyLabel})`
 
       // Color themes per document type & original/copy
@@ -1488,8 +1491,8 @@ export default function PDFMockPage() {
                 <p className="text-gray-600">
                   ทะเบียนรถ: {' '}
                   {claim.insuranceInvoice?.claims && claim.insuranceInvoice.claims.length > 1
-                    ? claim.insuranceInvoice.claims.map((c: any) => c.carPlate).join(', ')
-                    : claim.carPlate}
+                    ? claim.insuranceInvoice.claims.map((c: any) => `${c.carPlate} ${c.province || ''}`.trim()).join(', ')
+                    : `${claim.carPlate} ${claim.province || ''}`.trim()}
                 </p>
               </div>
             </div>
@@ -1519,7 +1522,7 @@ export default function PDFMockPage() {
                       {showClaimHeader && (
                         <tr className="bg-slate-100 font-semibold border-t border-b border-gray-300 print:bg-slate-100/90 print-no-break">
                           <td colSpan={7} className="py-2.5 print:py-1.5 px-3 text-slate-800 text-[11px] font-bold bg-[#eff6ff] text-left">
-                            📂 เคลมเลขที่ {item.claimNo} (ทะเบียน {item.carPlate || '-'})
+                            📂 เคลมเลขที่ {item.claimNo} (ทะเบียน {item.carPlate || '-'}{item.province ? ' ' + item.province : ''})
                           </td>
                         </tr>
                       )}
@@ -1745,11 +1748,23 @@ export default function PDFMockPage() {
         {/* Page 1: Original */}
         {renderSingleSheet(false)}
 
-        {/* Page Break for print */}
-        <div className="page-break" />
-
-        {/* Page 2: Copy */}
-        {renderSingleSheet(true)}
+        {isDeliveryTax ? (
+          <>
+            <div className="page-break" />
+            {renderSingleSheet(true, 1)}
+            <div className="page-break" />
+            {renderSingleSheet(true, 2)}
+            <div className="page-break" />
+            {renderSingleSheet(true, 3)}
+            <div className="page-break" />
+            {renderSingleSheet(true, 4)}
+          </>
+        ) : (
+          <>
+            <div className="page-break" />
+            {renderSingleSheet(true)}
+          </>
+        )}
       </div>
     )
   }
