@@ -8,7 +8,7 @@ import { ClaimTabProps } from './types'
 import { useState, useEffect } from 'react'
 
 interface InsuranceInvoiceTabProps extends ClaimTabProps {
-  handleCreateInsuranceInvoice: (customData?: { laborTotal: number, partsTotal: number, subtotal: number, vatAmount: number, grandTotal: number }) => Promise<void>
+  handleCreateInsuranceInvoice: (customData?: { laborTotal: number, partsTotal: number, subtotal: number, vatAmount: number, grandTotal: number, invoiceDate?: string }) => Promise<void>
   handleDeleteInsuranceInvoice: () => Promise<void>
   setConfirmModal: (val: { title: string, message: string, onConfirm: () => void } | null) => void
   setShowReceiveARModal: (val: boolean) => void
@@ -25,6 +25,7 @@ export default function InsuranceInvoiceTab({
 }: InsuranceInvoiceTabProps) {
   const [editParts, setEditParts] = useState<number>(partsTotal)
   const [editLabor, setEditLabor] = useState<number>(laborTotal)
+  const [invoiceDate, setInvoiceDate] = useState<string>(new Date().toISOString().substring(0, 10))
 
   useEffect(() => {
     setEditParts(partsTotal)
@@ -119,12 +120,23 @@ export default function InsuranceInvoiceTab({
                       </div>
                     </div>
                     
+                    <div>
+                      <label className="text-xs font-semibold text-[#475569]">วันที่ออกใบวางบิล</label>
+                      <input
+                        type="date"
+                        className="w-full mt-1.5 p-2 text-sm border rounded-md font-semibold text-[#0f172a]"
+                        value={invoiceDate}
+                        onChange={e => setInvoiceDate(e.target.value)}
+                      />
+                    </div>
+
                     <Button className="bg-[#0d9488] w-full" onClick={() => handleCreateInsuranceInvoice({
                       laborTotal: editLabor,
                       partsTotal: editParts,
                       subtotal: sub,
                       vatAmount: vat,
-                      grandTotal: grand
+                      grandTotal: grand,
+                      invoiceDate: invoiceDate
                     })}><Plus className="w-4 h-4 mr-1" />สร้างใบวางบิลประกัน</Button>
                   </div>
                 )

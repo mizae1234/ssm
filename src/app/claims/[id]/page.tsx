@@ -262,6 +262,7 @@ export default function ClaimDetailPage() {
     subtotal: number
     vatAmount: number
     grandTotal: number
+    invoiceDate?: string
   }) => {
     try {
       const laborTot = customData ? customData.laborTotal : laborTotal
@@ -278,7 +279,8 @@ export default function ClaimDetailPage() {
           partsTotal: partsTot,
           subtotal: sub,
           vatAmount: vatAmt,
-          grandTotal: grand
+          grandTotal: grand,
+          invoiceDate: customData?.invoiceDate || undefined
         })
       })
 
