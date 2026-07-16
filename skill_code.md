@@ -26,7 +26,12 @@
 - **ห้าม** ใช้ `value={number}` กับ `<Input type="number">` ตรงๆ → จะเกิด leading zero (เช่น "02000")
 - **ใช้** `value={number || ''}` → เมื่อ value เป็น 0 จะแสดงช่องว่าง ให้ user พิมพ์ตัวเลขใหม่ได้สะอาด
 
+### การรันเลขเอกสาร (Sequence Number Generation)
+- **ห้าม** ใช้ `prisma.model.count()` เพื่อหาจำนวนแถวทั้งหมดมาเป็นฐานในการบวก 1 เป็นเลขลำดับใหม่เด็ดขาด เพราะหากมีการลบเอกสารในระบบออกไปภายหลัง จะทำให้ค่า count ลดลงและได้เลขที่ซ้ำกับเอกสารเดิม เกิด Error Unique Constraint ได้
+- **ให้ใช้** การคิวรี่หาแถวล่าสุดที่เลขสูงที่สุด (เช่น `findFirst` กรองด้วย `startsWith` แล้วเรียง `orderBy` ของฟิลด์รหัสแบบ `desc`) จากนั้นดึงเลขต่อท้ายมาบวกเพิ่มทีละ 1
+
 ### Database Migrations — ห้ามรัน Auto
+
 - **ห้าม** AI execute `prisma migrate` หรือ `prisma db push` ในทุกสภาพแวดล้อม โดยไม่แจ้ง developer ก่อน
 - ต้องเตรียม schema changes แล้วแจ้ง developer ให้ approve ก่อน trigger migration
 

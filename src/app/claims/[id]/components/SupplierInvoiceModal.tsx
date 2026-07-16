@@ -145,8 +145,12 @@ export default function SupplierInvoiceModal({
     const initialPrices: Record<string, number> = {}
     const initialDiscounts: Record<string, number> = {}
 
-    const activeParts = parts.filter(p => p.paymentStatus !== 'INVOICED' && p.paymentStatus !== 'PAID')
-    const activeLabors = labors.filter(l => l.paymentStatus !== 'INVOICED' && l.paymentStatus !== 'PAID')
+    const activeParts = parts
+      .filter(p => p.paymentStatus !== 'INVOICED' && p.paymentStatus !== 'PAID')
+      .filter(p => globalPoItems.some((x: any) => x.partNo === p.partNo))
+    const activeLabors = labors
+      .filter(l => l.paymentStatus !== 'INVOICED' && l.paymentStatus !== 'PAID')
+      .filter(l => globalPoItems.some((x: any) => x.description?.includes(l.description)))
 
     activeParts.forEach(p => {
       initialSelections[p.id] = true
@@ -177,8 +181,13 @@ export default function SupplierInvoiceModal({
   }, [isOpen, parts, labors, claim])
 
   if (!isOpen) return null
-  const visibleParts = parts.filter(p => p.paymentStatus !== 'INVOICED' && p.paymentStatus !== 'PAID')
-  const visibleLabors = labors.filter(l => l.paymentStatus !== 'INVOICED' && l.paymentStatus !== 'PAID')
+  const visibleParts = parts
+    .filter(p => p.paymentStatus !== 'INVOICED' && p.paymentStatus !== 'PAID')
+    .filter(p => globalPoItems.some((x: any) => x.partNo === p.partNo))
+  const visibleLabors = labors
+    .filter(l => l.paymentStatus !== 'INVOICED' && l.paymentStatus !== 'PAID')
+    .filter(l => globalPoItems.some((x: any) => x.description?.includes(l.description)))
+
 
   const sub = parts.filter(p => uploadMapSelections[p.id]).reduce((s, p) => s + getPartPrice(p), 0) + 
               labors.filter(l => uploadMapSelections[l.id]).reduce((s, l) => s + getLaborPrice(l), 0)
@@ -227,6 +236,7 @@ export default function SupplierInvoiceModal({
         const price = getLaborPrice(l)
         const poLabor = validPOs.flatMap((po: any) => po.items).find((pi: any) => pi.description?.includes(l.description))
         return {
+          poItemId: poLabor?.id || null,
           claimPartId: null,
           claimLaborId: l.id,
           partNo: '',
@@ -237,6 +247,7 @@ export default function SupplierInvoiceModal({
           totalPrice: price
         }
       })
+
 
       const allItems = [...partItems, ...laborItems]
 
