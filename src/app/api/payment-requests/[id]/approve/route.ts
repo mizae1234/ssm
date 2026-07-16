@@ -32,12 +32,22 @@ export async function POST(
         const month = String(now.getMonth() + 1).padStart(2, '0')
         const prefix = `EXP-${year}${month}`
         
-        const count = await prisma.aPPayment.count({
-          where: { id: { startsWith: prefix } }
+        const lastPayment = await prisma.aPPayment.findFirst({
+          where: { id: { startsWith: prefix } },
+          orderBy: { id: 'desc' },
+          select: { id: true }
         })
-        const nextNo = 48 + count
+        let nextNo = 48
+        if (lastPayment) {
+          const lastSeqStr = lastPayment.id.substring(prefix.length)
+          const lastSeq = parseInt(lastSeqStr, 10)
+          if (!isNaN(lastSeq)) {
+            nextNo = lastSeq + 1
+          }
+        }
         const seq = String(nextNo).padStart(5, '0')
         const paymentId = `${prefix}${seq}`
+
 
         await prisma.aPPayment.create({
           data: {
@@ -63,11 +73,22 @@ export async function POST(
         const month = String(now.getMonth() + 1).padStart(2, '0')
         const prefix = `REC-${year}${month}`
         
-        const count = await prisma.aRPayment.count({
-          where: { id: { startsWith: prefix } }
+        const lastPayment = await prisma.aRPayment.findFirst({
+          where: { id: { startsWith: prefix } },
+          orderBy: { id: 'desc' },
+          select: { id: true }
         })
-        const seq = String(count + 1).padStart(5, '0')
+        let nextNo = 1
+        if (lastPayment) {
+          const lastSeqStr = lastPayment.id.substring(prefix.length)
+          const lastSeq = parseInt(lastSeqStr, 10)
+          if (!isNaN(lastSeq)) {
+            nextNo = lastSeq + 1
+          }
+        }
+        const seq = String(nextNo).padStart(5, '0')
         const paymentId = `${prefix}${seq}`
+
 
         await prisma.aRPayment.create({
           data: {

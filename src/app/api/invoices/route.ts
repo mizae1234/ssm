@@ -104,12 +104,24 @@ export async function POST(request: NextRequest) {
     const now = new Date()
     const yyyymm = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0')
     const prefix = `IVT-${yyyymm}`
-    const count = await prisma.insuranceInvoice.count({
-      where: { invoiceNo: { startsWith: 'IVT-' } }
+    
+    const lastInvoice = await prisma.insuranceInvoice.findFirst({
+      where: { invoiceNo: { startsWith: prefix } },
+      orderBy: { invoiceNo: 'desc' },
+      select: { invoiceNo: true }
     })
-    const nextNo = 1 + count
+
+    let nextNo = 1
+    if (lastInvoice) {
+      const lastSeqStr = lastInvoice.invoiceNo.substring(prefix.length)
+      const lastSeq = parseInt(lastSeqStr, 10)
+      if (!isNaN(lastSeq)) {
+        nextNo = lastSeq + 1
+      }
+    }
     const seqNo = String(nextNo).padStart(5, '0')
     const invoiceNo = `${prefix}${seqNo}`
+
 
     const invoiceDate = new Date(rawInvoiceDate || Date.now())
     const creditTermDays = claims[0]?.insurance?.creditTermArDays ?? 30

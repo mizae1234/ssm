@@ -34,11 +34,23 @@ export async function POST(
     let poNo = body.poNo
     if (!poNo) {
       const year = new Date().getFullYear()
-      const count = await prisma.purchaseOrder.count({
-        where: { poNo: { startsWith: `PO-${year}-` } }
+      const prefix = `PO-${year}-`
+      const lastPO = await prisma.purchaseOrder.findFirst({
+        where: { poNo: { startsWith: prefix } },
+        orderBy: { poNo: 'desc' },
+        select: { poNo: true }
       })
-      poNo = `PO-${year}-${String(count + 1).padStart(6, '0')}`
+      let nextNo = 1
+      if (lastPO) {
+        const lastSeqStr = lastPO.poNo.substring(prefix.length)
+        const lastSeq = parseInt(lastSeqStr, 10)
+        if (!isNaN(lastSeq)) {
+          nextNo = lastSeq + 1
+        }
+      }
+      poNo = `${prefix}${String(nextNo).padStart(6, '0')}`
     }
+
 
     // Calculate total with configurable VAT
     const subtotal = (body.items || []).reduce((sum: number, item: any) => sum + (item.totalPrice || 0), 0)

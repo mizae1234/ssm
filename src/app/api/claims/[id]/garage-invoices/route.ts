@@ -31,11 +31,23 @@ export async function POST(
     let invoiceNo = body.invoiceNo
     if (!invoiceNo) {
       const year = new Date().getFullYear()
-      const count = await prisma.garageInvoice.count({
-        where: { invoiceNo: { startsWith: `GINV-${year}-` } }
+      const prefix = `GINV-${year}-`
+      const lastInvoice = await prisma.garageInvoice.findFirst({
+        where: { invoiceNo: { startsWith: prefix } },
+        orderBy: { invoiceNo: 'desc' },
+        select: { invoiceNo: true }
       })
-      invoiceNo = `GINV-${year}-${String(count + 1).padStart(6, '0')}`
+      let nextNo = 1
+      if (lastInvoice) {
+        const lastSeqStr = lastInvoice.invoiceNo.substring(prefix.length)
+        const lastSeq = parseInt(lastSeqStr, 10)
+        if (!isNaN(lastSeq)) {
+          nextNo = lastSeq + 1
+        }
+      }
+      invoiceNo = `${prefix}${String(nextNo).padStart(6, '0')}`
     }
+
 
     const newInvoice = await prisma.garageInvoice.create({
       data: {
