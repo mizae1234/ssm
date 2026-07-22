@@ -626,12 +626,6 @@ export default function ClaimsPage() {
 
                               return (
                                 <Fragment key={c.id}>
-                                  {/* Header row for this Claim */}
-                                  <tr className="bg-slate-50 border-t border-b border-slate-200">
-                                    <td colSpan={7} className="py-2.5 px-3 text-slate-800 text-xs font-bold text-left bg-teal-50/50 text-teal-850">
-                                      📂 เคลมเลขที่ {c.claimNo} (ทะเบียน {c.carPlate || '-'} | {c.carBrand} {c.carModel})
-                                    </td>
-                                  </tr>
                                   {claimItems.map((item) => {
                                     itemIndex++
                                     return (

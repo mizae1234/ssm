@@ -1516,7 +1516,7 @@ export default function PDFMockPage() {
                 {editableItems.map((item: any, i: number) => {
                   const subtotal = item.totalPrice
                   const priceBeforeDiscount = item.unitPrice
-                  const showClaimHeader = (i === 0 || editableItems[i - 1]?.claimNo !== item.claimNo) && claim.insuranceInvoice?.claims && claim.insuranceInvoice.claims.length > 1
+                  const showClaimHeader = false
                   return (
                     <React.Fragment key={item.id}>
                       {showClaimHeader && (
