@@ -35,7 +35,10 @@ export async function GET(request: NextRequest) {
   // 3. Recent claims — only load 10
   const recentClaims = await prisma.claim.findMany({
     take: 10,
-    orderBy: { createdAt: 'desc' },
+    orderBy: [
+      { createdAt: 'desc' },
+      { id: 'asc' }
+    ],
     include: {
       insurance: { select: { id: true, name: true } },
       garage: { select: { id: true, name: true } },

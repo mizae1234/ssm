@@ -31,7 +31,7 @@ export default function ClaimsPage() {
   const [debouncedSearch, setDebouncedSearch] = useState(search)
 
   // Consolidated Invoicing states
-  const [selectedClaimIds, setSelectedClaimIds] = useState<Record<string, boolean>>({})
+  const [selectedClaims, setSelectedClaims] = useState<Record<string, any>>({})
   const [showBatchModal, setShowBatchModal] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [batchInvoiceDate, setBatchInvoiceDate] = useState(new Date().toISOString().substring(0, 10))
@@ -52,9 +52,9 @@ export default function ClaimsPage() {
   }, [debouncedSearch, statusFilter, insuranceFilter])
 
   useEffect(() => {
-    // Reset selection when parameters change
-    setSelectedClaimIds({})
-  }, [currentPage, debouncedSearch, statusFilter, insuranceFilter])
+    // Reset selection when search or filter parameters change (keep selection on page change)
+    setSelectedClaims({})
+  }, [debouncedSearch, statusFilter, insuranceFilter])
 
   useEffect(() => {
     fetch('/api/insurances')
@@ -91,25 +91,25 @@ export default function ClaimsPage() {
   // Eligibility check for consolidated invoicing
   const isEligible = (c: any) => !c.insuranceInvoiceId && c.status !== 'RECEIVED' && c.status !== 'CANCELLED'
 
-  const handleToggleSelect = (id: string, checked: boolean) => {
-    setSelectedClaimIds(prev => {
+  const handleToggleSelect = (claim: any, checked: boolean) => {
+    setSelectedClaims(prev => {
       const copy = { ...prev }
       if (checked) {
-        copy[id] = true
+        copy[claim.id] = claim
       } else {
-        delete copy[id]
+        delete copy[claim.id]
       }
       return copy
     })
   }
 
   const handleToggleAll = (checked: boolean) => {
-    setSelectedClaimIds(prev => {
+    setSelectedClaims(prev => {
       const copy = { ...prev }
       claims.forEach(c => {
         if (isEligible(c)) {
           if (checked) {
-            copy[c.id] = true
+            copy[c.id] = c
           } else {
             delete copy[c.id]
           }
@@ -120,8 +120,8 @@ export default function ClaimsPage() {
   }
 
   const selectedClaimsList = useMemo(() => {
-    return claims.filter(c => selectedClaimIds[c.id])
-  }, [claims, selectedClaimIds])
+    return Object.values(selectedClaims)
+  }, [selectedClaims])
 
   const selectedCount = selectedClaimsList.length
 
@@ -174,7 +174,7 @@ export default function ClaimsPage() {
 
       const invoice = await res.json()
       setToastMsg(`สร้างใบแจ้งหนี้รวมเลขที่ ${invoice.invoiceNo} สำเร็จ!`)
-      setSelectedClaimIds({})
+      setSelectedClaims({})
       setShowBatchModal(false)
 
       // Refresh data
@@ -288,7 +288,7 @@ export default function ClaimsPage() {
                     type="checkbox"
                     className="w-4 h-4 rounded border-gray-300"
                     onChange={e => handleToggleAll(e.target.checked)}
-                    checked={claims.length > 0 && claims.filter(isEligible).every(c => selectedClaimIds[c.id])}
+                    checked={claims.length > 0 && claims.filter(isEligible).every(c => selectedClaims[c.id])}
                   />
                 </TableHead>
                 <TableHead>Claim No.</TableHead>
@@ -314,8 +314,8 @@ export default function ClaimsPage() {
                         type="checkbox"
                         className="w-4 h-4 rounded border-gray-300 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                         disabled={!eligible}
-                        checked={!!selectedClaimIds[claim.id]}
-                        onChange={e => handleToggleSelect(claim.id, e.target.checked)}
+                        checked={!!selectedClaims[claim.id]}
+                        onChange={e => handleToggleSelect(claim, e.target.checked)}
                       />
                     </TableCell>
                     <TableCell>

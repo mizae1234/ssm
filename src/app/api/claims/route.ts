@@ -70,7 +70,10 @@ export async function GET(request: NextRequest) {
         select: { parts: true, labors: true }
       }
     },
-    orderBy: { createdAt: 'desc' }
+    orderBy: [
+      { createdAt: 'desc' },
+      { id: 'asc' }
+    ]
   })
 
   const listData = claims.map(c => ({

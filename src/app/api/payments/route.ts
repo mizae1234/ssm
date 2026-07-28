@@ -14,7 +14,10 @@ export async function GET(request: NextRequest) {
     where: {
       createdAt: { gte: dateFrom, lte: dateTo }
     },
-    orderBy: { createdAt: 'desc' },
+    orderBy: [
+      { createdAt: 'desc' },
+      { id: 'asc' }
+    ],
     include: {
       claim: {
         select: {
