@@ -1416,7 +1416,7 @@ export default function PDFMockPage() {
       }
 
       return (
-        <div className={`bg-white text-black p-8 max-w-4xl mx-auto print:p-6 font-sans relative ${isEmbedded ? 'min-h-[1123px] overflow-visible shadow-md my-4 border rounded-lg' : 'min-h-screen overflow-hidden'} print:overflow-visible print:min-h-0 print:shadow-none print:my-0 print:border-none print:rounded-none print-no-break`}>
+        <div className={`bg-white text-black p-8 max-w-4xl mx-auto print:p-6 font-sans relative print:flex print:flex-col ${isEmbedded ? 'min-h-[1123px] overflow-visible shadow-md my-4 border rounded-lg' : 'min-h-screen overflow-hidden'} print:overflow-visible print:min-h-0 print:shadow-none print:my-0 print:border-none print:rounded-none`}>
           {/* Header section */}
           <div className="flex justify-between items-start mb-6 print:mb-3 z-10 relative">
             <div className="flex gap-4">
@@ -1666,29 +1666,31 @@ export default function PDFMockPage() {
             </div>
           </div>
 
-          {/* Warning Remark */}
-          <div className="border border-rose-100 rounded-xl p-3 bg-rose-50/30 text-xs text-rose-600 font-semibold mb-8 print:mb-4 z-10 relative">
-            {isDeliveryTax || isInvoice
-              ? '* กรุณาตรวจสอบสินค้าที่ได้รับหากพ้นกำหนด 7 วันนับจากวันที่ส่งสินค้า ทางร้านจะไม่รับเปลี่ยนหรือคืน'
-              : '* การชำระจะเสร็จสมบูรณ์ต่อเมื่อบริษัทฯได้รับชำระเงินเรียบร้อยแล้ว'}
-          </div>
+          {/* Warning Remark + Signatures Footer (keep together, pushed to bottom) */}
+          <div className="print-no-break print:mt-auto">
+            <div className="border border-rose-100 rounded-xl p-3 bg-rose-50/30 text-xs text-rose-600 font-semibold mb-8 print:mb-4 z-10 relative">
+              {isDeliveryTax || isInvoice
+                ? '* กรุณาตรวจสอบสินค้าที่ได้รับหากพ้นกำหนด 7 วันนับจากวันที่ส่งสินค้า ทางร้านจะไม่รับเปลี่ยนหรือคืน'
+                : '* การชำระจะเสร็จสมบูรณ์ต่อเมื่อบริษัทฯได้รับชำระเงินเรียบร้อยแล้ว'}
+            </div>
 
-          {/* Signatures Footer */}
-          <div className="grid grid-cols-3 gap-4 text-center text-xs z-10 relative print-no-break mt-4">
-            <div>
-              <div className="border-b border-gray-400 w-36 mx-auto mb-2 mt-4 print:mt-2"></div>
-              <p className="font-bold text-gray-800">ผู้รับสินค้า</p>
-              <p className="text-gray-500 text-[10px] mt-1">วันที่ ____/____/____</p>
-            </div>
-            <div>
-              <div className="border-b border-gray-400 w-36 mx-auto mb-2 mt-4 print:mt-2"></div>
-              <p className="font-bold text-gray-800">ผู้รับเงิน</p>
-              <p className="text-gray-500 text-[10px] mt-1">วันที่ ____/____/____</p>
-            </div>
-            <div>
-              <div className="border-b border-gray-400 w-36 mx-auto mb-2 mt-4 print:mt-2"></div>
-              <p className="font-bold text-gray-800">ผู้ออกเอกสาร</p>
-              <p className="text-gray-500 text-[10px] mt-1">วันที่ ____/____/____</p>
+            {/* Signatures Footer */}
+            <div className="grid grid-cols-3 gap-4 text-center text-xs z-10 relative mt-4">
+              <div>
+                <div className="border-b border-gray-400 w-36 mx-auto mb-2 mt-4 print:mt-2"></div>
+                <p className="font-bold text-gray-800">ผู้รับสินค้า</p>
+                <p className="text-gray-500 text-[10px] mt-1">วันที่ ____/____/____</p>
+              </div>
+              <div>
+                <div className="border-b border-gray-400 w-36 mx-auto mb-2 mt-4 print:mt-2"></div>
+                <p className="font-bold text-gray-800">ผู้รับเงิน</p>
+                <p className="text-gray-500 text-[10px] mt-1">วันที่ ____/____/____</p>
+              </div>
+              <div>
+                <div className="border-b border-gray-400 w-36 mx-auto mb-2 mt-4 print:mt-2"></div>
+                <p className="font-bold text-gray-800">ผู้ออกเอกสาร</p>
+                <p className="text-gray-500 text-[10px] mt-1">วันที่ ____/____/____</p>
+              </div>
             </div>
           </div>
         </div>
@@ -1702,6 +1704,9 @@ export default function PDFMockPage() {
           @import url('https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap');
           .font-sans {
             font-family: 'Sarabun', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+          }
+          @page {
+            margin: 5mm;
           }
           @media print {
             .print-no-break {
