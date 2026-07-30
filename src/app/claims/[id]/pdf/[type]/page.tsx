@@ -1456,14 +1456,14 @@ export default function PDFMockPage() {
                   <span className="text-gray-500">วันที่ตอบรับ:</span>
                   <span className="font-semibold text-gray-955">-</span>
                 </div>
-                <div className={`flex justify-between border-t ${theme.infoDivider} pt-1.5 mt-1.5`}>
-                  <span className="text-gray-500">เลขเคลม:</span>
-                  <span className={`font-semibold ${theme.infoAccent}`}>
-                    {claim.insuranceInvoice?.claims && claim.insuranceInvoice.claims.length > 1
-                      ? claim.insuranceInvoice.claims.map((c: any) => c.claimNo).join(', ')
-                      : claim.claimNo}
-                  </span>
-                </div>
+                {!(claim.insuranceInvoice?.claims && claim.insuranceInvoice.claims.length > 1) && (
+                  <div className={`flex justify-between border-t ${theme.infoDivider} pt-1.5 mt-1.5`}>
+                    <span className="text-gray-500">เลขเคลม:</span>
+                    <span className={`font-semibold ${theme.infoAccent}`}>
+                      {claim.claimNo}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1481,20 +1481,16 @@ export default function PDFMockPage() {
               <p className="font-semibold">{claim.garage?.name || 'ไม่ระบุอู่'}</p>
               {claim.garage?.address && <p className="text-gray-600 mt-1 leading-relaxed">{claim.garage.address}</p>}
               {claim.garage?.phone && <p className="text-gray-600 mt-1">โทร: {claim.garage.phone}</p>}
-              <div className="border-t border-dashed border-gray-200 mt-2 pt-2 space-y-0.5">
-                <p className="text-gray-600">
-                  ยี่ห้อ/รุ่น รถ: {' '}
-                  {claim.insuranceInvoice?.claims && claim.insuranceInvoice.claims.length > 1
-                    ? claim.insuranceInvoice.claims.map((c: any) => `${c.carBrand} ${c.carModel}`).filter((v: any, idx: number, self: any[]) => self.indexOf(v) === idx).join(', ')
-                    : `${claim.carBrand} ${claim.carModel}`}
-                </p>
-                <p className="text-gray-600">
-                  ทะเบียนรถ: {' '}
-                  {claim.insuranceInvoice?.claims && claim.insuranceInvoice.claims.length > 1
-                    ? claim.insuranceInvoice.claims.map((c: any) => `${c.carPlate} ${c.province || ''}`.trim()).join(', ')
-                    : `${claim.carPlate} ${claim.province || ''}`.trim()}
-                </p>
-              </div>
+              {!(claim.insuranceInvoice?.claims && claim.insuranceInvoice.claims.length > 1) && (
+                <div className="border-t border-dashed border-gray-200 mt-2 pt-2 space-y-0.5">
+                  <p className="text-gray-600">
+                    ยี่ห้อ/รุ่น รถ: {claim.carBrand} {claim.carModel}
+                  </p>
+                  <p className="text-gray-600">
+                    ทะเบียนรถ: {claim.carPlate} {claim.province || ''}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
