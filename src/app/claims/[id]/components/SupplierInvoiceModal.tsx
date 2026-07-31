@@ -221,7 +221,7 @@ export default function SupplierInvoiceModal({
         const unitPrice = price / p.quantity
         const poItem = validPOs.flatMap((po: any) => po.items).find((pi: any) => pi.partNo === p.partNo)
         return {
-          poItemId: poItem?.id || validPOs[0]?.items?.[0]?.id,
+          poItemId: poItem?.id || null,
           claimPartId: p.id,
           partNo: p.partNo,
           description: p.partName,
@@ -265,7 +265,8 @@ export default function SupplierInvoiceModal({
       })
 
       if (!res.ok) {
-        throw new Error('เกิดข้อผิดพลาดในการบันทึกข้อมูลบางส่วน')
+        const errData = await res.json().catch(() => ({}))
+        throw new Error(errData.error || 'เกิดข้อผิดพลาดในการบันทึกข้อมูลบางส่วน')
       }
 
       const newInv = await res.json()
