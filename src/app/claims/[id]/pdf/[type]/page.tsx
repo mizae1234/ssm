@@ -1456,11 +1456,13 @@ export default function PDFMockPage() {
                   <span className="text-gray-500">วันที่ตอบรับ:</span>
                   <span className="font-semibold text-gray-955">-</span>
                 </div>
-                {!(claim.insuranceInvoice?.claims && claim.insuranceInvoice.claims.length > 1) && (
+                {!(claim.insuranceInvoice?.claims && claim.insuranceInvoice.claims.length > 5) && (
                   <div className={`flex justify-between border-t ${theme.infoDivider} pt-1.5 mt-1.5`}>
                     <span className="text-gray-500">เลขเคลม:</span>
-                    <span className={`font-semibold ${theme.infoAccent}`}>
-                      {claim.claimNo}
+                    <span className={`font-semibold ${theme.infoAccent} text-right max-w-[180px] break-words`}>
+                      {claim.insuranceInvoice?.claims && claim.insuranceInvoice.claims.length > 0
+                        ? claim.insuranceInvoice.claims.map((c: any) => c.claimNo).join(', ')
+                        : claim.claimNo}
                     </span>
                   </div>
                 )}
