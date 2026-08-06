@@ -6,9 +6,9 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Receipt, Search, Download, Eye, DollarSign, AlertTriangle, CheckCircle2, Clock, FileText } from 'lucide-react'
+import { Receipt, Search, Download, Eye, DollarSign, AlertTriangle, CheckCircle2, Clock, FileText, Edit } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
-import { formatDate } from '@/lib/date'
+import { formatDate, toInputDate } from '@/lib/date'
 import Link from 'next/link'
 
 type ARTab = 'all' | 'draft' | 'sent' | 'overdue' | 'paid' | 'cancelled'
@@ -18,7 +18,7 @@ export default function InvoicesPage() {
   const [search, setSearch] = useState('')
   const [allInvoices, setAllInvoices] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeModal, setActiveModal] = useState<{ type: 'send' | 'pay', inv: any } | null>(null)
+  const [activeModal, setActiveModal] = useState<{ type: 'send' | 'pay' | 'edit', inv: any } | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
@@ -32,6 +32,57 @@ export default function InvoicesPage() {
   const [filterInsurance, setFilterInsurance] = useState('')
   const [filterClaimNo, setFilterClaimNo] = useState('')
   const [filterCarPlate, setFilterCarPlate] = useState('')
+
+  // Edit Invoice States
+  const [editInvoiceNo, setEditInvoiceNo] = useState('')
+  const [editInvoiceDate, setEditInvoiceDate] = useState('')
+  const [editDueDate, setEditDueDate] = useState('')
+  const [editPartsTotal, setEditPartsTotal] = useState<number>(0)
+  const [editLaborTotal, setEditLaborTotal] = useState<number>(0)
+
+  const editSubtotal = Number(editPartsTotal) + Number(editLaborTotal)
+  const editVatAmount = Math.round(editSubtotal * 0.07 * 100) / 100
+  const editGrandTotal = Math.round((editSubtotal + editVatAmount) * 100) / 100
+
+  useEffect(() => {
+    if (activeModal?.type === 'edit') {
+      const inv = activeModal.inv
+      setEditInvoiceNo(inv.invoiceNo || '')
+      setEditInvoiceDate(toInputDate(inv.invoiceDate))
+      setEditDueDate(toInputDate(inv.dueDate))
+      setEditPartsTotal(inv.partsTotal || 0)
+      setEditLaborTotal(inv.laborTotal || 0)
+    }
+  }, [activeModal])
+
+  const handleUpdateInvoice = async () => {
+    if (!activeModal || activeModal.type !== 'edit') return
+    try {
+      setIsSaving(true)
+      const res = await fetch(`/api/invoices/${activeModal.inv.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          invoiceNo: editInvoiceNo,
+          invoiceDate: editInvoiceDate,
+          dueDate: editDueDate,
+          partsTotal: Number(editPartsTotal),
+          laborTotal: Number(editLaborTotal)
+        })
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to update invoice')
+      }
+      showToast('✅ แก้ไขใบแจ้งหนี้สำเร็จ')
+      fetchInvoices()
+      setActiveModal(null)
+    } catch (e: any) {
+      showToast(`❌ ${e.message}`)
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
   const fetchInvoices = () => {
     setLoading(true)
@@ -423,6 +474,7 @@ export default function InvoicesPage() {
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-1">
                       <Button variant="ghost" size="sm" className="h-7 w-7 p-0" title="ดูข้อมูล" onClick={() => window.location.href = `/claims/${inv.claims?.[0]?.id}?tab=insurance-inv`}><Eye className="w-3.5 h-3.5" /></Button>
+                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-amber-600" title="แก้ไขใบแจ้งหนี้" onClick={() => setActiveModal({ type: 'edit', inv })}><Edit className="w-3.5 h-3.5" /></Button>
                       {inv.displayStatus === 'DRAFT' && (
                         <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-blue-600" title="ส่งใบแจ้งหนี้" onClick={() => setActiveModal({ type: 'send', inv })}><Receipt className="w-3.5 h-3.5" /></Button>
                       )}
@@ -516,6 +568,99 @@ export default function InvoicesPage() {
               <div className="flex gap-3 justify-end mt-6">
                 <Button variant="outline" onClick={() => setBulkModal(null)} disabled={isSaving}>ยกเลิก</Button>
                 <Button className="bg-green-600 hover:bg-green-700" onClick={handleBulkPay} disabled={isSaving}>{isSaving ? 'กำลังบันทึก...' : 'ยืนยันรับชำระเงินทั้งหมด'}</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {activeModal?.type === 'edit' && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <Card className="w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200">
+            <CardHeader className="pb-3 border-b">
+              <CardTitle className="text-lg text-amber-600 flex items-center gap-2">
+                <Edit className="w-5 h-5" />
+                แก้ไขใบแจ้งหนี้
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4 space-y-4">
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs font-semibold text-[#475569]">เลขที่ใบแจ้งหนี้</label>
+                  <Input 
+                    type="text" 
+                    value={editInvoiceNo} 
+                    onChange={e => setEditInvoiceNo(e.target.value)} 
+                    className="mt-1 font-mono font-medium"
+                    placeholder="IVT-YYYYMMXXXXX"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-semibold text-[#475569]">วันที่ออกใบแจ้งหนี้</label>
+                    <Input 
+                      type="date" 
+                      value={editInvoiceDate} 
+                      onChange={e => setEditInvoiceDate(e.target.value)} 
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-[#475569]">วันครบกำหนด</label>
+                    <Input 
+                      type="date" 
+                      value={editDueDate} 
+                      onChange={e => setEditDueDate(e.target.value)} 
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 pt-2">
+                  <div>
+                    <label className="text-xs font-semibold text-[#475569]">ค่าอะไหล่ (฿)</label>
+                    <Input 
+                      type="number" 
+                      step="0.01"
+                      value={editPartsTotal} 
+                      onChange={e => setEditPartsTotal(Number(e.target.value) || 0)} 
+                      className="mt-1 font-semibold"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-[#475569]">ค่าแรง (฿)</label>
+                    <Input 
+                      type="number" 
+                      step="0.01"
+                      value={editLaborTotal} 
+                      onChange={e => setEditLaborTotal(Number(e.target.value) || 0)} 
+                      className="mt-1 font-semibold"
+                    />
+                  </div>
+                </div>
+
+                <div className="bg-[#f8faff] rounded-lg p-3 space-y-2 border border-slate-100 mt-2">
+                  <div className="flex justify-between text-xs text-[#475569]">
+                    <span>Subtotal:</span>
+                    <span className="font-semibold text-[#0f172a]">฿{formatCurrency(editSubtotal)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs text-[#475569]">
+                    <span>VAT 7%:</span>
+                    <span className="font-semibold text-[#0f172a]">฿{formatCurrency(editVatAmount)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm font-bold text-blue-700 pt-2 border-t mt-1">
+                    <span>ยอดรวมทั้งสิ้น (Grand Total):</span>
+                    <span>฿{formatCurrency(editGrandTotal)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3 justify-end pt-3 border-t">
+                <Button variant="outline" onClick={() => setActiveModal(null)} disabled={isSaving}>ยกเลิก</Button>
+                <Button className="bg-amber-600 hover:bg-amber-700 text-white" onClick={handleUpdateInvoice} disabled={isSaving}>
+                  {isSaving ? 'กำลังบันทึก...' : 'บันทึกการแก้ไข'}
+                </Button>
               </div>
             </CardContent>
           </Card>

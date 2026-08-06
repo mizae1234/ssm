@@ -101,9 +101,16 @@ export async function POST(request: NextRequest) {
     const grandTotal = Math.round((subtotal + vatAmount) * 100) / 100
 
     // Generate Invoice Number sequential in IVT-YYYYMMXXXXX format
-    const now = new Date()
-    const yyyymm = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0')
-    const prefix = `IVT-${yyyymm}`
+    const invoiceDate = new Date(rawInvoiceDate || Date.now())
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Bangkok',
+      year: 'numeric',
+      month: '2-digit'
+    })
+    const dateParts = formatter.formatToParts(invoiceDate)
+    const yyyy = dateParts.find(p => p.type === 'year')?.value || ''
+    const mm = dateParts.find(p => p.type === 'month')?.value || ''
+    const prefix = `IVT-${yyyy}${mm}`
     
     const lastInvoice = await prisma.insuranceInvoice.findFirst({
       where: { invoiceNo: { startsWith: prefix } },
@@ -123,7 +130,6 @@ export async function POST(request: NextRequest) {
     const invoiceNo = `${prefix}${seqNo}`
 
 
-    const invoiceDate = new Date(rawInvoiceDate || Date.now())
     const creditTermDays = claims[0]?.insurance?.creditTermArDays ?? 30
     const dueDate = new Date(invoiceDate)
     dueDate.setDate(dueDate.getDate() + creditTermDays)

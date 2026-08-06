@@ -20,10 +20,21 @@ export async function POST(
       return NextResponse.json({ error: 'มีใบวางบิลอยู่แล้ว กรุณาลบใบเดิมก่อนสร้างใหม่' }, { status: 400 })
     }
 
+    const invoiceDate = new Date(body.invoiceDate || Date.now())
+    const creditTermDays = claim.insurance?.creditTermArDays ?? 30
+    const dueDate = new Date(invoiceDate)
+    dueDate.setDate(dueDate.getDate() + creditTermDays)
+
     // Generate readable sequential invoice number in IVT-YYYYMMXXXXX format
-    const now = new Date()
-    const yyyymm = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0')
-    const prefix = `IVT-${yyyymm}`
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Bangkok',
+      year: 'numeric',
+      month: '2-digit'
+    })
+    const dateParts = formatter.formatToParts(invoiceDate)
+    const yyyy = dateParts.find(p => p.type === 'year')?.value || ''
+    const mm = dateParts.find(p => p.type === 'month')?.value || ''
+    const prefix = `IVT-${yyyy}${mm}`
     
     const lastInvoice = await prisma.insuranceInvoice.findFirst({
       where: { invoiceNo: { startsWith: prefix } },
@@ -41,12 +52,6 @@ export async function POST(
     }
     const seqNo = String(nextNo).padStart(5, '0')
     const invoiceNo = body.invoiceNo || `${prefix}${seqNo}`
-
-
-    const invoiceDate = new Date(body.invoiceDate || Date.now())
-    const creditTermDays = claim.insurance?.creditTermArDays ?? 30
-    const dueDate = new Date(invoiceDate)
-    dueDate.setDate(dueDate.getDate() + creditTermDays)
 
     const newInvoice = await prisma.insuranceInvoice.create({
       data: {
