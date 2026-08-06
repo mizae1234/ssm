@@ -625,7 +625,8 @@ export default function InvoicesPage() {
                       step="0.01"
                       value={editPartsTotal} 
                       onChange={e => setEditPartsTotal(Number(e.target.value) || 0)} 
-                      className="mt-1 font-semibold"
+                      className="mt-1 font-semibold bg-slate-50 text-slate-500 cursor-not-allowed"
+                      disabled
                     />
                   </div>
                   <div>
@@ -635,7 +636,8 @@ export default function InvoicesPage() {
                       step="0.01"
                       value={editLaborTotal} 
                       onChange={e => setEditLaborTotal(Number(e.target.value) || 0)} 
-                      className="mt-1 font-semibold"
+                      className="mt-1 font-semibold bg-slate-50 text-slate-500 cursor-not-allowed"
+                      disabled
                     />
                   </div>
                 </div>
