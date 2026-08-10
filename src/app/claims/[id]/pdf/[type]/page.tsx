@@ -402,7 +402,7 @@ export default function PDFMockPage() {
         </div>
       </div>
       <div className="text-right">
-        <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
+        <h2 className="text-2xl font-bold text-gray-900 whitespace-nowrap">{title}</h2>
         <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-gray-600">
           <span className="text-right">เลขที่เอกสาร:</span>
           <span className="font-semibold text-gray-900">{docNo}</span>
@@ -711,7 +711,7 @@ export default function PDFMockPage() {
           </div>
           <div className="text-right">
             <div className="text-xs text-gray-500 mb-1">หน้า 1/1 (ต้นฉบับ)</div>
-            <h2 className="text-2xl font-bold text-teal-700 tracking-wide">{titleText}</h2>
+            <h2 className="text-2xl font-bold text-teal-700 tracking-wide whitespace-nowrap">{titleText}</h2>
             <div className="mt-3 bg-teal-50/50 border border-teal-150 rounded-xl p-3 text-left text-xs space-y-1.5 min-w-[240px]">
               <div className="flex justify-between">
                 <span className="text-gray-500">เลขที่เอกสาร:</span>
@@ -1038,7 +1038,7 @@ export default function PDFMockPage() {
           </div>
           <div className="text-right">
             <div className="text-xs text-gray-500 mb-1">หน้า 1/1 (ต้นฉบับ)</div>
-            <h2 className="text-2xl font-bold text-teal-700 tracking-wide">ใบส่งของ/ใบส่งมอบสินค้า</h2>
+            <h2 className="text-2xl font-bold text-teal-700 tracking-wide whitespace-nowrap">ใบส่งของ/ใบส่งมอบสินค้า</h2>
             <div className="mt-3 bg-teal-50/50 border border-teal-150 rounded-xl p-3 text-left text-xs space-y-1.5 min-w-[240px]">
               <div className="flex justify-between">
                 <span className="text-gray-500">เลขที่เอกสาร:</span>
@@ -1442,23 +1442,23 @@ export default function PDFMockPage() {
             </div>
             <div className="text-right">
               <div className="text-xs text-gray-500 mb-1">{sheetLabel}</div>
-              <h2 className={`text-2xl font-bold ${theme.titleColor} tracking-wide`}>{mainTitle}</h2>
+              <h2 className={`text-2xl font-bold ${theme.titleColor} tracking-wide whitespace-nowrap`}>{mainTitle}</h2>
               <div className={`mt-3 ${theme.infoBg} border ${theme.infoBorder} rounded-xl p-3 text-left text-xs space-y-1.5 min-w-[240px]`}>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">เลขที่เอกสาร:</span>
+                  <span className="text-gray-500 whitespace-nowrap">เลขที่เอกสาร:</span>
                   <span className="font-semibold text-gray-955">{docNo}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">วันที่ออก:</span>
+                  <span className="text-gray-500 whitespace-nowrap">วันที่ออก:</span>
                   <span className="font-semibold text-gray-955">{formatDate(documentDate)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">วันที่ตอบรับ:</span>
+                  <span className="text-gray-500 whitespace-nowrap">วันที่ตอบรับ:</span>
                   <span className="font-semibold text-gray-955">-</span>
                 </div>
                 {!(claim.insuranceInvoice?.claims && claim.insuranceInvoice.claims.length > 5) && (
                   <div className={`flex justify-between border-t ${theme.infoDivider} pt-1.5 mt-1.5`}>
-                    <span className="text-gray-500">เลขเคลม:</span>
+                    <span className="text-gray-500 whitespace-nowrap">เลขเคลม:</span>
                     <span className={`font-semibold ${theme.infoAccent} text-right max-w-[180px] break-words`}>
                       {claim.insuranceInvoice?.claims && claim.insuranceInvoice.claims.length > 0
                         ? claim.insuranceInvoice.claims.map((c: any) => c.claimNo).join(', ')
@@ -1483,13 +1483,28 @@ export default function PDFMockPage() {
               <p className="font-semibold">{claim.garage?.name || 'ไม่ระบุอู่'}</p>
               {claim.garage?.address && <p className="text-gray-600 mt-1 leading-relaxed">{claim.garage.address}</p>}
               {claim.garage?.phone && <p className="text-gray-600 mt-1">โทร: {claim.garage.phone}</p>}
-              {!(claim.insuranceInvoice?.claims && claim.insuranceInvoice.claims.length > 1) && (
+              {!(claim.insuranceInvoice?.claims && claim.insuranceInvoice.claims.length > 5) && (
                 <div className="border-t border-dashed border-gray-200 mt-2 pt-2 space-y-0.5">
                   <p className="text-gray-600">
-                    ยี่ห้อ/รุ่น รถ: {claim.carBrand} {claim.carModel}
+                    ยี่ห้อ/รุ่น รถ:{' '}
+                    {claim.insuranceInvoice?.claims && claim.insuranceInvoice.claims.length > 0
+                      ? Array.from(
+                          new Set(
+                            claim.insuranceInvoice.claims.map(
+                              (c: any) => `${c.carBrand || ''} ${c.carModel || ''}`.trim()
+                            )
+                          )
+                        ).filter(Boolean).join(', ')
+                      : `${claim.carBrand || ''} ${claim.carModel || ''}`.trim()}
                   </p>
                   <p className="text-gray-600">
-                    ทะเบียนรถ: {claim.carPlate} {claim.province || ''}
+                    ทะเบียนรถ:{' '}
+                    {claim.insuranceInvoice?.claims && claim.insuranceInvoice.claims.length > 0
+                      ? claim.insuranceInvoice.claims
+                          .map((c: any) => `${c.carPlate || ''}${c.province ? ' ' + c.province : ''}`)
+                          .filter(Boolean)
+                          .join(', ')
+                      : `${claim.carPlate || ''}${claim.province ? ' ' + claim.province : ''}`}
                   </p>
                 </div>
               )}
