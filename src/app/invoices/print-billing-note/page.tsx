@@ -243,10 +243,10 @@ function BillingNoteContent() {
       setApproverName(mergedCompany.authorizedName || DEFAULT_COMPANY.authorizedName)
       
       // Setup Remarks
-      const bankName = mergedCompany.bankName || 'ธ.กสิกรไทย'
-      const bankAccName = mergedCompany.bankAccountName || 'บจก. ดับเบิ้ลเอสเอ็ม'
-      const bankAcc = mergedCompany.bankAccount || '214-1-55266-2'
-      const defaultRemarks = `กรุณาโอนเข้าบัญชี ${bankAccName}\n${bankName} สาขาเดอะ คริสตัล พาร์ค ออมทรัพย์ #${bankAcc}`
+      const bankName = mergedCompany.bankName || 'ธนาคารกสิกรไทย'
+      const bankAccName = mergedCompany.bankAccountName || 'บจก. ดับเบิ้ล เอส. เอ็ม. จำกัด'
+      const bankAcc = mergedCompany.bankAccount || '613-2-07377-3'
+      const defaultRemarks = `กรุณาโอนเข้าบัญชี ${bankAccName}\n${bankName} บัญชีออมทรัพย์ เลขที่ ${bankAcc}`
       setRemarks(defaultRemarks)
       
       // Setup Invoices List
@@ -532,35 +532,38 @@ function BillingNoteContent() {
           </div>
 
           {/* Seller / Header Info Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 border-b border-slate-200 pb-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] print:grid-cols-[1fr_auto] gap-6 border-b border-slate-200 pb-6 mb-6">
             
             {/* Seller Info (Left) */}
             <div className="space-y-1.5 text-xs text-slate-600">
               <div className="flex items-baseline">
                 <span className="font-semibold text-slate-800 w-16 shrink-0">ผู้ขาย :</span>
+                <span className="hidden print:inline font-bold text-slate-800">{company.name}</span>
                 <input 
                   type="text" 
                   value={company.name} 
                   onChange={e => setCompany({...company, name: e.target.value})} 
-                  className="w-full font-bold text-slate-800 bg-slate-50/50 focus:bg-white hover:bg-slate-50 focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide"
+                  className="w-full font-bold text-slate-800 bg-slate-50/50 focus:bg-white hover:bg-slate-50 focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide print:hidden"
                 />
               </div>
               <div className="flex items-start">
                 <span className="font-semibold text-slate-800 w-16 shrink-0 mt-0.5">ที่อยู่ :</span>
+                <span className="hidden print:inline leading-relaxed text-slate-600 whitespace-pre-wrap">{company.address}</span>
                 <textarea 
                   rows={2}
                   value={company.address} 
                   onChange={e => setCompany({...company, address: e.target.value})} 
-                  className="w-full bg-slate-50/50 focus:bg-white hover:bg-slate-50 focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide resize-none leading-relaxed"
+                  className="w-full bg-slate-50/50 focus:bg-white hover:bg-slate-50 focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide resize-none leading-relaxed print:hidden"
                 />
               </div>
               <div className="flex items-baseline">
                 <span className="font-semibold text-slate-800 w-16 shrink-0">เลขที่ภาษี :</span>
+                <span className="hidden print:inline text-slate-600">{`${company.taxId} (${company.branchName || 'สำนักงานใหญ่'})`}</span>
                 <input 
                   type="text" 
                   value={`${company.taxId} (${company.branchName || 'สำนักงานใหญ่'})`} 
                   onChange={e => setCompany({...company, taxId: e.target.value})} 
-                  className="w-full bg-slate-50/50 focus:bg-white hover:bg-slate-50 focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide"
+                  className="w-full bg-slate-50/50 focus:bg-white hover:bg-slate-50 focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide print:hidden"
                 />
               </div>
             </div>
@@ -569,73 +572,80 @@ function BillingNoteContent() {
             <div className="flex flex-col justify-end space-y-1.5 text-xs text-slate-600 min-w-[200px]">
               <div className="flex items-center gap-2">
                 <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span className="hidden print:inline text-slate-600">{company.phone}</span>
                 <input 
                   type="text" 
                   value={company.phone} 
                   onChange={e => setCompany({...company, phone: e.target.value})} 
-                  className="w-full bg-slate-50/50 focus:bg-white hover:bg-slate-50 focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide"
+                  className="w-full bg-slate-50/50 focus:bg-white hover:bg-slate-50 focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide print:hidden"
                 />
               </div>
               <div className="flex items-center gap-2">
                 <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span className="hidden print:inline text-slate-600">{company.email}</span>
                 <input 
                   type="text" 
                   value={company.email} 
                   onChange={e => setCompany({...company, email: e.target.value})} 
-                  className="w-full bg-slate-50/50 focus:bg-white hover:bg-slate-50 focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide"
+                  className="w-full bg-slate-50/50 focus:bg-white hover:bg-slate-50 focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide print:hidden"
                 />
               </div>
-              <div className="flex items-center gap-2">
+              <div className={`flex items-center gap-2 ${(!company.website || company.website === '-') ? 'print:hidden' : ''}`}>
                 <Globe className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span className="hidden print:inline text-slate-600">{company.website}</span>
                 <input 
                   type="text" 
                   value={company.website} 
                   onChange={e => setCompany({...company, website: e.target.value})} 
-                  className="w-full bg-slate-50/50 focus:bg-white hover:bg-slate-50 focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide"
+                  className="w-full bg-slate-50/50 focus:bg-white hover:bg-slate-50 focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide print:hidden"
                 />
               </div>
             </div>
           </div>
 
           {/* Customer & Document Metadata Info Blocks */}
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6 items-start mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] print:grid-cols-[1fr_320px] gap-6 items-start mb-6">
             
             {/* Customer Details */}
             <div className="space-y-1.5 text-xs text-slate-600">
               <div className="flex items-baseline">
                 <span className="font-semibold text-slate-800 w-16 shrink-0">ลูกค้า :</span>
+                <span className="hidden print:inline font-bold text-slate-800">{custName}</span>
                 <input 
                   type="text" 
                   value={custName} 
                   onChange={e => setCustName(e.target.value)} 
-                  className="w-full font-bold text-slate-800 bg-slate-50/50 focus:bg-white hover:bg-slate-50 focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide"
+                  className="w-full font-bold text-slate-800 bg-slate-50/50 focus:bg-white hover:bg-slate-50 focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide print:hidden"
                 />
               </div>
               <div className="flex items-start">
                 <span className="font-semibold text-slate-800 w-16 shrink-0 mt-0.5">ที่อยู่ :</span>
+                <span className="hidden print:inline leading-relaxed text-slate-600 whitespace-pre-wrap">{custAddress}</span>
                 <textarea 
                   rows={2}
                   value={custAddress} 
                   onChange={e => setCustAddress(e.target.value)} 
-                  className="w-full bg-slate-50/50 focus:bg-white hover:bg-slate-50 focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide resize-none leading-relaxed"
+                  className="w-full bg-slate-50/50 focus:bg-white hover:bg-slate-50 focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide resize-none leading-relaxed print:hidden"
                 />
               </div>
               <div className="flex items-baseline">
                 <span className="font-semibold text-slate-800 w-16 shrink-0">เลขที่ภาษี :</span>
+                <span className="hidden print:inline text-slate-600">{custTaxId}</span>
                 <input 
                   type="text" 
                   value={custTaxId} 
                   onChange={e => setCustTaxId(e.target.value)} 
-                  className="w-full bg-slate-50/50 focus:bg-white hover:bg-slate-50 focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide"
+                  className="w-full bg-slate-50/50 focus:bg-white hover:bg-slate-50 focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide print:hidden"
                 />
               </div>
               <div className="flex items-baseline">
                 <span className="font-semibold text-slate-800 w-16 shrink-0">เรียน :</span>
+                <span className="hidden print:inline text-slate-600">{custAttention}</span>
                 <input 
                   type="text" 
                   value={custAttention} 
                   onChange={e => setCustAttention(e.target.value)} 
-                  className="w-full bg-slate-50/50 focus:bg-white hover:bg-slate-50 focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide"
+                  className="w-full bg-slate-50/50 focus:bg-white hover:bg-slate-50 focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide print:hidden"
                 />
               </div>
             </div>
@@ -644,15 +654,17 @@ function BillingNoteContent() {
             <div className="bg-[#ccfbf1]/60 border border-teal-100 rounded-xl p-4 space-y-2 text-xs print:bg-[#ccfbf1]/30">
               <div className="grid grid-cols-[90px_1fr] items-baseline gap-1.5">
                 <span className="font-semibold text-slate-800">เลขที่เอกสาร :</span>
+                <span className="hidden print:inline font-bold text-slate-900">{docNo}</span>
                 <input 
                   type="text" 
                   value={docNo} 
                   onChange={e => setDocNo(e.target.value)} 
-                  className="font-bold text-slate-900 bg-white/70 focus:bg-white focus:ring-1 focus:ring-sky-500 rounded px-1.5 py-0.5 border border-dashed border-slate-300 print-border-hide"
+                  className="font-bold text-slate-900 bg-white/70 focus:bg-white focus:ring-1 focus:ring-sky-500 rounded px-1.5 py-0.5 border border-dashed border-slate-300 print-border-hide print:hidden"
                 />
               </div>
               <div className="grid grid-cols-[90px_1fr] items-baseline gap-1.5">
                 <span className="font-semibold text-slate-800">วันที่ออก :</span>
+                <span className="hidden print:inline font-medium text-slate-800">{formatDate(docDate)}</span>
                 <input 
                   type="date" 
                   value={docDate} 
@@ -665,64 +677,69 @@ function BillingNoteContent() {
                       setDueDate(d.toISOString().substring(0, 10))
                     }
                   }} 
-                  className="font-medium text-slate-800 bg-white/70 focus:bg-white focus:ring-1 focus:ring-sky-500 rounded px-1.5 py-0.5 border border-dashed border-slate-300 print-border-hide w-full"
+                  className="font-medium text-slate-800 bg-white/70 focus:bg-white focus:ring-1 focus:ring-sky-500 rounded px-1.5 py-0.5 border border-dashed border-slate-300 print-border-hide w-full print:hidden"
                 />
               </div>
               <div className="grid grid-cols-[90px_1fr] items-baseline gap-1.5">
                 <span className="font-semibold text-slate-800">วันที่ครบกำหนด :</span>
+                <span className="hidden print:inline font-medium text-slate-800">{formatDate(dueDate)}</span>
                 <input 
                   type="date" 
                   value={dueDate} 
                   onChange={e => setDueDate(e.target.value)} 
-                  className="font-medium text-slate-800 bg-white/70 focus:bg-white focus:ring-1 focus:ring-sky-500 rounded px-1.5 py-0.5 border border-dashed border-slate-300 print-border-hide w-full"
+                  className="font-medium text-slate-800 bg-white/70 focus:bg-white focus:ring-1 focus:ring-sky-500 rounded px-1.5 py-0.5 border border-dashed border-slate-300 print-border-hide w-full print:hidden"
                 />
               </div>
               <div className="grid grid-cols-[90px_1fr] items-baseline gap-1.5">
                 <span className="font-semibold text-slate-800">อ้างอิง :</span>
+                <span className="hidden print:inline font-medium text-slate-800">{reference}</span>
                 <input 
                   type="text" 
                   value={reference} 
                   onChange={e => setReference(e.target.value)} 
-                  className="font-medium text-slate-800 bg-white/70 focus:bg-white focus:ring-1 focus:ring-sky-500 rounded px-1.5 py-0.5 border border-dashed border-slate-300 print-border-hide"
+                  className="font-medium text-slate-800 bg-white/70 focus:bg-white focus:ring-1 focus:ring-sky-500 rounded px-1.5 py-0.5 border border-dashed border-slate-300 print-border-hide print:hidden"
                 />
               </div>
             </div>
           </div>
 
           {/* Contact Person Back Info */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between border-t border-b border-slate-200/80 py-3 mb-6 gap-3">
+          <div className="flex flex-col md:flex-row print:flex-row print:items-center md:items-center justify-between border-t border-b border-slate-200/80 py-3 mb-6 gap-3">
             <div className="text-xs font-semibold text-[#0284c7] flex items-center gap-1.5">
               <span>ติดต่อกลับที่ :</span>
             </div>
             <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-slate-600">
               <div className="flex items-center gap-1.5">
                 <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span className="hidden print:inline text-slate-800 font-medium">{contactName}</span>
                 <input 
                   type="text" 
                   value={contactName} 
                   onChange={e => setContactName(e.target.value)} 
                   placeholder="ผู้ติดต่อ"
-                  className="w-36 bg-slate-50/50 focus:bg-white hover:bg-slate-50 focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide font-medium text-slate-800"
+                  className="w-36 bg-slate-50/50 focus:bg-white hover:bg-slate-50 focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide font-medium text-slate-800 print:hidden"
                 />
               </div>
               <div className="flex items-center gap-1.5">
                 <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span className="hidden print:inline text-slate-800 font-medium">{contactPhone}</span>
                 <input 
                   type="text" 
                   value={contactPhone} 
                   onChange={e => setContactPhone(e.target.value)} 
                   placeholder="เบอร์โทรศัพท์"
-                  className="w-28 bg-slate-50/50 focus:bg-white hover:bg-slate-50 focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide font-medium text-slate-800"
+                  className="w-28 bg-slate-50/50 focus:bg-white hover:bg-slate-50 focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide font-medium text-slate-800 print:hidden"
                 />
               </div>
               <div className="flex items-center gap-1.5">
                 <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span className="hidden print:inline text-slate-800 font-medium">{contactEmail}</span>
                 <input 
                   type="text" 
                   value={contactEmail} 
                   onChange={e => setContactEmail(e.target.value)} 
                   placeholder="อีเมล"
-                  className="w-48 bg-slate-50/50 focus:bg-white hover:bg-slate-50 focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide font-medium text-slate-800"
+                  className="w-48 bg-slate-50/50 focus:bg-white hover:bg-slate-50 focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide font-medium text-slate-800 print:hidden"
                 />
               </div>
             </div>
@@ -756,29 +773,31 @@ function BillingNoteContent() {
                         return d
                       })())}
                     </td>
-                    <td className="py-2.5 px-3 text-right font-medium text-slate-700">฿{formatCurrency(inv.grandTotal)}</td>
+                    <td className="py-2.5 px-3 text-right font-medium text-slate-700"><span className="mr-0.5">฿</span>{formatCurrency(inv.grandTotal)}</td>
                     
                     {/* Editable Billing Amount */}
                     <td className="py-1 px-3 text-right">
                       <div className="flex items-center justify-end">
                         <span className="text-slate-400 mr-0.5">฿</span>
+                        <span className="hidden print:inline font-semibold text-slate-800">{formatCurrency(inv.billingAmount)}</span>
                         <input 
                           type="number" 
                           step="0.01"
                           value={inv.billingAmount === 0 ? '' : inv.billingAmount}
                           onChange={e => handleRowChange(inv.id, 'billingAmount', e.target.value)}
-                          className="w-24 text-right bg-slate-50/70 focus:bg-white hover:bg-slate-50 focus:ring-1 focus:ring-sky-500 rounded px-1.5 py-0.5 border border-dashed border-slate-300 print-border-hide font-semibold text-slate-800"
+                          className="w-24 text-right bg-slate-50/70 focus:bg-white hover:bg-slate-50 focus:ring-1 focus:ring-sky-500 rounded px-1.5 py-0.5 border border-dashed border-slate-300 print-border-hide font-semibold text-slate-800 print:hidden"
                         />
                       </div>
                     </td>
 
                     {/* Editable WHT */}
                     <td className="py-1 px-3 text-center">
+                      <span className="hidden print:inline font-medium text-slate-700">{inv.wht || '-'}</span>
                       <input 
                         type="text" 
                         value={inv.wht}
                         onChange={e => handleRowChange(inv.id, 'wht', e.target.value)}
-                        className="w-16 text-center bg-slate-50/70 focus:bg-white hover:bg-slate-50 focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide font-medium text-slate-700"
+                        className="w-16 text-center bg-slate-50/70 focus:bg-white hover:bg-slate-50 focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide font-medium text-slate-700 print:hidden"
                       />
                     </td>
                   </tr>
@@ -809,12 +828,13 @@ function BillingNoteContent() {
                 <div className="flex justify-between items-center">
                   <span className="text-slate-500">มูลค่าไม่มีหรือยกเว้นภาษี</span>
                   <div className="flex items-center gap-1">
+                    <span className="hidden print:inline font-semibold text-slate-700">{formatCurrency(exemptAmount)}</span>
                     <input
                       type="number"
                       step="0.01"
                       value={exemptAmount === 0 ? '' : exemptAmount}
                       onChange={e => setExemptAmount(e.target.value === '' ? 0 : Number(e.target.value))}
-                      className="w-28 text-right bg-slate-50/70 focus:bg-white hover:bg-slate-50 focus:ring-1 focus:ring-sky-500 rounded px-1.5 py-0.5 border border-dashed border-slate-300 print-border-hide font-semibold text-slate-800"
+                      className="w-28 text-right bg-slate-50/70 focus:bg-white hover:bg-slate-50 focus:ring-1 focus:ring-sky-500 rounded px-1.5 py-0.5 border border-dashed border-slate-300 print-border-hide font-semibold text-slate-800 print:hidden"
                       placeholder="0.00"
                     />
                     <span className="text-slate-500">บาท</span>
@@ -870,8 +890,8 @@ function BillingNoteContent() {
               )}
               <div className="text-xs space-y-1">
                 <p className="font-bold text-slate-800 text-[13px]">{company.bankName || 'ธนาคารกสิกรไทย'}</p>
-                <p className="text-slate-650 font-medium">ออมทรัพย์ &nbsp;{company.bankAccount || '214-1-55266-2'}</p>
-                <p className="text-slate-500 font-semibold">{company.bankAccountName || 'บริษัท เอ็กซ์เพิร์ท บอดี้แอนด์เพนท์ จำกัด'}</p>
+                <p className="text-slate-650 font-medium">ออมทรัพย์ &nbsp;{company.bankAccount || '613-2-07377-3'}</p>
+                <p className="text-slate-500 font-semibold">{company.bankAccountName || 'บจก. ดับเบิ้ล เอส. เอ็ม. จำกัด'}</p>
               </div>
             </div>
           </div>
@@ -882,11 +902,14 @@ function BillingNoteContent() {
               <MessageSquare className="w-4 h-4 text-slate-500" />
               <span>หมายเหตุ</span>
             </div>
+            <div className="hidden print:block text-xs text-slate-600 whitespace-pre-wrap leading-relaxed max-w-xl">
+              {remarks || '-'}
+            </div>
             <textarea
               rows={2}
               value={remarks}
               onChange={e => setRemarks(e.target.value)}
-              className="w-full text-xs text-slate-600 bg-slate-50/50 hover:bg-slate-50 focus:bg-white focus:ring-1 focus:ring-sky-500 rounded px-2 py-1.5 border border-dashed border-slate-300 print-border-hide resize-none leading-relaxed max-w-xl"
+              className="w-full text-xs text-slate-600 bg-slate-50/50 hover:bg-slate-50 focus:bg-white focus:ring-1 focus:ring-sky-500 rounded px-2 py-1.5 border border-dashed border-slate-300 print-border-hide resize-none leading-relaxed max-w-xl print:hidden"
               placeholder="กรอกหมายเหตุเพิ่มเติม..."
             />
           </div>
@@ -908,18 +931,20 @@ function BillingNoteContent() {
                     <span className="font-signature text-2xl text-sky-800 italic select-none">{issuerName.split(' ')[0]}</span>
                   )}
                 </div>
+                <span className="hidden print:inline font-semibold text-slate-850 mt-1 text-[11px]">{issuerName}</span>
                 <input
                   type="text"
                   value={issuerName}
                   onChange={e => setIssuerName(e.target.value)}
-                  className="w-full text-center bg-slate-50/50 hover:bg-slate-50 focus:bg-white focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide font-semibold text-slate-850 mt-1 text-[11px]"
+                  className="w-full text-center bg-slate-50/50 hover:bg-slate-50 focus:bg-white focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide font-semibold text-slate-850 mt-1 text-[11px] print:hidden"
                   placeholder="ชื่อผู้ออกเอกสาร"
                 />
+                <span className="hidden print:inline text-slate-450 mt-0.5 text-[9px]">{issuerDate || 'วันที่: ........................'}</span>
                 <input
                   type="text"
                   value={issuerDate}
                   onChange={e => setIssuerDate(e.target.value)}
-                  className="w-full text-center bg-slate-50/50 hover:bg-slate-50 focus:bg-white focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide text-slate-450 mt-0.5 text-[9px]"
+                  className="w-full text-center bg-slate-50/50 hover:bg-slate-50 focus:bg-white focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide text-slate-450 mt-0.5 text-[9px] print:hidden"
                   placeholder="วันที่"
                 />
               </div>
@@ -934,18 +959,20 @@ function BillingNoteContent() {
                     <span className="font-signature text-2xl text-sky-800 italic select-none">{approverName.split(' ')[0]}</span>
                   )}
                 </div>
+                <span className="hidden print:inline font-semibold text-slate-850 mt-1 text-[11px]">{approverName}</span>
                 <input
                   type="text"
                   value={approverName}
                   onChange={e => setApproverName(e.target.value)}
-                  className="w-full text-center bg-slate-50/50 hover:bg-slate-50 focus:bg-white focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide font-semibold text-slate-850 mt-1 text-[11px]"
+                  className="w-full text-center bg-slate-50/50 hover:bg-slate-50 focus:bg-white focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide font-semibold text-slate-850 mt-1 text-[11px] print:hidden"
                   placeholder="ชื่อผู้อนุมัติ"
                 />
+                <span className="hidden print:inline text-slate-450 mt-0.5 text-[9px]">{approverDate || 'วันที่: ........................'}</span>
                 <input
                   type="text"
                   value={approverDate}
                   onChange={e => setApproverDate(e.target.value)}
-                  className="w-full text-center bg-slate-50/50 hover:bg-slate-50 focus:bg-white focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide text-slate-450 mt-0.5 text-[9px]"
+                  className="w-full text-center bg-slate-50/50 hover:bg-slate-50 focus:bg-white focus:ring-1 focus:ring-sky-500 rounded px-1 py-0.5 border border-dashed border-slate-300 print-border-hide text-slate-450 mt-0.5 text-[9px] print:hidden"
                   placeholder="วันที่"
                 />
               </div>
