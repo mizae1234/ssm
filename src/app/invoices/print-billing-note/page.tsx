@@ -39,7 +39,29 @@ interface InvoiceRow {
   subtotal?: number
   vatAmount?: number
   deductible?: number
-  claim: {
+  claims?: Array<{
+    id: string
+    claimNo: string
+    carPlate: string
+    carBrand: string
+    carModel: string
+    insuredName: string
+    insurance: {
+      id: string
+      name: string
+      address: string
+      taxId: string
+      branchCode: string
+      creditTermArDays: number
+    }
+    expenses?: Array<{
+      id: string
+      category: string
+      description: string
+      amount: number
+    }>
+  }>
+  claim?: {
     claimNo: string
     carPlate: string
     carBrand: string
@@ -265,8 +287,9 @@ function BillingNoteContent() {
         // Setup Customer Info (from first invoice)
         const firstInv = mapped[0]
         let termDays = 30
-        if (firstInv.claim && firstInv.claim.insurance) {
-          const ins = firstInv.claim.insurance
+        const firstClaim = firstInv.claims?.[0] || firstInv.claim
+        if (firstClaim && firstClaim.insurance) {
+          const ins = firstClaim.insurance
           setCustName(ins.name || '')
           setCustAddress(ins.address || '')
           setCustTaxId(ins.taxId ? `${ins.taxId} (${ins.branchCode === '00000' || !ins.branchCode ? 'สำนักงานใหญ่' : `สาขา ${ins.branchCode}`})` : '')
@@ -283,7 +306,7 @@ function BillingNoteContent() {
         setDueDate(d.toISOString().substring(0, 10))
         
         // Setup Reference field (e.g. claim numbers list or single claim number)
-        const claimNos = Array.from(new Set(mapped.map(i => i.claim?.claimNo).filter(Boolean)))
+        const claimNos = Array.from(new Set(mapped.flatMap((i: any) => (i.claims?.map((c: any) => c.claimNo) || [i.claim?.claimNo])).filter(Boolean)))
         setReference(claimNos.join(', ') || '-')
       }
       
@@ -760,14 +783,35 @@ function BillingNoteContent() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {invoices.map((inv, idx) => (
+                {invoices.map((inv, idx) => {
+                  const termDays = inv.claims?.[0]?.insurance?.creditTermArDays ?? inv.claim?.insurance?.creditTermArDays ?? 30
+                  return (
                   <tr key={inv.id} className="hover:bg-slate-50/50 transition">
                     <td className="py-2.5 px-3 text-center text-slate-400">{idx + 1}</td>
-                    <td className="py-2.5 px-3 font-mono font-medium text-slate-900">{inv.invoiceNo}</td>
+                    <td className="py-2.5 px-3">
+                      <div className="font-mono font-medium text-slate-900">{inv.invoiceNo}</div>
+                      {inv.claims && inv.claims.length > 0 && (
+                        <div className="text-[10px] text-slate-500 mt-0.5 space-y-0.5">
+                          {inv.claims.map((c: any) => {
+                            const expTotal = (c.expenses || []).reduce((s: number, e: any) => s + e.amount, 0)
+                            return (
+                              <div key={c.id}>
+                                เคลม: <span className="font-mono text-slate-700 font-semibold">{c.claimNo}</span>
+                                {c.carPlate && <span className="text-slate-600"> ({c.carPlate})</span>}
+                                {expTotal > 0 && (
+                                  <span className="text-teal-700 font-medium ml-1">
+                                    [+ค่าขนส่ง ฿{formatCurrency(expTotal)}]
+                                  </span>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </td>
                     <td className="py-2.5 px-3 text-center text-slate-600">{formatDate(inv.invoiceDate)}</td>
                     <td className="py-2.5 px-3 text-center text-slate-600">
                       {formatDate(inv.dueDate || (() => {
-                        const termDays = inv.claim?.insurance?.creditTermArDays ?? 30
                         const d = new Date(inv.invoiceDate)
                         d.setDate(d.getDate() + termDays)
                         return d
@@ -801,7 +845,8 @@ function BillingNoteContent() {
                       />
                     </td>
                   </tr>
-                ))}
+                  )
+                })}
               </tbody>
             </table>
           </div>

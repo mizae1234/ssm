@@ -34,6 +34,15 @@ export async function GET(request: NextRequest) {
                 branchCode: true,
                 creditTermArDays: true
               }
+            },
+            expenses: {
+              where: { billable: true },
+              select: {
+                id: true,
+                category: true,
+                description: true,
+                amount: true
+              }
             }
           }
         }

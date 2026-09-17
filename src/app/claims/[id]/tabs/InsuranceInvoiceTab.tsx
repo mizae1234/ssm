@@ -23,17 +23,22 @@ export default function InsuranceInvoiceTab({
   setConfirmModal,
   setShowReceiveARModal
 }: InsuranceInvoiceTabProps) {
+  const billableExpenses = (claim.expenses || []).filter((e: any) => e.billable)
+  const billableExpensesTotal = billableExpenses.reduce((s: number, e: any) => s + e.amount, 0)
+
   const [editParts, setEditParts] = useState<number>(partsTotal)
   const [editLabor, setEditLabor] = useState<number>(laborTotal)
+  const [editExpenses, setEditExpenses] = useState<number>(billableExpensesTotal)
   const [invoiceDate, setInvoiceDate] = useState<string>(new Date().toISOString().substring(0, 10))
 
   useEffect(() => {
     setEditParts(partsTotal)
     setEditLabor(laborTotal)
-  }, [partsTotal, laborTotal])
+    setEditExpenses(billableExpensesTotal)
+  }, [partsTotal, laborTotal, billableExpensesTotal])
 
   // Calculations with 2 decimal places (not rounded to integers)
-  const sub = editParts + editLabor
+  const sub = Math.round((editParts + editLabor + editExpenses) * 100) / 100
   const vat = Math.round(sub * 0.07 * 100) / 100
   const grand = Math.round((sub + vat) * 100) / 100
 
@@ -81,7 +86,7 @@ export default function InsuranceInvoiceTab({
                     </div>
                     
                     <div className="bg-[#f8faff] rounded-lg p-4 space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                           <label className="text-xs font-semibold text-[#475569]">ค่าอะไหล่ (แก้ไขได้)</label>
                           <input
@@ -102,9 +107,30 @@ export default function InsuranceInvoiceTab({
                             onChange={e => setEditLabor(Number(e.target.value) || 0)}
                           />
                         </div>
+                        <div>
+                          <label className="text-xs font-semibold text-[#475569]">ค่าขนส่ง/ส่งอะไหล่ (รวมประกัน)</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            className="w-full mt-1.5 p-2 text-sm border rounded-md font-semibold text-[#0d9488]"
+                            value={editExpenses}
+                            onChange={e => setEditExpenses(Number(e.target.value) || 0)}
+                          />
+                          {billableExpenses.length > 0 && (
+                            <p className="text-[10px] text-teal-700 mt-1 truncate" title={billableExpenses.map((e: any) => `${e.description}: ฿${formatCurrency(e.amount)}`).join(', ')}>
+                              ✓ ติ๊กไว้: {billableExpenses.map((e: any) => `${e.description} ฿${formatCurrency(e.amount)}`).join(', ')}
+                            </p>
+                          )}
+                        </div>
                       </div>
                       
                       <div className="border-t pt-3 space-y-2">
+                        {editExpenses > 0 && (
+                          <div className="flex justify-between text-xs text-teal-700">
+                            <span>รวมค่าขนส่ง/ส่งอะไหล่:</span>
+                            <span className="font-semibold">+฿{formatCurrency(editExpenses)}</span>
+                          </div>
+                        )}
                         <div className="flex justify-between text-sm text-[#475569]">
                           <span>Subtotal:</span>
                           <span className="font-semibold text-[#0f172a]">฿{formatCurrency(sub)}</span>
@@ -132,7 +158,7 @@ export default function InsuranceInvoiceTab({
 
                     <Button className="bg-[#0d9488] w-full" onClick={() => handleCreateInsuranceInvoice({
                       laborTotal: editLabor,
-                      partsTotal: editParts,
+                      partsTotal: Math.round((editParts + editExpenses) * 100) / 100,
                       subtotal: sub,
                       vatAmount: vat,
                       grandTotal: grand,
@@ -155,6 +181,7 @@ export default function InsuranceInvoiceTab({
                 ['วันที่', formatDate(claim.insuranceInvoice.invoiceDate)],
                 ['ค่าแรงรวมทั้งหมด', `฿${formatCurrency(claim.insuranceInvoice.laborTotal)}`],
                 ['ค่าอะไหล่รวมทั้งหมด', `฿${formatCurrency(claim.insuranceInvoice.partsTotal)}`],
+                ...(billableExpensesTotal > 0 ? [['ค่าขนส่ง/ค่าใช้จ่ายที่รวมในบิล', `฿${formatCurrency(billableExpensesTotal)}`]] : []),
                 ['Subtotal', `฿${formatCurrency(claim.insuranceInvoice.subtotal)}`],
                 ['VAT 7%', `฿${formatCurrency(claim.insuranceInvoice.vatAmount)}`],
                 ['Grand Total', `฿${formatCurrency(claim.insuranceInvoice.grandTotal)}`],
