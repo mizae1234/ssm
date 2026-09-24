@@ -691,7 +691,27 @@ export default function PeakSyncPage() {
         {/* Tab: Expenses */}
         <TabsContent value="expense">
           <Card>
-                   <CardContent className="p-0">
+            <CardHeader className="flex flex-row items-center justify-between py-4">
+              <CardTitle className="text-base flex items-center gap-2">
+                รายการรอส่งค่าใช้จ่าย (Expenses)
+              </CardTitle>
+              <div className="flex items-center gap-4">
+                <div className="relative w-64">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <Input 
+                    placeholder="ค้นหา Claim, รายละเอียด, ผู้บันทึก..." 
+                    value={searchExpense}
+                    onChange={(e) => setSearchExpense(e.target.value)}
+                    className="pl-9 h-9 bg-gray-50 border-gray-200"
+                  />
+                </div>
+                <Button size="sm" className="bg-[#0d9488]" disabled={isSyncing} onClick={handleSyncExpense}>
+                  {isSyncing ? <RefreshCw className="w-4 h-4 mr-1.5 animate-spin" /> : <Cloud className="w-4 h-4 mr-1.5" />}
+                  Export Excel ({Object.keys(expenseSelections).filter(k => expenseSelections[k]).length})
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-[#f8faff]">
