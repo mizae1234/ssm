@@ -158,7 +158,7 @@ export default function InsuranceInvoiceTab({
 
                     <Button className="bg-[#0d9488] w-full" onClick={() => handleCreateInsuranceInvoice({
                       laborTotal: editLabor,
-                      partsTotal: Math.round((editParts + editExpenses) * 100) / 100,
+                      partsTotal: editParts,
                       subtotal: sub,
                       vatAmount: vat,
                       grandTotal: grand,
