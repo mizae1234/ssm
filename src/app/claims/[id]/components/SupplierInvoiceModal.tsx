@@ -48,6 +48,27 @@ export default function SupplierInvoiceModal({
   const [selectedPoId, setSelectedPoId] = useState<string>('')
   const [manualVendorId, setManualVendorId] = useState<string>('')
 
+  const isPartMatchingPoItem = (part: any, poItem: any) => {
+    if (part.partNo && poItem.partNo && part.partNo.trim() !== '' && poItem.partNo.trim() !== '') {
+      return part.partNo.trim().toLowerCase() === poItem.partNo.trim().toLowerCase()
+    }
+    const pName = (part.partName || '').trim().toLowerCase()
+    const desc = (poItem.description || '').trim().toLowerCase()
+    if (pName && desc) {
+      return pName === desc || desc.includes(pName) || pName.includes(desc)
+    }
+    return false
+  }
+
+  const isLaborMatchingPoItem = (labor: any, poItem: any) => {
+    const lDesc = (labor.description || '').trim().toLowerCase()
+    const pDesc = (poItem.description || '').trim().toLowerCase()
+    if (lDesc && pDesc) {
+      return lDesc === pDesc || pDesc.includes(lDesc) || lDesc.includes(pDesc)
+    }
+    return false
+  }
+
   const validPOs = useMemo(() => {
     return claim?.purchaseOrders?.filter((po: any) => po.status !== 'CANCELLED') || []
   }, [claim?.purchaseOrders])
@@ -55,8 +76,8 @@ export default function SupplierInvoiceModal({
   const poPendingCounts = useMemo(() => {
     const counts: Record<string, number> = {}
     validPOs.forEach((po: any) => {
-      const pCount = parts.filter(p => p.paymentStatus !== 'INVOICED' && p.paymentStatus !== 'PAID' && po.items.some((pi: any) => pi.partNo === p.partNo)).length
-      const lCount = labors.filter(l => l.paymentStatus !== 'INVOICED' && l.paymentStatus !== 'PAID' && po.items.some((pi: any) => pi.description?.includes(l.description))).length
+      const pCount = parts.filter(p => p.paymentStatus !== 'INVOICED' && p.paymentStatus !== 'PAID' && po.items.some((pi: any) => isPartMatchingPoItem(p, pi))).length
+      const lCount = labors.filter(l => l.paymentStatus !== 'INVOICED' && l.paymentStatus !== 'PAID' && po.items.some((pi: any) => isLaborMatchingPoItem(l, pi))).length
       counts[po.id] = pCount + lCount
     })
     return counts
@@ -71,11 +92,11 @@ export default function SupplierInvoiceModal({
   // Filter visible items according to selected PO
   const visibleParts = parts
     .filter(p => p.paymentStatus !== 'INVOICED' && p.paymentStatus !== 'PAID')
-    .filter(p => currentPo ? currentPo.items.some((pi: any) => pi.partNo === p.partNo) : true)
+    .filter(p => currentPo ? currentPo.items.some((pi: any) => isPartMatchingPoItem(p, pi)) : true)
 
   const visibleLabors = labors
     .filter(l => l.paymentStatus !== 'INVOICED' && l.paymentStatus !== 'PAID')
-    .filter(l => currentPo ? currentPo.items.some((pi: any) => pi.description?.includes(l.description)) : true)
+    .filter(l => currentPo ? currentPo.items.some((pi: any) => isLaborMatchingPoItem(l, pi)) : true)
 
   // Initialize selected PO when modal opens
   useEffect(() => {
@@ -109,8 +130,8 @@ export default function SupplierInvoiceModal({
 
     visibleParts.forEach(p => {
       initialSelections[p.id] = true
-      const poi = currentPo?.items.find((x: any) => x.partNo === p.partNo) ||
-        validPOs.flatMap((po: any) => po.items).find((x: any) => x.partNo === p.partNo)
+      const poi = currentPo?.items.find((x: any) => isPartMatchingPoItem(p, x)) ||
+        validPOs.flatMap((po: any) => po.items).find((x: any) => isPartMatchingPoItem(p, x))
       const base = poi ? (poi.unitPrice * (poi.quantity || 1)) : (p.priceApprove * p.quantity)
       const disc = poi ? 0 : (p.discountPct || 0)
       initialDiscounts[p.id] = disc
@@ -119,8 +140,8 @@ export default function SupplierInvoiceModal({
 
     visibleLabors.forEach(l => {
       initialSelections[l.id] = true
-      const pol = currentPo?.items.find((x: any) => x.description?.includes(l.description)) ||
-        validPOs.flatMap((po: any) => po.items).find((x: any) => x.description?.includes(l.description))
+      const pol = currentPo?.items.find((x: any) => isLaborMatchingPoItem(l, x)) ||
+        validPOs.flatMap((po: any) => po.items).find((x: any) => isLaborMatchingPoItem(l, x))
       const base = pol ? pol.unitPrice : l.priceApprove
       const disc = pol ? 0 : (l.discountPct || 0)
       initialDiscounts[l.id] = disc
@@ -179,14 +200,14 @@ export default function SupplierInvoiceModal({
   }, [isOpen, isSaving, showToast])
 
   const getPartBaseAmt = (p: any) => {
-    const poi = currentPo?.items.find((x: any) => x.partNo === p.partNo) ||
-      validPOs.flatMap((po: any) => po.items).find((x: any) => x.partNo === p.partNo)
+    const poi = currentPo?.items.find((x: any) => isPartMatchingPoItem(p, x)) ||
+      validPOs.flatMap((po: any) => po.items).find((x: any) => isPartMatchingPoItem(p, x))
     return poi ? (poi.unitPrice * (poi.quantity || 1)) : (p.priceApprove * p.quantity)
   }
 
   const getLaborBaseAmt = (l: any) => {
-    const pol = currentPo?.items.find((x: any) => x.description?.includes(l.description)) ||
-      validPOs.flatMap((po: any) => po.items).find((x: any) => x.description?.includes(l.description))
+    const pol = currentPo?.items.find((x: any) => isLaborMatchingPoItem(l, x)) ||
+      validPOs.flatMap((po: any) => po.items).find((x: any) => isLaborMatchingPoItem(l, x))
     return pol ? pol.unitPrice : l.priceApprove
   }
 
@@ -254,8 +275,8 @@ export default function SupplierInvoiceModal({
       const partItems = selParts.map(p => {
         const price = getPartPrice(p)
         const unitPrice = price / p.quantity
-        const poItem = currentPo?.items.find((pi: any) => pi.partNo === p.partNo) ||
-          validPOs.flatMap((po: any) => po.items).find((pi: any) => pi.partNo === p.partNo)
+        const poItem = currentPo?.items.find((pi: any) => isPartMatchingPoItem(p, pi)) ||
+          validPOs.flatMap((po: any) => po.items).find((pi: any) => isPartMatchingPoItem(p, pi))
         return {
           poItemId: poItem?.id || null,
           claimPartId: p.id,
@@ -270,8 +291,8 @@ export default function SupplierInvoiceModal({
 
       const laborItems = selLabors.map(l => {
         const price = getLaborPrice(l)
-        const poLabor = currentPo?.items.find((pi: any) => pi.description?.includes(l.description)) ||
-          validPOs.flatMap((po: any) => po.items).find((pi: any) => pi.description?.includes(l.description))
+        const poLabor = currentPo?.items.find((pi: any) => isLaborMatchingPoItem(l, pi)) ||
+          validPOs.flatMap((po: any) => po.items).find((pi: any) => isLaborMatchingPoItem(l, pi))
         return {
           poItemId: poLabor?.id || null,
           claimPartId: null,

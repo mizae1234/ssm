@@ -98,9 +98,19 @@ export async function DELETE(
 
     const inv = await prisma.garageInvoice.findUnique({
       where: { id: invoiceId },
-      include: { items: true }
+      include: {
+        items: true,
+        paymentRequests: {
+          include: { apPayment: true }
+        }
+      }
     })
     if (!inv) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+
+    const hasPaidPayment = inv.paymentRequests.some(pr => pr.apPayment || pr.status === 'APPROVED')
+    if (hasPaidPayment) {
+      return NextResponse.json({ error: 'ไม่สามารถลบ Invoice ได้เนื่องจากมีการอนุมัติหรือชำระเงินแล้ว' }, { status: 400 })
+    }
 
     // Reset related claimLabors back to PENDING
     const laborIds = inv.items.map(item => item.claimLaborId).filter(Boolean) as string[]
@@ -109,6 +119,15 @@ export async function DELETE(
         where: { id: { in: laborIds } },
         data: { paymentStatus: 'PENDING' }
       })
+    }
+
+    // Delete related paymentRequests (and their billReceipts) if any
+    const prs = await prisma.paymentRequest.findMany({
+      where: { garageInvoiceId: invoiceId }
+    })
+    for (const pr of prs) {
+      await prisma.billReceipt.deleteMany({ where: { paymentRequestId: pr.id } })
+      await prisma.paymentRequest.delete({ where: { id: pr.id } })
     }
 
     await prisma.garageInvoiceItem.deleteMany({ where: { garageInvoiceId: invoiceId } })

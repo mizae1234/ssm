@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { CreditCard, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react'
+import { CreditCard, CheckCircle2, XCircle, AlertTriangle, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
 import { ClaimTabProps } from './types'
@@ -68,9 +68,32 @@ export default function PaymentsTab({ claim, showToast, setErrorModalMsg, refres
                   : <><AlertTriangle className="w-3.5 h-3.5 text-amber-500" /><span className="text-amber-600">บิลไม่ตรง — ระบบ: {pr.billReceipt.systemInvoiceNo} / กระดาษ: {pr.billReceipt.physicalInvoiceNo}</span></>}
               </div>
             )}
-            {pr.status === 'REJECTED' && pr.rejectReason && (
-              <div className="bg-red-50 rounded p-2 text-xs text-red-600 mt-2 flex items-center gap-1.5">
-                <XCircle className="w-3.5 h-3.5" />เหตุผล: {pr.rejectReason}
+            {pr.status === 'REJECTED' && (
+              <div className="bg-red-50 rounded p-2 text-xs text-red-600 mt-2 flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <XCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>เหตุผล: {pr.rejectReason || 'ไม่ระบุเหตุผล'}</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 text-[11px] text-red-600 hover:bg-red-100 flex items-center gap-1"
+                  onClick={async () => {
+                    try {
+                      const res = await fetch(`/api/payment-requests/${pr.id}`, { method: 'DELETE' })
+                      if (!res.ok) {
+                        const err = await res.json().catch(() => ({}))
+                        throw new Error(err.error || 'ลบรายการไม่สำเร็จ')
+                      }
+                      showToast('ลบรายการคำขอเบิกเงินเรียบร้อย')
+                      await refreshClaim()
+                    } catch (err: any) {
+                      setErrorModalMsg(err.message)
+                    }
+                  }}
+                >
+                  <Trash2 className="w-3 h-3 mr-0.5" />ลบรายการ
+                </Button>
               </div>
             )}
             {pr.status === 'PENDING_APPROVAL' && (

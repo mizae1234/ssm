@@ -144,9 +144,13 @@ export async function DELETE(
     // Get the invoice with items to find related claimPartIds
     const inv = await prisma.supplierInvoice.findUnique({
       where: { id: invoiceId },
-      include: { items: true }
+      include: { items: true, apPayment: true }
     })
     if (!inv) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+
+    if (inv.apPayment) {
+      return NextResponse.json({ error: 'ไม่สามารถลบ Invoice ได้เนื่องจากมีการชำระเงินแล้ว' }, { status: 400 })
+    }
 
     // Reset related claimParts back to PENDING
     const partIds = inv.items.map(item => item.claimPartId).filter(Boolean) as string[]
@@ -164,6 +168,15 @@ export async function DELETE(
         where: { id: { in: laborIds } },
         data: { paymentStatus: 'PENDING' }
       })
+    }
+
+    // Delete related paymentRequests (and their billReceipts) if any
+    const prs = await prisma.paymentRequest.findMany({
+      where: { supplierInvoiceId: invoiceId }
+    })
+    for (const pr of prs) {
+      await prisma.billReceipt.deleteMany({ where: { paymentRequestId: pr.id } })
+      await prisma.paymentRequest.delete({ where: { id: pr.id } })
     }
 
     // Delete items first, then invoice

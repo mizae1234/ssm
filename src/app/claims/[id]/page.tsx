@@ -1224,7 +1224,14 @@ export default function ClaimDetailPage() {
                     <TableHead>ประเภท</TableHead><TableHead>รายการ</TableHead><TableHead className="text-right">ยอดอนุมัติ</TableHead><TableHead className="text-right">ยอด PO</TableHead><TableHead className="text-center">PO / เอกสารอ้างอิง</TableHead><TableHead className="text-center">Invoice</TableHead><TableHead className="text-center">สถานะ</TableHead>
                   </TableRow></TableHeader><TableBody>
                     {parts.map(p => {
-                      const poi = poItems.find((x: any) => x.partNo === p.partNo)
+                      const poi = poItems.find((x: any) => {
+                        if (p.partNo && x.partNo && p.partNo.trim() !== '' && x.partNo.trim() !== '') {
+                          return p.partNo.trim().toLowerCase() === x.partNo.trim().toLowerCase()
+                        }
+                        const pName = (p.partName || '').trim().toLowerCase()
+                        const desc = (x.description || '').trim().toLowerCase()
+                        return pName && desc && (pName === desc || desc.includes(pName) || pName.includes(desc))
+                      })
                       const inv = allInvItems.find((x: any) => x.claimPartId === p.id)
                       const invDoc = inv ? supplierInvoices.find((si: any) => si.items?.some((i: any) => i.id === inv.id)) : null
                       return (<TableRow key={p.id} className={p.paymentStatus === 'PAID' ? 'bg-green-50/30' : ''}>
@@ -1246,7 +1253,11 @@ export default function ClaimDetailPage() {
                       const sDoc = sItem ? supplierInvoices.find((si: any) => si.items?.some((i: any) => i.id === sItem.id)) : null
                       const invoiceDoc = gDoc || sDoc
                       // Check if labor is in a PO
-                      const poLabor = poItems.find((x: any) => x.description?.includes(l.description))
+                      const poLabor = poItems.find((x: any) => {
+                        const lDesc = (l.description || '').trim().toLowerCase()
+                        const pDesc = (x.description || '').trim().toLowerCase()
+                        return lDesc && pDesc && (lDesc === pDesc || pDesc.includes(lDesc) || lDesc.includes(pDesc))
+                      })
                       return (<TableRow key={l.id} className={l.paymentStatus === 'PAID' ? 'bg-green-50/30' : ''}>
                         <TableCell><Badge variant="outline" className="text-[10px] bg-orange-50 text-orange-700">ค่าแรง</Badge></TableCell>
                         <TableCell className="font-medium">{l.description}</TableCell>
@@ -1378,22 +1389,29 @@ export default function ClaimDetailPage() {
                                 </div>
                               </div>
                               <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-100">
-                                {!pr && !inv.apPayment && (
-                                  <Button variant="outline" size="sm" className="h-7 text-xs text-[#0d9488] border-[#0d9488] hover:bg-blue-50" onClick={() => setPendingPaymentRequest({ type: inv._type === 'SUPPLIER' ? 'AP_VENDOR' : 'AP_GARAGE', invoiceId: inv.id, amount: inv.totalAmount })}><CreditCard className="w-3 h-3 mr-1" />ขอเบิกเงิน</Button>
+                                {(!pr || pr.status === 'REJECTED') && !inv.apPayment && (
+                                  <Button variant="outline" size="sm" className="h-7 text-xs text-[#0d9488] border-[#0d9488] hover:bg-blue-50" onClick={() => setPendingPaymentRequest({ type: inv._type === 'SUPPLIER' ? 'AP_VENDOR' : 'AP_GARAGE', invoiceId: inv.id, amount: inv.totalAmount })}>
+                                    <CreditCard className="w-3 h-3 mr-1" />{pr?.status === 'REJECTED' ? 'ขอเบิกเงินใหม่' : 'ขอเบิกเงิน'}
+                                  </Button>
                                 )}
                                 {pr?.status === 'REJECTED' && (
                                   <Badge className="border-none text-[10px] bg-red-100 text-red-700">ถูกปฏิเสธ: {pr.rejectReason}</Badge>
                                 )}
-                                {!inv.apPayment && !pr && (
+                                {!inv.apPayment && (!pr || pr.status !== 'APPROVED') && (
                                   <Button variant="outline" size="sm" className="h-7 text-xs text-red-500 border-red-200 hover:bg-red-50" onClick={() => {
                                     setConfirmModal({
                                       title: `ลบ Invoice "${inv.invoiceNo}"`,
-                                      message: 'รายการที่เกี่ยวข้องจะถูก reset กลับเป็น "รอ Invoice"',
+                                      message: pr?.status === 'REJECTED'
+                                        ? 'รายการคำขอเบิกเงินที่ถูกปฏิเสธและ Invoice นี้จะถูกลบ และรายการอะไหล่จะถูก reset กลับเป็น "รอ Invoice"'
+                                        : 'รายการที่เกี่ยวข้องจะถูก reset กลับเป็น "รอ Invoice"',
                                       onConfirm: async () => {
                                         try {
                                           const endpoint = inv._type === 'SUPPLIER' ? 'supplier-invoices' : 'garage-invoices'
                                           const res = await fetch(`/api/claims/${claim.id}/${endpoint}?invoiceId=${inv.id}`, { method: 'DELETE' })
-                                          if (!res.ok) throw new Error('ลบไม่สำเร็จ')
+                                          if (!res.ok) {
+                                            const errData = await res.json().catch(() => ({}))
+                                            throw new Error(errData.error || 'ลบไม่สำเร็จ')
+                                          }
                                           showToast(`ลบ ${inv.invoiceNo} เรียบร้อย`)
                                           await refreshClaim()
                                         } catch (err: any) {
