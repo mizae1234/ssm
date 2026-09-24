@@ -114,6 +114,7 @@ export default function ClaimDetailPage() {
   }, [params.id])
   const [showStatusModal, setShowStatusModal] = useState(false)
   const [showUploadModal, setShowUploadModal] = useState(false)
+  const [uploadModalPoId, setUploadModalPoId] = useState<string | null>(null)
   const [claimPRs, setClaimPRs] = useState<PaymentRequest[]>([])
   const [vendors, setVendors] = useState<any[]>([])
   const [toast, setToast] = useState<string | null>(null)
@@ -1169,6 +1170,17 @@ export default function ClaimDetailPage() {
                                 <Truck className="w-3 h-3 mr-1" />ใบส่งของ
                               </Button>
                             </Link>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="text-xs h-7 text-[#0d9488] border-[#0d9488]/40 hover:bg-[#0d9488]/10"
+                              onClick={() => {
+                                setUploadModalPoId(po.id)
+                                setShowUploadModal(true)
+                              }}
+                            >
+                              <Upload className="w-3 h-3 mr-1" />แนบ Invoice
+                            </Button>
                           </div>
                         )}
                       </CardContent>
@@ -1201,7 +1213,10 @@ export default function ClaimDetailPage() {
                 {/* Combined Parts and Labors Table */}
                 <Card><CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle className="text-base">รายการอะไหล่และค่าแรง</CardTitle>
-                  <Button variant="outline" size="sm" onClick={() => setShowUploadModal(true)}>
+                  <Button variant="outline" size="sm" onClick={() => {
+                    setUploadModalPoId(null)
+                    setShowUploadModal(true)
+                  }}>
                     <Upload className="w-4 h-4 mr-1" />อัพโหลด Invoice
                   </Button>
                 </CardHeader><CardContent>
@@ -1488,7 +1503,11 @@ export default function ClaimDetailPage() {
       {/* ─── Supplier Invoice Modal ─── */}
       <SupplierInvoiceModal
         isOpen={showUploadModal}
-        onClose={() => setShowUploadModal(false)}
+        onClose={() => {
+          setShowUploadModal(false)
+          setUploadModalPoId(null)
+        }}
+        targetPoId={uploadModalPoId}
         claim={claim}
         parts={parts}
         labors={labors}

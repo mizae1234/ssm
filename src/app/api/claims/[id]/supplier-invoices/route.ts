@@ -49,10 +49,27 @@ export async function POST(
     }
 
 
+    // Resolve Vendor ID: If items link to a PO, verify/enforce that vendorId matches the PO's vendorId
+    let vendorId = body.vendorId
+    const firstPoItemId = (body.items || []).find((it: any) => it.poItemId)?.poItemId
+    if (firstPoItemId) {
+      const poItem = await prisma.pOItem.findUnique({
+        where: { id: firstPoItemId },
+        include: { po: true }
+      })
+      if (poItem?.po?.vendorId) {
+        vendorId = poItem.po.vendorId
+      }
+    }
+
+    if (!vendorId) {
+      return NextResponse.json({ error: 'Vendor ID is required' }, { status: 400 })
+    }
+
     const newInvoice = await prisma.supplierInvoice.create({
       data: {
         claimId: params.id,
-        vendorId: body.vendorId,
+        vendorId,
         invoiceNo,
         invoiceDate: new Date(body.invoiceDate || new Date()),
         subtotal,

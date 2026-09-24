@@ -1,11 +1,12 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
-import { X, Upload, Save, FileText } from 'lucide-react'
+import React, { useState, useEffect, useMemo } from 'react'
+import { X, Upload, Save, FileText, Building2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
 import { uploadToR2 } from '@/lib/upload'
 import { formatCurrency } from '@/lib/utils'
 
@@ -16,6 +17,7 @@ interface SupplierInvoiceModalProps {
   parts: any[]
   labors: any[]
   vendors: any[]
+  targetPoId?: string | null
   onSuccess: (newInv: any, selectedPartIds: string[], selectedLaborIds: string[]) => void
   showToast: (msg: string) => void
   setErrorModalMsg: (msg: string) => void
@@ -28,6 +30,7 @@ export default function SupplierInvoiceModal({
   parts,
   labors,
   vendors,
+  targetPoId,
   onSuccess,
   showToast,
   setErrorModalMsg
@@ -42,6 +45,92 @@ export default function SupplierInvoiceModal({
   const [invoiceVatPct, setInvoiceVatPct] = useState(7)
   const [invoiceCustomVat, setInvoiceCustomVat] = useState<string>('')
   const [isSaving, setIsSaving] = useState(false)
+  const [selectedPoId, setSelectedPoId] = useState<string>('')
+  const [manualVendorId, setManualVendorId] = useState<string>('')
+
+  const validPOs = useMemo(() => {
+    return claim?.purchaseOrders?.filter((po: any) => po.status !== 'CANCELLED') || []
+  }, [claim?.purchaseOrders])
+
+  const poPendingCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    validPOs.forEach((po: any) => {
+      const pCount = parts.filter(p => p.paymentStatus !== 'INVOICED' && p.paymentStatus !== 'PAID' && po.items.some((pi: any) => pi.partNo === p.partNo)).length
+      const lCount = labors.filter(l => l.paymentStatus !== 'INVOICED' && l.paymentStatus !== 'PAID' && po.items.some((pi: any) => pi.description?.includes(l.description))).length
+      counts[po.id] = pCount + lCount
+    })
+    return counts
+  }, [validPOs, parts, labors])
+
+  // Active PO and Vendor resolution
+  const currentPo = validPOs.find((p: any) => p.id === selectedPoId)
+  const activeVendorId = currentPo ? currentPo.vendorId : (manualVendorId || vendors[0]?.id || claim?.garageId || 'ven-p01')
+  const vendorData = vendors.find((v: any) => v.id === activeVendorId) || currentPo?.vendor || vendors[0]
+  const billingPct = vendorData?.billingPct ?? 100
+
+  // Filter visible items according to selected PO
+  const visibleParts = parts
+    .filter(p => p.paymentStatus !== 'INVOICED' && p.paymentStatus !== 'PAID')
+    .filter(p => currentPo ? currentPo.items.some((pi: any) => pi.partNo === p.partNo) : true)
+
+  const visibleLabors = labors
+    .filter(l => l.paymentStatus !== 'INVOICED' && l.paymentStatus !== 'PAID')
+    .filter(l => currentPo ? currentPo.items.some((pi: any) => pi.description?.includes(l.description)) : true)
+
+  // Initialize selected PO when modal opens
+  useEffect(() => {
+    if (!isOpen) return
+    let initialPoId = ''
+    if (targetPoId && validPOs.some((p: any) => p.id === targetPoId)) {
+      initialPoId = targetPoId
+    } else {
+      const poWithPending = validPOs.find((po: any) => (poPendingCounts[po.id] || 0) > 0)
+      initialPoId = poWithPending?.id || (validPOs.length > 0 ? validPOs[0]?.id : 'MANUAL')
+    }
+    setSelectedPoId(initialPoId)
+    setUploadedFile(null)
+    setCustomInvoiceNo('')
+    setInvoiceIncludeVat(true)
+    setInvoiceVatPct(7)
+    setInvoiceCustomVat('')
+    setGlobalDiscountPct('')
+    if (vendors.length > 0 && !manualVendorId) {
+      setManualVendorId(vendors[0].id)
+    }
+  }, [isOpen, targetPoId, validPOs, poPendingCounts])
+
+  // Setup items selection & pricing when selectedPoId, parts, or labors change
+  useEffect(() => {
+    if (!isOpen) return
+
+    const initialSelections: Record<string, boolean> = {}
+    const initialPrices: Record<string, number> = {}
+    const initialDiscounts: Record<string, number> = {}
+
+    visibleParts.forEach(p => {
+      initialSelections[p.id] = true
+      const poi = currentPo?.items.find((x: any) => x.partNo === p.partNo) ||
+        validPOs.flatMap((po: any) => po.items).find((x: any) => x.partNo === p.partNo)
+      const base = poi ? (poi.unitPrice * (poi.quantity || 1)) : (p.priceApprove * p.quantity)
+      const disc = poi ? 0 : (p.discountPct || 0)
+      initialDiscounts[p.id] = disc
+      initialPrices[p.id] = base * (1 - disc / 100)
+    })
+
+    visibleLabors.forEach(l => {
+      initialSelections[l.id] = true
+      const pol = currentPo?.items.find((x: any) => x.description?.includes(l.description)) ||
+        validPOs.flatMap((po: any) => po.items).find((x: any) => x.description?.includes(l.description))
+      const base = pol ? pol.unitPrice : l.priceApprove
+      const disc = pol ? 0 : (l.discountPct || 0)
+      initialDiscounts[l.id] = disc
+      initialPrices[l.id] = base * (1 - disc / 100)
+    })
+
+    setUploadMapSelections(initialSelections)
+    setUploadItemPrices(initialPrices)
+    setUploadItemDiscounts(initialDiscounts)
+  }, [isOpen, selectedPoId, parts, labors, currentPo])
 
   useEffect(() => {
     if (!isOpen) return
@@ -89,16 +178,15 @@ export default function SupplierInvoiceModal({
     }
   }, [isOpen, isSaving, showToast])
 
-  // Helpers defined at top of body so they are available to useEffect
-  const globalPoItems = claim?.purchaseOrders?.filter((po: any) => po.status !== 'CANCELLED').flatMap((po: any) => po.items.map((item: any) => ({ ...item, poId: po.id, poNo: po.poNo, poStatus: po.status }))) || []
-  
   const getPartBaseAmt = (p: any) => {
-    const poi = globalPoItems.find((x: any) => x.partNo === p.partNo)
+    const poi = currentPo?.items.find((x: any) => x.partNo === p.partNo) ||
+      validPOs.flatMap((po: any) => po.items).find((x: any) => x.partNo === p.partNo)
     return poi ? (poi.unitPrice * (poi.quantity || 1)) : (p.priceApprove * p.quantity)
   }
 
   const getLaborBaseAmt = (l: any) => {
-    const pol = globalPoItems.find((x: any) => x.description?.includes(l.description))
+    const pol = currentPo?.items.find((x: any) => x.description?.includes(l.description)) ||
+      validPOs.flatMap((po: any) => po.items).find((x: any) => x.description?.includes(l.description))
     return pol ? pol.unitPrice : l.priceApprove
   }
 
@@ -137,65 +225,12 @@ export default function SupplierInvoiceModal({
     setUploadItemPrices(nextPrices)
   }
 
-  useEffect(() => {
-    if (!isOpen) return
-    setUploadedFile(null)
-    
-    const initialSelections: Record<string, boolean> = {}
-    const initialPrices: Record<string, number> = {}
-    const initialDiscounts: Record<string, number> = {}
-
-    const activeParts = parts
-      .filter(p => p.paymentStatus !== 'INVOICED' && p.paymentStatus !== 'PAID')
-      .filter(p => globalPoItems.some((x: any) => x.partNo === p.partNo))
-    const activeLabors = labors
-      .filter(l => l.paymentStatus !== 'INVOICED' && l.paymentStatus !== 'PAID')
-      .filter(l => globalPoItems.some((x: any) => x.description?.includes(l.description)))
-
-    activeParts.forEach(p => {
-      initialSelections[p.id] = true
-      const poi = globalPoItems.find((x: any) => x.partNo === p.partNo)
-      const base = poi ? (poi.unitPrice * (poi.quantity || 1)) : (p.priceApprove * p.quantity)
-      const disc = poi ? 0 : (p.discountPct || 0)
-      initialDiscounts[p.id] = disc
-      initialPrices[p.id] = base * (1 - disc / 100)
-    })
-
-    activeLabors.forEach(l => {
-      initialSelections[l.id] = true
-      const pol = globalPoItems.find((x: any) => x.description?.includes(l.description))
-      const base = pol ? pol.unitPrice : l.priceApprove
-      const disc = pol ? 0 : (l.discountPct || 0)
-      initialDiscounts[l.id] = disc
-      initialPrices[l.id] = base * (1 - disc / 100)
-    })
-
-    setUploadMapSelections(initialSelections)
-    setUploadItemPrices(initialPrices)
-    setUploadItemDiscounts(initialDiscounts)
-    setCustomInvoiceNo('')
-    setInvoiceIncludeVat(true)
-    setInvoiceVatPct(7)
-    setInvoiceCustomVat('')
-    setGlobalDiscountPct('')
-  }, [isOpen, parts, labors, claim])
-
   if (!isOpen) return null
-  const visibleParts = parts
-    .filter(p => p.paymentStatus !== 'INVOICED' && p.paymentStatus !== 'PAID')
-    .filter(p => globalPoItems.some((x: any) => x.partNo === p.partNo))
-  const visibleLabors = labors
-    .filter(l => l.paymentStatus !== 'INVOICED' && l.paymentStatus !== 'PAID')
-    .filter(l => globalPoItems.some((x: any) => x.description?.includes(l.description)))
-
 
   const sub = parts.filter(p => uploadMapSelections[p.id]).reduce((s, p) => s + getPartPrice(p), 0) + 
               labors.filter(l => uploadMapSelections[l.id]).reduce((s, l) => s + getLaborPrice(l), 0)
   const calculatedVat = invoiceIncludeVat ? Math.round(sub * (invoiceVatPct / 100) * 100) / 100 : 0
   const vat = invoiceIncludeVat ? (invoiceCustomVat !== '' ? Number(invoiceCustomVat) : calculatedVat) : 0
-  const validPOs = claim.purchaseOrders?.filter((po: any) => po.status !== 'CANCELLED') || []
-  const vendorData = validPOs[0]?.vendorId ? vendors.find((v: any) => v.id === validPOs[0].vendorId) : vendors[0]
-  const billingPct = vendorData?.billingPct ?? 100
   const expectedBilling = Math.round(sub * billingPct / 100)
 
   const handleSave = async () => {
@@ -214,12 +249,13 @@ export default function SupplierInvoiceModal({
       }
 
       const invoiceNo = customInvoiceNo.trim() || undefined
-      const firstVendorId = validPOs[0]?.vendorId || vendors[0]?.id || claim.garageId || 'ven-p01'
+      const finalVendorId = activeVendorId
 
       const partItems = selParts.map(p => {
         const price = getPartPrice(p)
         const unitPrice = price / p.quantity
-        const poItem = validPOs.flatMap((po: any) => po.items).find((pi: any) => pi.partNo === p.partNo)
+        const poItem = currentPo?.items.find((pi: any) => pi.partNo === p.partNo) ||
+          validPOs.flatMap((po: any) => po.items).find((pi: any) => pi.partNo === p.partNo)
         return {
           poItemId: poItem?.id || null,
           claimPartId: p.id,
@@ -234,7 +270,8 @@ export default function SupplierInvoiceModal({
 
       const laborItems = selLabors.map(l => {
         const price = getLaborPrice(l)
-        const poLabor = validPOs.flatMap((po: any) => po.items).find((pi: any) => pi.description?.includes(l.description))
+        const poLabor = currentPo?.items.find((pi: any) => pi.description?.includes(l.description)) ||
+          validPOs.flatMap((po: any) => po.items).find((pi: any) => pi.description?.includes(l.description))
         return {
           poItemId: poLabor?.id || null,
           claimPartId: null,
@@ -248,14 +285,13 @@ export default function SupplierInvoiceModal({
         }
       })
 
-
       const allItems = [...partItems, ...laborItems]
 
       const res = await fetch(`/api/claims/${claim.id}/supplier-invoices`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          vendorId: firstVendorId,
+          vendorId: finalVendorId,
           invoiceNo,
           items: allItems,
           pdfUrl: pdfUrlToSave,
@@ -298,6 +334,59 @@ export default function SupplierInvoiceModal({
           </button>
         </CardHeader>
         <CardContent className="space-y-4 pt-4">
+          {/* ─── PO / Vendor Selector ─── */}
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                <Building2 className="w-4 h-4 text-[#0d9488]" />
+                เลือก PO / ผู้จัดจำหน่าย (Vendor)
+              </label>
+              {vendorData && (
+                <Badge variant="outline" className="text-[11px] bg-teal-50 text-teal-800 border-teal-200 font-medium">
+                  ผู้ขาย: {vendorData.name}
+                </Badge>
+              )}
+            </div>
+            {validPOs.length > 0 ? (
+              <select
+                value={selectedPoId}
+                onChange={e => setSelectedPoId(e.target.value)}
+                disabled={isSaving}
+                className="w-full h-10 rounded-md border border-gray-300 bg-white px-3 py-1 text-sm shadow-sm transition-colors focus:border-[#0d9488] focus:ring-1 focus:ring-[#0d9488]"
+              >
+                {validPOs.map((po: any) => {
+                  const pending = poPendingCounts[po.id] || 0
+                  return (
+                    <option key={po.id} value={po.id}>
+                      {po.poNo} — {po.vendor?.name || 'ไม่ระบุผู้ขาย'} {pending > 0 ? `(${pending} รายการรอวางบิล)` : '(วางบิลครบแล้ว)'}
+                    </option>
+                  )
+                })}
+                <option value="MANUAL">-- ผู้จัดจำหน่ายอื่นๆ / ไม่อิง PO --</option>
+              </select>
+            ) : (
+              <div className="text-xs text-amber-600">ไม่มีรายการ PO ในเคลมนี้</div>
+            )}
+
+            {selectedPoId === 'MANUAL' && (
+              <div className="pt-1.5">
+                <label className="text-xs text-slate-600 block mb-1">เลือกผู้จัดจำหน่ายจากระบบ:</label>
+                <select
+                  value={manualVendorId || vendors[0]?.id || ''}
+                  onChange={e => setManualVendorId(e.target.value)}
+                  disabled={isSaving}
+                  className="w-full h-10 rounded-md border border-gray-300 bg-white px-3 py-1 text-sm shadow-sm"
+                >
+                  {vendors.map((v: any) => (
+                    <option key={v.id} value={v.id}>
+                      {v.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+
           <label className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-[#0d9488] transition-colors cursor-pointer block relative">
             <input 
               type="file" 
@@ -419,7 +508,15 @@ export default function SupplierInvoiceModal({
                             />
                           </TableCell>
                           <TableCell className="font-medium text-xs">
-                            {p.partName} <span className="text-[10px] text-[#94a3b8] font-mono block mt-0.5">{p.partNo}</span>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span>{p.partName}</span>
+                              {currentPo && (
+                                <Badge variant="outline" className="text-[10px] bg-blue-50 text-blue-700 border-blue-200 py-0 px-1.5 font-normal">
+                                  {currentPo.poNo}
+                                </Badge>
+                              )}
+                            </div>
+                            <span className="text-[10px] text-[#94a3b8] font-mono block mt-0.5">{p.partNo}</span>
                             <span className="text-[10px] text-gray-400 block mt-0.5">ราคาอ้างอิง: ฿{formatCurrency(base)}</span>
                           </TableCell>
                           <TableCell className="text-right">
@@ -518,7 +615,14 @@ export default function SupplierInvoiceModal({
                             />
                           </TableCell>
                           <TableCell className="font-medium text-xs">
-                            {l.description}
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span>{l.description}</span>
+                              {currentPo && (
+                                <Badge variant="outline" className="text-[10px] bg-blue-50 text-blue-700 border-blue-200 py-0 px-1.5 font-normal">
+                                  {currentPo.poNo}
+                                </Badge>
+                              )}
+                            </div>
                             <span className="text-[10px] text-gray-400 block mt-0.5">ราคาอ้างอิง: ฿{formatCurrency(base)}</span>
                           </TableCell>
                           <TableCell className="text-right">
