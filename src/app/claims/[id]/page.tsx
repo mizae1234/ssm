@@ -268,7 +268,8 @@ export default function ClaimDetailPage() {
     try {
       const laborTot = customData ? customData.laborTotal : laborTotal
       const partsTot = customData ? customData.partsTotal : partsTotal
-      const sub = customData ? customData.subtotal : (laborTot + partsTot)
+      const billableExpensesTot = (claim.expenses || []).filter((e: any) => e.billable).reduce((s: number, e: any) => s + e.amount, 0)
+      const sub = customData ? customData.subtotal : (laborTot + partsTot + billableExpensesTot)
       const vatAmt = customData ? customData.vatAmount : (Math.round(sub * 0.07 * 100) / 100)
       const grand = customData ? customData.grandTotal : (Math.round((sub + vatAmt) * 100) / 100)
 

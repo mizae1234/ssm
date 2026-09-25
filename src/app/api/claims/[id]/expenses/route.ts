@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { syncInsuranceInvoice } from '@/lib/insuranceInvoiceSync'
 
 // GET all expenses for a claim
 export async function GET(
@@ -37,6 +38,16 @@ export async function POST(
         createdBy: body.createdBy || 'Admin',
       }
     })
+
+    // Auto-sync invoice if claim has an unpaid insurance invoice
+    const checkClaim = await prisma.claim.findUnique({
+      where: { id: params.id },
+      select: { insuranceInvoiceId: true, insuranceInvoice: { select: { status: true } } }
+    })
+    if (checkClaim?.insuranceInvoiceId && checkClaim.insuranceInvoice?.status !== 'PAID') {
+      await syncInsuranceInvoice(checkClaim.insuranceInvoiceId)
+    }
+
     return NextResponse.json(expense, { status: 201 })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
@@ -54,8 +65,19 @@ export async function DELETE(
     if (!expenseId) return NextResponse.json({ error: 'Missing expenseId' }, { status: 400 })
     
     await prisma.claimExpense.delete({ where: { id: expenseId } })
+
+    // Auto-sync invoice if claim has an unpaid insurance invoice
+    const checkClaim = await prisma.claim.findUnique({
+      where: { id: params.id },
+      select: { insuranceInvoiceId: true, insuranceInvoice: { select: { status: true } } }
+    })
+    if (checkClaim?.insuranceInvoiceId && checkClaim.insuranceInvoice?.status !== 'PAID') {
+      await syncInsuranceInvoice(checkClaim.insuranceInvoiceId)
+    }
+
     return NextResponse.json({ ok: true })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
+

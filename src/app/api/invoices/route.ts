@@ -70,6 +70,7 @@ export async function POST(request: NextRequest) {
     // Calculations across all selected claims
     let partsTotal = 0
     let laborTotal = 0
+    let expensesTotal = 0
 
     for (const claim of claims) {
       const claimPartsTotal = claim.parts.reduce((s, p) => s + p.priceApprove * p.quantity, 0)
@@ -92,11 +93,12 @@ export async function POST(request: NextRequest) {
       })
       const claimExpensesTotal = claimShippingExpenses.reduce((s, e) => s + e.amount, 0)
 
-      partsTotal += claimPartsTotal + claimExpensesTotal
+      partsTotal += claimPartsTotal
       laborTotal += claimLaborTotal
+      expensesTotal += claimExpensesTotal
     }
 
-    const subtotal = partsTotal + laborTotal
+    const subtotal = Math.round((partsTotal + laborTotal + expensesTotal) * 100) / 100
     const vatAmount = Math.round(subtotal * 0.07 * 100) / 100
     const grandTotal = Math.round((subtotal + vatAmount) * 100) / 100
 

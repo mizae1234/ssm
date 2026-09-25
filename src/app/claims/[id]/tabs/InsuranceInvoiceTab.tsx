@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { TrendingUp, CheckCircle2, AlertTriangle, Trash2, Plus, Download, Printer } from 'lucide-react'
+import { TrendingUp, CheckCircle2, AlertTriangle, Trash2, Plus, Download, Printer, RefreshCw } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import { formatDate } from '@/lib/date'
 import { ClaimTabProps } from './types'
@@ -16,12 +16,18 @@ interface InsuranceInvoiceTabProps extends ClaimTabProps {
 
 export default function InsuranceInvoiceTab({
   claim,
+  parts,
+  labors,
   partsTotal,
   laborTotal,
   handleCreateInsuranceInvoice,
   handleDeleteInsuranceInvoice,
   setConfirmModal,
-  setShowReceiveARModal
+  setShowReceiveARModal,
+  setInsuranceInvoice,
+  refreshClaim,
+  showToast,
+  setErrorModalMsg
 }: InsuranceInvoiceTabProps) {
   const billableExpenses = (claim.expenses || []).filter((e: any) => e.billable)
   const billableExpensesTotal = billableExpenses.reduce((s: number, e: any) => s + e.amount, 0)
@@ -42,6 +48,75 @@ export default function InsuranceInvoiceTab({
   const vat = Math.round(sub * 0.07 * 100) / 100
   const grand = Math.round((sub + vat) * 100) / 100
 
+  const [isSyncing, setIsSyncing] = useState(false)
+
+  const claimsList = (claim.insuranceInvoice?.claims && claim.insuranceInvoice.claims.length > 0)
+    ? claim.insuranceInvoice.claims
+    : [claim]
+
+  let aggPartsTotal = 0
+  let aggLaborTotal = 0
+  let aggExpensesTotal = 0
+
+  for (const c of claimsList) {
+    const cParts = c.id === claim.id ? (parts || []) : (c.parts || [])
+    const cLabors = c.id === claim.id ? (labors || []) : (c.labors || [])
+    const cExpenses = c.id === claim.id ? (claim.expenses || []) : (c.expenses || [])
+
+    aggPartsTotal += cParts.reduce((s: number, p: any) => s + (p.priceApprove || 0) * (p.quantity || 1), 0)
+    aggLaborTotal += cLabors.reduce((s: number, l: any) => s + (l.priceApprove || 0), 0)
+    aggExpensesTotal += cExpenses.filter((e: any) => {
+      if (!e.billable) return false
+      const cat = e.category?.toLowerCase() || ''
+      const desc = e.description?.toLowerCase() || ''
+      return (
+        cat === 'shipping' ||
+        cat === 'handling' ||
+        cat === 'towing' ||
+        desc.includes('ขนส่ง') ||
+        desc.includes('shipping') ||
+        desc.includes('ส่งอะไหล่') ||
+        desc.includes('ค่าส่ง') ||
+        desc.includes('ค่าขน')
+      )
+    }).reduce((s: number, e: any) => s + (e.amount || 0), 0)
+  }
+
+  const expectedSubtotal = Math.round((aggPartsTotal + aggLaborTotal + aggExpensesTotal) * 100) / 100
+  const expectedVatAmount = Math.round(expectedSubtotal * 0.07 * 100) / 100
+  const expectedGrandTotal = Math.round((expectedSubtotal + expectedVatAmount) * 100) / 100
+
+  const isMismatch = Boolean(claim.insuranceInvoice && claim.insuranceInvoice.status !== 'PAID' && (Math.abs(claim.insuranceInvoice.grandTotal - expectedGrandTotal) > 0.05))
+
+  const handleSyncInvoice = async () => {
+    try {
+      setIsSyncing(true)
+      const res = await fetch(`/api/claims/${claim.id}/insurance-invoice/sync`, {
+        method: 'POST'
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || 'Failed to sync')
+      }
+      const updated = await res.json()
+      if (setInsuranceInvoice) {
+        setInsuranceInvoice(updated)
+      }
+      if (refreshClaim) {
+        await refreshClaim()
+      }
+      if (showToast) {
+        showToast('✅ ซิงค์ยอดใบวางบิลกับรายการเคลมเรียบร้อยแล้ว')
+      }
+    } catch (e: any) {
+      if (setErrorModalMsg) {
+        setErrorModalMsg(`ไม่สามารถซิงค์ยอดได้: ${e.message}`)
+      }
+    } finally {
+      setIsSyncing(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* ─── Section AR: วางบิลประกัน ─── */}
@@ -51,6 +126,11 @@ export default function InsuranceInvoiceTab({
           <div className="flex items-center gap-2">
             {claim.insuranceInvoice && (
               <>
+                {!claim.insuranceInvoice.arPayment && (
+                  <Button variant="outline" size="sm" className="text-xs text-blue-700 border-blue-200 hover:bg-blue-50" onClick={handleSyncInvoice} disabled={isSyncing}>
+                    <RefreshCw className={`w-3.5 h-3.5 mr-1 ${isSyncing ? 'animate-spin' : ''}`} />ซิงค์ยอด
+                  </Button>
+                )}
                 <Button variant="outline" size="sm" className="text-xs" onClick={() => window.open(`/claims/${claim.id}/pdf/insurance-invoice`)}><Download className="w-3.5 h-3.5 mr-1" />ใบวางบิล</Button>
                 <Button variant="outline" size="sm" className="text-xs text-teal-700 border-teal-200 hover:bg-teal-50" onClick={() => window.open(`/claims/${claim.id}/pdf/insurance-delivery-tax`)}><Printer className="w-3.5 h-3.5 mr-1" />ใบส่งของ/ใบกำกับภาษี</Button>
                 <Button variant="outline" size="sm" className="text-xs text-teal-700 border-teal-200 hover:bg-teal-50" onClick={() => window.open(`/claims/${claim.id}/pdf/insurance-receipt`)}><Printer className="w-3.5 h-3.5 mr-1" />ใบเสร็จรับเงิน</Button>
@@ -170,6 +250,25 @@ export default function InsuranceInvoiceTab({
             </div>
           ) : (
             <div className="space-y-4">
+              {isMismatch && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-start gap-2.5">
+                    <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-sm font-semibold text-amber-900">
+                        ยอดในใบวางบิล (฿{formatCurrency(claim.insuranceInvoice.grandTotal)}) ไม่ตรงกับยอดรายการปัจจุบัน (฿{formatCurrency(expectedGrandTotal)})
+                      </p>
+                      <p className="text-xs text-amber-700 mt-0.5">
+                        เนื่องจากมีการแก้ไขรายการอะไหล่ ค่าแรง หรือค่าขนส่งหลังจากออกใบวางบิล
+                      </p>
+                    </div>
+                  </div>
+                  <Button size="sm" variant="outline" className="text-xs border-amber-400 bg-white text-amber-900 hover:bg-amber-100 font-semibold shrink-0" onClick={handleSyncInvoice} disabled={isSyncing}>
+                    <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                    ซิงค์ยอดให้ตรงกัน
+                  </Button>
+                </div>
+              )}
               <div className="flex items-center gap-3">
                 <Badge className={`border-none ${claim.insuranceInvoice.status === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'}`}>{claim.insuranceInvoice.status === 'PAID' ? 'รับชำระแล้ว' : 'ส่งวางบิลแล้ว'}</Badge>
                 {claim.insuranceInvoice.claims && claim.insuranceInvoice.claims.length > 1 && (

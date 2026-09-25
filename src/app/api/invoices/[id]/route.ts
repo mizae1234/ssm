@@ -29,9 +29,40 @@ export async function PUT(
       return NextResponse.json({ error: 'เลขที่ใบแจ้งหนี้ซ้ำในระบบ กรุณากรอกเลขอื่น' }, { status: 400 })
     }
 
-    const labor = typeof laborTotal === 'number' ? laborTotal : 0
-    const parts = typeof partsTotal === 'number' ? partsTotal : 0
-    const subtotal = labor + parts
+    // Fetch claims to calculate expensesTotal so billable expenses are not lost
+    const invoice = await prisma.insuranceInvoice.findUnique({
+      where: { id },
+      include: {
+        claims: {
+          include: {
+            expenses: true
+          }
+        }
+      }
+    })
+
+    const expensesTotal = (invoice?.claims || []).reduce((sum, c) => {
+      const expSum = (c.expenses || []).filter((e: any) => {
+        if (!e.billable) return false
+        const cat = e.category?.toLowerCase() || ''
+        const desc = e.description?.toLowerCase() || ''
+        return (
+          cat === 'shipping' ||
+          cat === 'handling' ||
+          cat === 'towing' ||
+          desc.includes('ขนส่ง') ||
+          desc.includes('shipping') ||
+          desc.includes('ส่งอะไหล่') ||
+          desc.includes('ค่าส่ง') ||
+          desc.includes('ค่าขน')
+        )
+      }).reduce((s: number, e: any) => s + (e.amount || 0), 0)
+      return sum + expSum
+    }, 0)
+
+    const labor = typeof laborTotal === 'number' ? laborTotal : (invoice?.laborTotal || 0)
+    const parts = typeof partsTotal === 'number' ? partsTotal : (invoice?.partsTotal || 0)
+    const subtotal = Math.round((labor + parts + expensesTotal) * 100) / 100
     const vatAmount = Math.round(subtotal * 0.07 * 100) / 100
     const grandTotal = Math.round((subtotal + vatAmount) * 100) / 100
 

@@ -32,6 +32,7 @@ export async function POST(request: NextRequest) {
 
     let partsTotal = 0
     let laborTotal = 0
+    let expensesTotal = 0
 
     const claimsWithItems = claims.map(c => {
       // Filter billable shipping expenses
@@ -51,11 +52,13 @@ export async function POST(request: NextRequest) {
         )
       })
 
-      const claimPartsTotal = c.parts.reduce((s, p) => s + p.priceApprove * p.quantity, 0) + claimShippingExpenses.reduce((s, e) => s + e.amount, 0)
+      const purePartsTotal = c.parts.reduce((s, p) => s + p.priceApprove * p.quantity, 0)
+      const claimExpensesTotal = claimShippingExpenses.reduce((s, e) => s + e.amount, 0)
       const claimLaborTotal = c.labors.reduce((s, l) => s + l.priceApprove, 0)
       
-      partsTotal += claimPartsTotal
+      partsTotal += purePartsTotal
       laborTotal += claimLaborTotal
+      expensesTotal += claimExpensesTotal
 
       return {
         id: c.id,
@@ -94,13 +97,14 @@ export async function POST(request: NextRequest) {
           description: e.description || 'ค่าขนส่ง/ส่งอะไหล่',
           amount: e.amount
         })),
-        partsTotal: claimPartsTotal,
+        partsTotal: purePartsTotal,
         laborTotal: claimLaborTotal,
-        total: claimPartsTotal + claimLaborTotal
+        expensesTotal: claimExpensesTotal,
+        total: purePartsTotal + claimLaborTotal + claimExpensesTotal
       }
     })
 
-    const subtotal = partsTotal + laborTotal
+    const subtotal = Math.round((partsTotal + laborTotal + expensesTotal) * 100) / 100
     const vatAmount = Math.round(subtotal * 0.07 * 100) / 100
     const grandTotal = Math.round((subtotal + vatAmount) * 100) / 100
 

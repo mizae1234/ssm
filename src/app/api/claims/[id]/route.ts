@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { syncInsuranceInvoice } from '@/lib/insuranceInvoiceSync'
 
 export async function GET(
   request: NextRequest,
@@ -246,6 +247,15 @@ export async function PUT(
     }
   }
   
+  // Auto-sync insurance invoice totals if invoice exists and is not PAID
+  const checkClaim = await prisma.claim.findUnique({
+    where: { id: params.id },
+    select: { insuranceInvoiceId: true, insuranceInvoice: { select: { status: true } } }
+  })
+  if (checkClaim?.insuranceInvoiceId && checkClaim.insuranceInvoice?.status !== 'PAID') {
+    await syncInsuranceInvoice(checkClaim.insuranceInvoiceId)
+  }
+
   const updatedClaim = await prisma.claim.findUnique({
     where: { id: params.id },
     include: {
