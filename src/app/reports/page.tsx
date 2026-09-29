@@ -1,5 +1,6 @@
 "use client"
 import { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -7,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Select } from '@/components/ui/select'
-import { TrendingUp, Clock, Users, BarChart3, Download, Search, Filter, FileSpreadsheet } from 'lucide-react'
+import { TrendingUp, Clock, Users, BarChart3, Download, Search, Filter, FileSpreadsheet, ShoppingCart } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import { formatDate } from '@/lib/date'
 import { Skeleton, SkeletonTableRows } from '@/components/ui/skeleton'
@@ -162,10 +163,33 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-[#0f172a]">Reports</h1>
           <p className="text-sm text-[#94a3b8] mt-1">รายงานสรุปการเงินและผลประกอบการ</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/reports"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#0d9488] text-white shadow-sm"
+          >
+            <BarChart3 className="w-3.5 h-3.5" />
+            <span>ภาพรวมรายงานการเงิน</span>
+          </Link>
+          <Link
+            href="/reports/purchases"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-gray-200 text-[#475569] hover:bg-gray-50 hover:text-[#0d9488] transition-colors shadow-sm"
+          >
+            <ShoppingCart className="w-3.5 h-3.5 text-[#0d9488]" />
+            <span>รายงานซื้อ</span>
+          </Link>
+          <Link
+            href="/reports/sales"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-gray-200 text-[#475569] hover:bg-gray-50 hover:text-[#0d9488] transition-colors shadow-sm"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-[#0d9488]" />
+            <span>รายงานขาย</span>
+          </Link>
         </div>
       </div>
 
